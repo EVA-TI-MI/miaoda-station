@@ -28,7 +28,7 @@ jobs:
 
       - name: Build EXE
         run: |
-          pyinstaller --onefile --windowed --noconfirm --name "霓虹贪吃蛇" `
+          pyinstaller --onefile --windowed --noconfirm --name "MiaodaStation" `
             --add-data "snake.html;." --add-data "biquge.html;." `
             --add-data "index.html;." --add-data "sw.js;." `
             --add-data "manifest.json;." --add-data "icon-192.png;." `
@@ -41,4 +41,4 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            dist/*.exe
+            dist/MiaodaStation.exe
