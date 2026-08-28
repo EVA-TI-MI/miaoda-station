@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  administration: write
 
 jobs:
   build-windows:
@@ -39,10 +40,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = "application/vnd.github+json" }
           $release = gh release view ${{ github.ref_name }} --json id -q .id
           if ($release) {
-            gh release delete-asset ${{ github.ref_name }} default.exe -y --skip-questions 2>$null
-            Write-Host "Cleaned old assets"
+            $assets = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/$release/assets" -Headers $headers
+            foreach ($asset in $assets) {
+              Write-Host "Deleting asset: $($asset.name)"
+              Invoke-RestMethod -Method Delete -Uri $asset.url -Headers $headers
+            }
           }
 
       - name: Upload EXE to Release
@@ -57,18 +62,14 @@ jobs:
   set-topics:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      administration: write
     steps:
       - name: Set repository topics
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api -X PUT repos/${{ github.repository }}/topics \
-            -f names[]=snake-game \
-            -f names[]=novel-reader \
-            -f names[]=html5-game \
-            -f names[]=pywebview \
-            -f names[]=pwa \
-            -f names[]=electron-alternative \
-            -f names[]=canvas-game \
-            -f names[]=chinese-novel
+          curl -s -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/topics \
+            -d '{"names":["snake-game","novel-reader","html5-game","pywebview","pwa","canvas-game","chinese-novel","desktop-app"]}'
