@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  administration: write
 
 jobs:
   build-windows:
@@ -41,13 +40,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = "application/vnd.github+json" }
-          $release = gh release view ${{ github.ref_name }} --json id -q .id
-          if ($release) {
-            $assets = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/$release/assets" -Headers $headers
-            foreach ($asset in $assets) {
+          $repo = "${{ github.repository }}"
+          $tag = "${{ github.ref_name }}"
+          try {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$tag" -Headers $headers
+            foreach ($asset in $release.assets) {
               Write-Host "Deleting asset: $($asset.name)"
               Invoke-RestMethod -Method Delete -Uri $asset.url -Headers $headers
             }
+          } catch {
+            Write-Host "No existing release or assets to delete"
           }
 
       - name: Upload EXE to Release
@@ -61,8 +63,6 @@ jobs:
 
   set-topics:
     runs-on: ubuntu-latest
-    permissions:
-      administration: write
     steps:
       - name: Set repository topics
         env:
