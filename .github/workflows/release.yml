@@ -35,22 +35,15 @@ jobs:
             --add-data "icon-512.png;." snake_launcher.py
 
       - name: Delete old release assets
-        shell: pwsh
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = "application/vnd.github+json" }
-          $repo = "${{ github.repository }}"
-          $tag = "${{ github.ref_name }}"
-          try {
-            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$tag" -Headers $headers
-            foreach ($asset in $release.assets) {
-              Write-Host "Deleting asset: $($asset.name)"
-              Invoke-RestMethod -Method Delete -Uri $asset.url -Headers $headers
-            }
-          } catch {
-            Write-Host "No existing release or assets to delete"
-          }
+          echo "Checking for existing assets on release ${{ github.ref_name }}"
+          gh release view ${{ github.ref_name }} --json assets --jq '.assets[].name' | while read asset; do
+            echo "Deleting asset: $asset"
+            gh release delete-asset ${{ github.ref_name }} "$asset" --yes || true
+          done
 
       - name: Upload EXE to Release
         uses: softprops/action-gh-release@v2
@@ -68,8 +61,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -s -X PUT \
+          echo "Setting repository topics..."
+          RESPONSE=$(curl -s --fail -X PUT \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/topics \
-            -d '{"names":["snake-game","novel-reader","html5-game","pywebview","pwa","canvas-game","chinese-novel","desktop-app"]}'
+            -d '{"names":["snake-game","novel-reader","html5-game","pywebview","pwa","canvas-game","chinese-novel","desktop-app"]}')
+          echo "Response: $RESPONSE"
