@@ -1,0 +1,22 @@
+{
+  "name": "妙搭小站 - 游戏与阅读",
+  "short_name": "妙搭小站",
+  "description": "霓虹贪吃蛇游戏与笔趣阁小说阅读",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f0d08",
+  "theme_color": "#0f0d08",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
