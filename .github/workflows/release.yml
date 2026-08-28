@@ -34,6 +34,17 @@ jobs:
             --add-data "manifest.json;." --add-data "icon-192.png;." `
             --add-data "icon-512.png;." snake_launcher.py
 
+      - name: Delete old release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $release = gh release view ${{ github.ref_name }} --json id -q .id
+          if ($release) {
+            gh release delete-asset ${{ github.ref_name }} default.exe -y --skip-questions 2>$null
+            Write-Host "Cleaned old assets"
+          }
+
       - name: Upload EXE to Release
         uses: softprops/action-gh-release@v2
         with:
@@ -42,3 +53,22 @@ jobs:
           prerelease: false
           files: |
             dist/MiaodaStation.exe
+
+  set-topics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Set repository topics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X PUT repos/${{ github.repository }}/topics \
+            -f names[]=snake-game \
+            -f names[]=novel-reader \
+            -f names[]=html5-game \
+            -f names[]=pywebview \
+            -f names[]=pwa \
+            -f names[]=electron-alternative \
+            -f names[]=canvas-game \
+            -f names[]=chinese-novel
