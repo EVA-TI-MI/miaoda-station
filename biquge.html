@@ -3128,11 +3128,8 @@ function ttsChooseEngine(eng) {
   if (eng === 'offline') {
     ttsUnlockAudio();
     ttsOfflineEnsure(false);
-  } else {
-    // 选在线也把离线引擎在后台备好，作为断网保底（用户要求 B 始终就绪）
-    ttsOfflineEnsure(true);
   }
-  showToast(eng === 'offline' ? '已选择离线引擎，首次加载约 45MB，请稍候…' : '已选择在线语音，即点即读');
+  showToast(eng === 'offline' ? '已选择离线引擎，首次加载约 45MB，请稍候…' : (eng === 'online' ? '已选择在线语音，即点即读' : '已选择系统语音'));
   const from = (typeof tts._resumeFrom === 'number') ? tts._resumeFrom : 0;
   tts._resumeFrom = null;
   ttsStartChapter(from);
@@ -3185,14 +3182,11 @@ function ttsInit() {
     }, 500);
   }
   ttsPopulateEngineSelect();
-  // 已选定音源的无系统语音环境：首次打开即把离线引擎准备好（B 保底，用户明确要求首次加载）
+  // 条件不足（无系统语音）且默认/选定离线：首次打开即后台把离线引擎准备好（仅一次，之后缓存）
   setTimeout(function () {
-    if (ttsHasSynth()) return;
-    if (tts.enginePref === 'offline') {
+    if (ttsDefaultIsOffline()) {
       ttsUnlockAudio();
       ttsOfflineEnsure(false);
-    } else if (tts.enginePref === 'online') {
-      ttsOfflineEnsure(true); // 在线为主，离线静默后台保底
     }
   }, 1200);
 }
@@ -3232,14 +3226,20 @@ function ttsOnEngineChange(eng) {
   ttsPopulateVoiceSelect();
   if (wasPlaying) ttsStartChapter(cur); else ttsRefreshUI();
 }
-// 返回本次应用的引擎；需要用户选择时弹窗并返回 null
+// 返回本次应用的引擎：优先用户手动选择；否则按浏览器能力给默认
+// 条件足够（有系统语音）→ 系统语音；条件不足（如微信/QQ 内置浏览器）→ 离线引擎
 function ttsPickEngine() {
   let pref = tts.enginePref;
   if (pref === 'system' && !ttsHasSynth()) pref = null;
   if (pref) return pref;
-  if (ttsHasSynth()) return 'system';
-  ttsShowEnginePicker();
-  return null;
+  return ttsHasSynth() ? 'system' : 'offline';
+}
+// 是否将默认使用离线引擎（用于进入阅读页时提前后台预载）
+function ttsDefaultIsOffline() {
+  let pref = tts.enginePref;
+  if (pref === 'system' && !ttsHasSynth()) pref = null;
+  if (pref) return pref === 'offline';
+  return !ttsHasSynth();
 }
 
 // ---------- 系统语音音色 ----------
