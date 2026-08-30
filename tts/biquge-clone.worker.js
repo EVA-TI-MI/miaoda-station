@@ -30,10 +30,17 @@ importScripts('sherpa-onnx-wasm-main-tts.js', 'sherpa-onnx-tts.js');
 
 // 模型缓存统一交给 Service Worker（/tts/ 路径缓存优先、运行时落盘、断网回退），
 // Worker 不再单独开 Cache Storage，避免 195MB 模型被重复缓存两份。
-async function fetchBytes(url) {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error('模型下载失败 HTTP ' + resp.status + '：' + url);
-  return new Uint8Array(await resp.arrayBuffer());
+async function fetchBytes(url, tries) {
+  tries = tries || 0;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return new Uint8Array(await resp.arrayBuffer());
+  } catch (e) {
+    if (tries >= 3) throw new Error('模型下载失败（' + url.split('/').pop() + '）：' + (e && e.message || e) + '，已重试3次，请检查网络后再次点击朗读，已下载部分会断点续传');
+    await new Promise(function (r) { setTimeout(r, 400 * (tries + 1)); });
+    return fetchBytes(url, tries + 1); // SW 已缓存成功分片，重试不会重复下载
+  }
 }
 
 async function loadModels(dir) {
