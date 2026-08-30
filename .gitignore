@@ -36,3 +36,8 @@ _check.js
 token.txt
 _token_file
 _screenshot.png
+
+# TTS 双通道改造：工作片段/调研大目录/备份（不入库）
+_tts_ab_patch/
+tts-offline/
+*.bak2
