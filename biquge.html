@@ -1533,6 +1533,28 @@ img { max-width: 100%; display: block; }
 .clone-saved-tip { font-size: 12px; color: #2e7d32; text-align: center; margin-top: 8px; }
 .clone-audio { width: 100%; margin: 6px 0; }
 
+/* 阅读器底部“更多”收纳面板 */
+.reader-more-wrap { position: relative; }
+.reader-more-panel {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 2400;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  min-width: 280px;
+  max-width: 88vw;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e5e0d5);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.22);
+}
+.reader-more-panel.show { display: flex; }
+.reader-more-panel .reader-tool-group { flex-wrap: wrap; }
+
+
 /* chapter list modal in reader */
 .chapter-modal-backdrop {
   position: fixed;
@@ -2344,6 +2366,9 @@ function renderBookshelf() {
       <button class="shelf-tool-btn" onclick="exportShelfState()" title="导出书架状态 JSON，配合 cleanup_shelf.py 清理已删除小说的本地缓存">
         📤 导出书架状态
       </button>
+      <button class="shelf-tool-btn" onclick="pickLocalTxt()" title="选择 .txt 文件，逐个做纯文本安全检测后导入书架">
+        📥 导入本地TXT
+      </button>
     </div>
   `;
 
@@ -2825,28 +2850,11 @@ function renderReader() {
         </div>
         <div class="reader-tools">
           <div class="reader-tool-group">
-            <span class="reader-tool-label">主题</span>
-            <div class="theme-options">
-              <div class="theme-option theme-light ${readerTheme==='light'?'active':''}" onclick="setReaderTheme('light')" title="浅色"></div>
-              <div class="theme-option theme-dark ${readerTheme==='dark'?'active':''}" onclick="setReaderTheme('dark')" title="深色"></div>
-              <div class="theme-option theme-paper ${readerTheme==='paper'?'active':''}" onclick="setReaderTheme('paper')" title="护眼"></div>
-              <div class="theme-option theme-night ${readerTheme==='night'?'active':''}" onclick="setReaderTheme('night')" title="夜间"></div>
-            </div>
-          </div>
-          <div class="reader-tool-group">
             <span class="reader-tool-label">字号</span>
             <div class="font-size-control">
               <button class="font-btn" onclick="changeFontSize(-1)">A-</button>
               <span class="font-size-val">${readerFontSize}</span>
               <button class="font-btn" onclick="changeFontSize(1)">A+</button>
-            </div>
-          </div>
-          <div class="reader-tool-group">
-            <span class="reader-tool-label">字体</span>
-            <div class="font-family-options">
-              ${Object.keys(READER_FONTS).map(ff => `
-                <button class="ff-btn ${readerFontFamily===ff?'active':''}" onclick="setReaderFontFamily('${ff}')" title="${READER_FONTS[ff].label}">${READER_FONTS[ff].label}</button>
-              `).join('')}
             </div>
           </div>
           <div class="reader-tool-group">
@@ -2863,16 +2871,41 @@ function renderReader() {
               <option value="2">2.0x 极速</option>
             </select>
           </div>
-          <div class="reader-tool-group">
-            <button class="reader-shelf-btn" onclick="toggleShelf(${book.id})">
-              ${inShelf ? '✓ 已加入书架' : '加入书架'}
-            </button>
-            <button class="reader-shelf-btn" onclick="toggleFavBtn(${book.id})" style="${isFavorite(book.id) ? 'background:#fff3cd;border-color:#d4a84b;color:#856404;' : ''}">
-              ${isFavorite(book.id) ? '★ 已收藏' : '☆ 收藏'}
-            </button>
-            <button class="reader-shelf-btn" onclick="toggleLikeBtn(${book.id})" style="${isLiked(book.id) ? 'background:#f8d7da;border-color:#e74c3c;color:#c0392b;' : ''}">
-              ${isLiked(book.id) ? '♥ 已喜欢' : '♡ 喜欢'}
-            </button>
+          <div class="reader-tool-group reader-more-wrap">
+            <button class="reader-shelf-btn" onclick="toggleReaderMore()">⋯ 更多</button>
+            <div class="reader-more-panel" id="readerMorePanel">
+              <div class="reader-tool-group">
+                <span class="reader-tool-label">主题</span>
+                <div class="theme-options">
+                  <div class="theme-option theme-light ${readerTheme==='light'?'active':''}" onclick="setReaderTheme('light')" title="浅色"></div>
+                  <div class="theme-option theme-dark ${readerTheme==='dark'?'active':''}" onclick="setReaderTheme('dark')" title="深色"></div>
+                  <div class="theme-option theme-paper ${readerTheme==='paper'?'active':''}" onclick="setReaderTheme('paper')" title="护眼"></div>
+                  <div class="theme-option theme-night ${readerTheme==='night'?'active':''}" onclick="setReaderTheme('night')" title="夜间"></div>
+                </div>
+              </div>
+              <div class="reader-tool-group">
+                <span class="reader-tool-label">字体</span>
+                <div class="font-family-options">
+                  ${Object.keys(READER_FONTS).map(ff => `
+                    <button class="ff-btn ${readerFontFamily===ff?'active':''}" onclick="setReaderFontFamily('${ff}')" title="${READER_FONTS[ff].label}">${READER_FONTS[ff].label}</button>
+                  `).join('')}
+                </div>
+              </div>
+              <div class="reader-tool-group">
+                <button class="reader-shelf-btn" onclick="toggleShelf(${book.id})">
+                  ${inShelf ? '✓ 已加入书架' : '加入书架'}
+                </button>
+                <button class="reader-shelf-btn" onclick="toggleFavBtn(${book.id})" style="${isFavorite(book.id) ? 'background:#fff3cd;border-color:#d4a84b;color:#856404;' : ''}">
+                  ${isFavorite(book.id) ? '★ 已收藏' : '☆ 收藏'}
+                </button>
+                <button class="reader-shelf-btn" onclick="toggleLikeBtn(${book.id})" style="${isLiked(book.id) ? 'background:#f8d7da;border-color:#e74c3c;color:#c0392b;' : ''}">
+                  ${isLiked(book.id) ? '♥ 已喜欢' : '♡ 喜欢'}
+                </button>
+              </div>
+              <div class="reader-tool-group">
+                <button class="reader-shelf-btn" onclick="openStandaloneRecorder()">🎤 录音 / 保存 / 分享</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -4012,6 +4045,283 @@ function ttsAfterRender() {
   }
 }
 
+
+// ==================== 本地 TXT 导入（编码识别 / 安全检测 / 自动分章 / IndexedDB 存储） ====================
+const LOCAL_DB = 'biquge_local_books', LOCAL_STORE = 'books';
+const LOCAL_MAX = 20 * 1024 * 1024; // 单文件 20MB 上限
+function localOpenDB() {
+  return new Promise(function (res) {
+    if (!window.indexedDB) return res(null);
+    let req;
+    try { req = indexedDB.open(LOCAL_DB, 1); } catch (e) { return res(null); }
+    req.onupgradeneeded = function () { if (!req.result.objectStoreNames.contains(LOCAL_STORE)) req.result.createObjectStore(LOCAL_STORE, { keyPath: 'id' }); };
+    req.onsuccess = function () { res(req.result); };
+    req.onerror = function () { res(null); };
+  });
+}
+function localIDB(mode, fn) {
+  return localOpenDB().then(function (db) {
+    return new Promise(function (res) {
+      if (!db) return res(null);
+      try { const tx = db.transaction(LOCAL_STORE, mode), st = tx.objectStore(LOCAL_STORE), rq = fn(st);
+        if (rq && rq.onsuccess !== undefined) { rq.onsuccess = function () { res(rq.result); }; rq.onerror = function () { res(null); }; }
+        else { tx.oncomplete = function () { res(true); }; tx.onerror = function () { res(null); }; }
+      } catch (e) { res(null); }
+    });
+  });
+}
+function localPutBook(b) { return localIDB('readwrite', st => st.put(b)); }
+function localAllBooks() { return localIDB('readonly', st => st.getAll()); }
+function localDeleteBook(id) { return localIDB('readwrite', st => st.delete(id)); }
+
+// 解码：BOM → UTF-8 严格 → GBK 兜底（中文 txt 常见 GB18030/GBK）
+function localDecode(buf) {
+  const u8 = new Uint8Array(buf);
+  if (u8.length >= 3 && u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) return new TextDecoder('utf-8').decode(u8.subarray(3));
+  if (u8.length >= 2 && u8[0] === 0xFF && u8[1] === 0xFE) return new TextDecoder('utf-16le').decode(u8.subarray(2));
+  if (u8.length >= 2 && u8[0] === 0xFE && u8[1] === 0xFF) return new TextDecoder('utf-16be').decode(u8.subarray(2));
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(u8); } catch (e) {}
+  try { return new TextDecoder('gbk').decode(u8); } catch (e) { return new TextDecoder('utf-8').decode(u8); }
+}
+
+// 纯文本安全检测：拦截伪装可执行文件 / 二进制 / 内嵌脚本（说明：纯文本 txt 不会携带可执行病毒，这里做的是“是否为安全纯文本”校验）
+function txtSafetyScan(fileName, u8, text) {
+  const lower = String(fileName || '').toLowerCase();
+  if (!lower.endsWith('.txt')) return { ok: false, reason: '不是 .txt 文本文件' };
+  if (u8.length < 2) return { ok: false, reason: '文件为空' };
+  if (u8.length > LOCAL_MAX) return { ok: false, reason: '超过 20MB 上限' };
+  const hex = Array.from(u8.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const magic = [
+    ['4d5a', 'Windows 可执行程序（EXE/DLL）'], ['7f454c46', 'Linux 可执行程序'],
+    ['504b0304', '压缩包（ZIP/Office）'], ['25504446', 'PDF 文档'], ['cafebabe', 'Java 程序'],
+    ['cffaedfe', 'Windows 可执行程序'], ['feedface', '可执行程序'], ['78617221', '压缩包']
+  ];
+  for (const item of magic) if (hex.startsWith(item[0])) return { ok: false, reason: '文件头为' + item[1] + '，并非纯文本，已阻止' };
+  if (/^\s*#!/.test(text.slice(0, 200))) return { ok: false, reason: '内容是脚本文件，已阻止' };
+  for (let i = 0; i < Math.min(u8.length, 200000); i++) if (u8[i] === 0) return { ok: false, reason: '含二进制空字节，不是纯文本，已阻止' };
+  const sample = text.slice(0, 200000);
+  let bad = 0;
+  for (const ch of sample) { const c = ch.codePointAt(0); if (c === 0xFFFD || (c < 32 && c !== 9 && c !== 10 && c !== 13)) bad++; }
+  if (sample.length > 0 && bad / sample.length > 0.002) return { ok: false, reason: '含大量非文本字节，疑似二进制或已损坏，已阻止' };
+  if (/<script[\s>]/i.test(text) || /<\?php/i.test(text) || /<%[^%]/.test(text.slice(0, 8000))) return { ok: false, reason: '内嵌可执行脚本，为安全已阻止' };
+  return { ok: true };
+}
+
+// 逐行扫描分章；识别不到章节则整本一章
+const LOCAL_HEAD_RE = /^\s*(第\s*[0-9零一二三四五六七八九十百千万两]+\s*[章节回卷集部篇][^\n]{0,40}|楔子|序章|序言|前言|引子|引言|后记|尾声|番外[^\n]{0,30}|Chapter\s+\d+[^\n]{0,40})\s*$/i;
+function splitIntoChapters(raw, fallback) {
+  const lines = raw.replace(/\r\n?/g, '\n').replace(/^\uFEFF/, '').split('\n');
+  const chapters = [];
+  let cur = null, headCount = 0;
+  const flush = function () {
+    if (!cur) return;
+    const ps = cur.buf.map(s => s.trim()).filter(Boolean);
+    if (ps.length) { cur.c.paragraphs = ps; chapters.push(cur.c); }
+    cur = null;
+  };
+  for (const line of lines) {
+    if (LOCAL_HEAD_RE.test(line)) {
+      headCount++; flush();
+      cur = { c: { title: line.trim(), paragraphs: [] }, buf: [] };
+    } else if (cur) cur.buf.push(line);
+    else if (!chapters.length) cur = { c: { title: '开篇', paragraphs: [] }, buf: [line] };
+  }
+  flush();
+  if (headCount < 2 || chapters.length === 0) {
+    const ps = lines.map(s => s.trim()).filter(Boolean);
+    return ps.length ? [{ title: fallback, paragraphs: ps }] : [];
+  }
+  return chapters;
+}
+
+function localEnsureInput() {
+  let i = document.getElementById('localTxtInput');
+  if (i) return i;
+  i = document.createElement('input');
+  i.type = 'file'; i.id = 'localTxtInput'; i.accept = '.txt,text/plain'; i.multiple = true;
+  i.style.display = 'none';
+  i.addEventListener('change', function () { onLocalTxtFiles(i); });
+  document.body.appendChild(i);
+  return i;
+}
+function pickLocalTxt() { localEnsureInput().click(); }
+async function onLocalTxtFiles(input) {
+  const files = Array.from(input.files || []);
+  try { input.value = ''; } catch (e) {}
+  if (!files.length) return;
+  showToast('正在检测并解析 ' + files.length + ' 个文件…');
+  let ok = 0; const fail = [];
+  for (const f of files) {
+    try {
+      const buf = await f.arrayBuffer();
+      const u8 = new Uint8Array(buf);
+      const text = localDecode(buf);
+      const scan = txtSafetyScan(f.name, u8, text);
+      if (!scan.ok) { fail.push(f.name + '：' + scan.reason); continue; }
+      const base = f.name.replace(/\.txt$/i, '').trim() || '本地书籍';
+      const real = splitIntoChapters(text, base);
+      if (!real.length) { fail.push(f.name + '：未解析出正文'); continue; }
+      const words = text.replace(/\s/g, '').length;
+      const id = 'local_' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      const book = {
+        id, title: base, author: '本地导入', category: 'mingzhu', tags: ['本地导入', 'TXT'], status: '完结',
+        words: Math.round(words / 10000 * 10) / 10, chapters: real.length, rating: 0, hot: 0,
+        desc: '本地导入的 TXT：共 ' + real.length + ' 章、约 ' + words.toLocaleString() + ' 字，已通过纯文本安全检测。',
+        gradient: ['#5d4037', '#8d6e63', '#bcaaa4'], realContent: real, localImport: true, importAt: Date.now()
+      };
+      await localPutBook(book);
+      if (!BOOKS_DATA.some(x => x.id === id)) BOOKS_DATA.unshift(book);
+      addToShelf(id);
+      ok++;
+    } catch (err) { fail.push(f.name + '：解析异常（' + (err && err.message ? err.message : err) + '）'); }
+  }
+  if (ok) showToast('安全检测通过，成功导入 ' + ok + ' 本');
+  if (fail.length) alert('以下文件未通过检测或解析失败，未导入：\n\n' + fail.join('\n'));
+  try { render(); } catch (e) {}
+}
+async function localRemoveBook(id) {
+  await localDeleteBook(id);
+  removeFromShelf(id);
+  for (let i = BOOKS_DATA.length - 1; i >= 0; i--) if (BOOKS_DATA[i].id === id) BOOKS_DATA.splice(i, 1);
+  try { render(); } catch (e) {}
+}
+// 启动时把本地书载入内存并确保在书架
+function localLoadIntoMemory() {
+  return localAllBooks().then(function (arr) {
+    if (!arr || !arr.length) return;
+    arr.forEach(b => { if (!BOOKS_DATA.some(x => x.id === b.id)) BOOKS_DATA.unshift(b); });
+    const shelf = getShelf(); let changed = false;
+    arr.forEach(b => { if (!shelf.some(s => s.id === b.id)) { shelf.unshift({ id: b.id, lastChapter: 1, lastTime: b.importAt || Date.now() }); changed = true; }});
+    if (changed) saveShelf(shelf);
+  }).catch(function () {});
+}
+localLoadIntoMemory().then(function () { try { render(); } catch (e) {} });
+
+// ==================== 阅读器“更多”面板 + 独立录音（保存到手机 / 系统分享） ====================
+let readerMoreOpen = false;
+function toggleReaderMore() {
+  readerMoreOpen = !readerMoreOpen;
+  const p = document.getElementById('readerMorePanel');
+  if (p) p.classList.toggle('show', readerMoreOpen);
+}
+function closeReaderMore() {
+  readerMoreOpen = false;
+  const p = document.getElementById('readerMorePanel');
+  if (p) p.classList.remove('show');
+}
+
+// 独立录音器：单纯录音 → 试听 → 保存到手机(下载) / 系统分享(可选择微信、QQ 等)
+const recS = { mr: null, stream: null, chunks: [], blob: null, url: null, mime: '', timer: null, sec: 0, audio: null };
+function recSSupported() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+}
+function recSFmt(s) { s = Math.max(0, Math.floor(s)); return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + (s % 60)).slice(-2); }
+function recSExt() {
+  if (recS.mime.indexOf('mp4') >= 0) return 'm4a';
+  if (recS.mime.indexOf('ogg') >= 0) return 'ogg';
+  return 'webm';
+}
+function recSName() {
+  const d = new Date(), p = n => ('0' + n).slice(-2);
+  return '录音_' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '.' + recSExt();
+}
+function openStandaloneRecorder() {
+  closeReaderMore();
+  const ok = recSSupported();
+  ttsEl('recSMask', 'tts-help-mask',
+    '<div class="tts-help-card" style="max-width:420px;">' +
+      '<div class="tts-help-title">🎤 录音</div>' +
+      '<div class="clone-hint">录一段声音，可试听、保存到手机（下载到本地/“下载”目录，也可在系统面板选录音软件或 QQ 浏览器打开保存），或通过系统分享发送给微信/QQ 好友（在弹出面板里选择，可逐个多选联系人）。录音只在本机处理。</div>' +
+      (ok ? '' : '<div class="clone-hint" style="color:#c0504d;">当前浏览器不支持网页录音，请用系统浏览器（Chrome/Edge/Safari）或更新微信。</div>') +
+      '<div class="clone-timer" id="recSTimer">00:00</div>' +
+      '<div class="clone-status" id="recSStatus">尚未录制</div>' +
+      '<div id="recSPreview"></div>' +
+      '<div class="clone-btns">' +
+        '<button class="clone-btn primary" id="recSBtn" onclick="recSToggle()">● 开始录音</button>' +
+        '<button class="clone-btn" id="recSPlay" onclick="recSPlay()" disabled>▶ 试听</button>' +
+        '<button class="clone-btn" id="recSSave" onclick="recSDownload()" disabled>💾 保存到手机</button>' +
+        '<button class="clone-btn" id="recSShare" onclick="recSShare()" disabled>📤 分享</button>' +
+        '<button class="clone-btn" onclick="closeStandaloneRecorder()">关闭</button>' +
+      '</div>' +
+    '</div>');
+  const m = document.getElementById('recSMask');
+  m.onclick = function (e) { if (e.target === m) closeStandaloneRecorder(); };
+  if (!ok) { const b = document.getElementById('recSBtn'); if (b) b.disabled = true; }
+  m.classList.add('show');
+}
+function closeStandaloneRecorder() {
+  const m = document.getElementById('recSMask'); if (m) m.classList.remove('show');
+  recSStopStream();
+}
+function recSSetStatus(t, isRec) { const el = document.getElementById('recSStatus'); if (el) { el.textContent = t; el.className = 'clone-status' + (isRec ? ' rec' : ''); } }
+function recSRefresh() {
+  const has = !!recS.blob;
+  ['recSPlay', 'recSSave', 'recSShare'].forEach(function (id) { const b = document.getElementById(id); if (b) b.disabled = !has; });
+  const w = document.getElementById('recSPreview');
+  if (w && recS.url) w.innerHTML = '<audio class="clone-audio" controls src="' + recS.url + '"></audio>';
+}
+function recSStopStream() {
+  if (recS.timer) { clearInterval(recS.timer); recS.timer = null; }
+  try { if (recS.mr && recS.mr.state !== 'inactive') recS.mr.stop(); } catch (e) {}
+  try { (recS.stream || { getTracks: () => [] }).getTracks().forEach(t => t.stop()); } catch (e) {}
+  recS.stream = null;
+}
+async function recSToggle() {
+  if (recS.mr && recS.mr.state === 'recording') { recSStopOnly(); return; }
+  try {
+    recS.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    let mime = '';
+    ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].forEach(c => {
+      if (!mime && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) mime = c;
+    });
+    recS.chunks = []; recS.sec = 0;
+    recS.mr = mime ? new MediaRecorder(recS.stream, { mimeType: mime }) : new MediaRecorder(recS.stream);
+    recS.mime = recS.mr.mimeType || mime || 'audio/webm';
+    recS.mr.ondataavailable = e => { if (e.data && e.data.size > 0) recS.chunks.push(e.data); };
+    recS.mr.onstop = function () {
+      recS.blob = new Blob(recS.chunks, { type: recS.mime || 'audio/webm' });
+      if (recS.url) URL.revokeObjectURL(recS.url);
+      recS.url = URL.createObjectURL(recS.blob);
+      recSSetStatus('录制完成（' + recSFmt(recS.sec) + '），可试听 / 保存 / 分享', false);
+      recSRefresh();
+    };
+    recS.mr.start(250);
+    recS.timer = setInterval(() => { recS.sec += 0.25; const t = document.getElementById('recSTimer'); if (t) t.textContent = recSFmt(recS.sec); }, 250);
+    const b = document.getElementById('recSBtn'); if (b) { b.textContent = '■ 停止'; b.classList.remove('primary'); }
+    recSSetStatus('正在录音…再次点击停止', true);
+  } catch (err) {
+    recSSetStatus('无法使用麦克风：' + (err && err.message ? err.message : '权限被拒绝'), false);
+  }
+}
+function recSStopOnly() {
+  try { if (recS.mr) recS.mr.stop(); } catch (e) {}
+  recSStopStream();
+  const b = document.getElementById('recSBtn'); if (b) { b.textContent = '● 重新录制'; b.classList.add('primary'); }
+  const t = document.getElementById('recSTimer'); if (t) t.textContent = recSFmt(recS.sec);
+}
+function recSPlay() { if (!recS.url) return; if (recS.audio) { try { recS.audio.pause(); } catch (e) {} } recS.audio = new Audio(recS.url); recS.audio.play().catch(() => {}); }
+function recSDownload() {
+  if (!recS.blob) return;
+  const a = document.createElement('a');
+  a.href = recS.url; a.download = recSName();
+  document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1000);
+  recSSetStatus('已触发保存，请在手机提示中选择保存位置/录音软件/浏览器', false);
+}
+async function recSShare() {
+  if (!recS.blob) return;
+  const file = new File([recS.blob], recSName(), { type: recS.mime || 'audio/webm' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: '录音分享' });
+    } else if (navigator.share) {
+      await navigator.share({ title: '录音', text: '我的录音（当前环境不支持直接分享文件，已改为先保存再到微信/QQ 发送）' });
+      recSDownload();
+    } else {
+      recSSetStatus('当前环境不支持系统分享，已改为保存到手机，可到微信/QQ 手动发送', false);
+      recSDownload();
+    }
+  } catch (e) { /* 用户取消分享，忽略 */ }
+}
 
 // ==================== Main Render ====================
 function render() {
