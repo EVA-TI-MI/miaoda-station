@@ -1,5 +1,5 @@
 // 妙搭小站 - Service Worker
-const CACHE_NAME = 'miaoda-station-v4';
+const CACHE_NAME = 'miaoda-station-v5';
 const ASSETS = [
   'index.html',
   'snake.html',

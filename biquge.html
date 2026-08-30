@@ -1355,6 +1355,51 @@ img { max-width: 100%; display: block; }
 }
 .tts-select:focus { outline: none; border-color: var(--primary); }
 
+/* 不支持语音时的引导层 */
+.tts-help-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: ttsFade 0.2s;
+}
+.tts-help-mask.show { display: flex; }
+.tts-help-card {
+  width: 100%;
+  max-width: 440px;
+  max-height: 82vh;
+  overflow: auto;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e5e0d5);
+  border-radius: 14px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-sans);
+}
+.tts-help-title { font-size: 17px; font-weight: 700; color: var(--text-primary, #222); margin-bottom: 12px; }
+.tts-help-body { font-size: 14px; line-height: 1.7; color: var(--text-secondary, #555); }
+.tts-help-body p { margin: 0 0 10px; }
+.tts-help-body b { color: var(--text-primary, #222); }
+.tts-help-tip { font-size: 12.5px; opacity: 0.82; }
+.tts-help-ok {
+  display: block;
+  margin: 6px auto 0;
+  min-width: 120px;
+  height: 38px;
+  border: none;
+  border-radius: 19px;
+  background: var(--primary, #d4a84b);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.tts-help-ok:active { opacity: 0.85; }
+@keyframes ttsFade { from { opacity: 0; } to { opacity: 1; } }
+
 /* 正在朗读的段落高亮 */
 .reader-text p.tts-active {
   background: rgba(212, 168, 75, 0.20);
@@ -2921,6 +2966,41 @@ function closeReader() {
 // ==================== 有声书朗读（Web Speech TTS） ====================
 const TTS_SUPPORTED = ('speechSynthesis' in window) && (typeof window.SpeechSynthesisUtterance !== 'undefined');
 
+// 运行时实时探测（部分移动浏览器会延迟挂载 speechSynthesis，不能只看加载时的常量）
+function ttsHasSynth() {
+  return !!window.speechSynthesis && typeof window.SpeechSynthesisUtterance !== 'undefined';
+}
+
+// 构建“当前浏览器不支持”引导层（挂在 body，阅读页内外均可弹出）
+function ttsBuildHelp() {
+  if (document.getElementById('ttsHelpMask')) return;
+  const mask = document.createElement('div');
+  mask.className = 'tts-help-mask';
+  mask.id = 'ttsHelpMask';
+  mask.innerHTML =
+    '<div class="tts-help-card">' +
+      '<div class="tts-help-title">当前浏览器不支持语音朗读</div>' +
+      '<div class="tts-help-body">' +
+        '<p>你多半是在微信/QQ/抖音等 App 的内置浏览器里打开的，这类内核通常不提供语音合成能力。按下面任一方式即可听书：</p>' +
+        '<p><b>方法一 · 换浏览器打开（推荐，最快）</b><br>点右上角「···」选择「在浏览器打开」；安卓推荐用 <b>Chrome 或 Edge</b>，iPhone 用自带 <b>Safari</b>，回到本页再点「开始听书」。</p>' +
+        '<p><b>方法二 · 安装中文语音引擎（安卓）</b><br>若在 Chrome 里仍无声：进入「系统设置 → 语言/无障碍 → 文字转语音(TTS)输出」，启用一个语音引擎并下载「中文」语音数据后重试。</p>' +
+        '<p class="tts-help-tip">iPhone 用 Safari 一般可直接朗读；可选音色数量取决于系统已安装的语音，朗读中也能随时切换。</p>' +
+      '</div>' +
+      '<button class="tts-help-ok" onclick="ttsHideUnsupported()">我知道了</button>' +
+    '</div>';
+  mask.addEventListener('click', function (e) { if (e.target === mask) ttsHideUnsupported(); });
+  document.body.appendChild(mask);
+}
+function ttsShowUnsupported() {
+  ttsBuildHelp();
+  const m = document.getElementById('ttsHelpMask');
+  if (m) m.classList.add('show');
+}
+function ttsHideUnsupported() {
+  const m = document.getElementById('ttsHelpMask');
+  if (m) m.classList.remove('show');
+}
+
 const tts = {
   playing: false,      // 是否处于听书会话（含暂停）
   paused: false,       // 是否被用户暂停
@@ -2946,17 +3026,32 @@ let ttsVoices = [];
 })();
 
 function ttsInit() {
-  if (!TTS_SUPPORTED) return;
-  ttsLoadVoices();
-  // Chrome/Edge 的语音列表为异步加载，需监听 voiceschanged
-  try { window.speechSynthesis.addEventListener('voiceschanged', ttsLoadVoices); } catch (e) {}
-  // 离开页面时停止朗读，避免后台持续发声
+  ttsBuildHelp();
+  // 离开页面时停止朗读，避免后台持续发声（不依赖语音能力，始终注册）
   window.addEventListener('beforeunload', ttsStop);
   window.addEventListener('pagehide', ttsStop);
+  if (ttsHasSynth()) {
+    ttsLoadVoices();
+    // Chrome/Edge 的语音列表为异步加载，需监听 voiceschanged
+    try { window.speechSynthesis.addEventListener('voiceschanged', ttsLoadVoices); } catch (e) {}
+    return;
+  }
+  // 部分移动浏览器延迟挂载语音对象：约 10 秒内轮询，一旦可用立即加载音色
+  let tries = 0;
+  const timer = setInterval(function () {
+    tries++;
+    if (ttsHasSynth()) {
+      clearInterval(timer);
+      ttsLoadVoices();
+      try { window.speechSynthesis.addEventListener('voiceschanged', ttsLoadVoices); } catch (e) {}
+    } else if (tries > 20) {
+      clearInterval(timer);
+    }
+  }, 500);
 }
 
 function ttsLoadVoices() {
-  if (!TTS_SUPPORTED) return;
+  if (!ttsHasSynth()) return;
   let voices = [];
   try { voices = window.speechSynthesis.getVoices() || []; } catch (e) { voices = []; }
   // 中文语音优先，其余按名称排序
@@ -3021,7 +3116,7 @@ function ttsCurrentParagraphs() {
 
 // 从头（或指定段）朗读当前章节
 function ttsStartChapter(fromIndex) {
-  if (!TTS_SUPPORTED) { showToast('当前浏览器不支持语音朗读'); return; }
+  if (!ttsHasSynth()) { ttsShowUnsupported(); return; }
   const paras = ttsCurrentParagraphs();
   if (!paras.length) { showToast('本章暂无可朗读内容'); return; }
   tts.paragraphs = paras;
@@ -3071,7 +3166,7 @@ function ttsSpeak() {
     // 主动 cancel / 切换会触发 interrupted、canceled，属于正常情况
     if (e && (e.error === 'interrupted' || e.error === 'canceled')) return;
     // 其余错误（not-allowed / synthesis-failed 等）会持续复现，安全停下并提示，避免瞬间冲完全书
-    ttsFail('语音朗读启动失败' + (e && e.error ? '（' + e.error + '），请点击页面后重试或检查系统语音' : ''));
+    ttsFail('语音朗读启动失败' + (e && e.error ? '（' + e.error + '）。请用 Chrome/Edge/Safari 打开，或在系统设置中安装中文语音引擎' : ''));
   };
   // 先更新高亮与 UI，再发起合成；这样即使 speak 同步触发错误回调，清理也能最后生效
   ttsStartWatchdog();
@@ -3094,7 +3189,7 @@ function ttsOnChapterEnd() {
 
 // 播放 / 暂停 / 继续
 function ttsToggle() {
-  if (!TTS_SUPPORTED) { showToast('当前浏览器不支持语音朗读'); return; }
+  if (!ttsHasSynth()) { ttsShowUnsupported(); return; }
   if (!tts.playing) { ttsStart(); return; }
   if (tts.paused) {
     try { window.speechSynthesis.resume(); } catch (e) {}
@@ -3109,8 +3204,7 @@ function ttsToggle() {
 }
 
 function ttsStop() {
-  if (!TTS_SUPPORTED) return;
-  try { window.speechSynthesis.cancel(); } catch (e) {}
+  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
   tts.playing = false;
   tts.paused = false;
   tts.index = 0;
@@ -3231,7 +3325,7 @@ function ttsRefreshUI() {
 
 // render 之后同步朗读状态：换章自动续读、离开阅读页自动停止、同章重渲染不打断
 function ttsAfterRender() {
-  if (!TTS_SUPPORTED) return;
+  if (!ttsHasSynth()) return;
   if (currentPage !== 'reader') {
     if (tts.playing) ttsStop();
     return;
