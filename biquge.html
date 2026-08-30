@@ -1331,6 +1331,107 @@ img { max-width: 100%; display: block; }
   color: #fff;
 }
 
+.reader-shelf-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.reader-shelf-btn:disabled:hover {
+  background: var(--bg-secondary);
+  color: var(--primary);
+}
+
+/* ==================== 有声书朗读 TTS ==================== */
+.tts-select {
+  height: 28px;
+  max-width: 158px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 4px;
+  cursor: pointer;
+}
+.tts-select:focus { outline: none; border-color: var(--primary); }
+
+/* 正在朗读的段落高亮 */
+.reader-text p.tts-active {
+  background: rgba(212, 168, 75, 0.20);
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(212, 168, 75, 0.10);
+  transition: background 0.3s;
+}
+
+/* 悬浮听书播放条 */
+.tts-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%) translateY(16px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px 8px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  max-width: calc(100% - 24px);
+}
+.tts-bar.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.tts-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  white-space: nowrap;
+}
+.tts-bar-icon { font-size: 15px; }
+.tts-bar-actions { display: flex; align-items: center; gap: 6px; }
+.tts-bar-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.tts-bar-btn:hover { border-color: var(--primary); color: var(--primary); }
+.tts-bar-main {
+  width: 38px;
+  height: 38px;
+  font-size: 15px;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.tts-bar-main:hover { color: #fff; opacity: 0.88; }
+
+@media (max-width: 480px) {
+  .tts-select { max-width: 108px; }
+  .tts-bar { bottom: 84px; gap: 8px; padding: 6px 10px 6px 14px; }
+  .tts-bar-info { font-size: 12px; }
+  .tts-bar-btn { width: 30px; height: 30px; }
+  .tts-bar-main { width: 34px; height: 34px; }
+}
+
 /* chapter list modal in reader */
 .chapter-modal-backdrop {
   position: fixed;
@@ -2640,6 +2741,19 @@ function renderReader() {
             </div>
           </div>
           <div class="reader-tool-group">
+            <span class="reader-tool-label">听书</span>
+            <button class="reader-shelf-btn" id="ttsToggleBtn" onclick="ttsToggle()">${tts.playing ? (tts.paused ? '▶ 继续' : '⏸ 暂停') : '🔊 开始听书'}</button>
+            <button class="reader-shelf-btn" id="ttsStopBtn" onclick="ttsStop()" disabled>⏹ 停止</button>
+            <select class="tts-select" id="ttsVoiceSelect" onchange="ttsOnVoiceChange(this.value)" title="选择朗读音色"></select>
+            <select class="tts-select" id="ttsRateSelect" onchange="ttsOnRateChange(this.value)" title="朗读语速">
+              <option value="0.75">0.75x 慢速</option>
+              <option value="1">1.0x 正常</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x 快速</option>
+              <option value="2">2.0x 极速</option>
+            </select>
+          </div>
+          <div class="reader-tool-group">
             <button class="reader-shelf-btn" onclick="toggleShelf(${book.id})">
               ${inShelf ? '✓ 已加入书架' : '加入书架'}
             </button>
@@ -2654,6 +2768,19 @@ function renderReader() {
       </div>
 
       ${showChapterModal ? renderChapterModal(book) : ''}
+
+      <div class="tts-bar" id="ttsBar">
+        <div class="tts-bar-info">
+          <span class="tts-bar-icon">🎧</span>
+          <span class="tts-bar-text" id="ttsBarText">准备听书</span>
+        </div>
+        <div class="tts-bar-actions">
+          <button class="tts-bar-btn" onclick="ttsJumpPara(-1)" title="上一段">⏮</button>
+          <button class="tts-bar-btn tts-bar-main" id="ttsBarToggle" onclick="ttsToggle()" title="播放/暂停">▶</button>
+          <button class="tts-bar-btn" onclick="ttsJumpPara(1)" title="下一段">⏭</button>
+          <button class="tts-bar-btn" onclick="ttsStop()" title="停止朗读">⏹</button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -2791,6 +2918,339 @@ function closeReader() {
   navigate('detail', { bookId: currentBookId });
 }
 
+// ==================== 有声书朗读（Web Speech TTS） ====================
+const TTS_SUPPORTED = ('speechSynthesis' in window) && (typeof window.SpeechSynthesisUtterance !== 'undefined');
+
+const tts = {
+  playing: false,      // 是否处于听书会话（含暂停）
+  paused: false,       // 是否被用户暂停
+  paragraphs: [],      // 当前章节的段落文本
+  index: 0,            // 当前朗读段落下标
+  bookId: null,
+  chapterNum: null,
+  voiceURI: '',
+  rate: 1,
+  chapterEnded: false, // 当前章节段落是否已读完
+  watchdog: null,
+};
+let ttsVoices = [];
+
+// 恢复上次选择的音色与语速
+(function ttsRestorePrefs() {
+  try {
+    const v = localStorage.getItem('biquge_tts_voice');
+    if (v) tts.voiceURI = v;
+    const r = parseFloat(localStorage.getItem('biquge_tts_rate'));
+    if (!isNaN(r) && r > 0) tts.rate = r;
+  } catch (e) {}
+})();
+
+function ttsInit() {
+  if (!TTS_SUPPORTED) return;
+  ttsLoadVoices();
+  // Chrome/Edge 的语音列表为异步加载，需监听 voiceschanged
+  try { window.speechSynthesis.addEventListener('voiceschanged', ttsLoadVoices); } catch (e) {}
+  // 离开页面时停止朗读，避免后台持续发声
+  window.addEventListener('beforeunload', ttsStop);
+  window.addEventListener('pagehide', ttsStop);
+}
+
+function ttsLoadVoices() {
+  if (!TTS_SUPPORTED) return;
+  let voices = [];
+  try { voices = window.speechSynthesis.getVoices() || []; } catch (e) { voices = []; }
+  // 中文语音优先，其余按名称排序
+  voices.sort(function (a, b) {
+    const az = /^zh/i.test(a.lang) ? 0 : 1;
+    const bz = /^zh/i.test(b.lang) ? 0 : 1;
+    if (az !== bz) return az - bz;
+    return String(a.name).localeCompare(String(b.name));
+  });
+  ttsVoices = voices;
+  ttsPopulateVoiceSelect();
+}
+
+function ttsVoiceLabel(v) {
+  const lang = String(v.lang || '').replace('_', '-');
+  let label = '🎙 ' + v.name;
+  return label + '（' + lang + '）' + (v.localService ? '' : ' ·在线');
+}
+
+function ttsPopulateVoiceSelect() {
+  const sel = document.getElementById('ttsVoiceSelect');
+  if (!sel) return;
+  let html = '';
+  if (ttsVoices.length === 0) {
+    sel.innerHTML = '<option value="">未检测到语音包</option>';
+    sel.value = '';
+    return;
+  }
+  const zh = ttsVoices.filter(v => /^zh/i.test(v.lang));
+  const other = ttsVoices.filter(v => !/^zh/i.test(v.lang));
+  if (zh.length) {
+    html += '<optgroup label="中文音色">' + zh.map(v =>
+      '<option value="' + escapeHtml(v.voiceURI) + '">' + escapeHtml(ttsVoiceLabel(v)) + '</option>').join('') + '</optgroup>';
+  }
+  if (other.length) {
+    html += '<optgroup label="其他音色">' + other.map(v =>
+      '<option value="' + escapeHtml(v.voiceURI) + '">' + escapeHtml(ttsVoiceLabel(v)) + '</option>').join('') + '</optgroup>';
+  }
+  sel.innerHTML = html;
+  // 选中已保存音色；若无效则默认选第一个中文音色
+  let target = tts.voiceURI;
+  if (!target || !ttsVoices.some(v => v.voiceURI === target)) {
+    target = zh.length ? zh[0].voiceURI : ttsVoices[0].voiceURI;
+    tts.voiceURI = target;
+  }
+  sel.value = target;
+}
+
+function ttsGetVoice() {
+  if (!ttsVoices.length) ttsLoadVoices();
+  return ttsVoices.find(v => v.voiceURI === tts.voiceURI)
+      || ttsVoices.find(v => /^zh/i.test(v.lang))
+      || ttsVoices[0]
+      || null;
+}
+
+function ttsCurrentParagraphs() {
+  const arr = generateChapterContent(currentBookId, currentChapterNum);
+  if (!Array.isArray(arr)) return [];
+  return arr.map(p => String(p == null ? '' : p).trim()).filter(Boolean);
+}
+
+// 从头（或指定段）朗读当前章节
+function ttsStartChapter(fromIndex) {
+  if (!TTS_SUPPORTED) { showToast('当前浏览器不支持语音朗读'); return; }
+  const paras = ttsCurrentParagraphs();
+  if (!paras.length) { showToast('本章暂无可朗读内容'); return; }
+  tts.paragraphs = paras;
+  tts.bookId = currentBookId;
+  tts.chapterNum = currentChapterNum;
+  tts.index = (typeof fromIndex === 'number') ? Math.max(0, Math.min(fromIndex, paras.length - 1)) : 0;
+  tts.chapterEnded = false;
+  tts.playing = true;
+  tts.paused = false;
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  ttsSpeak();
+  ttsRefreshUI();
+}
+
+function ttsStart() {
+  if (tts.playing) return;
+  ttsStartChapter(0);
+}
+
+function ttsSpeak() {
+  if (!tts.playing) return;
+  if (tts.index >= tts.paragraphs.length) { ttsOnChapterEnd(); return; }
+  const text = tts.paragraphs[tts.index];
+  const myIndex = tts.index;
+  const startedAt = Date.now();
+  const u = new SpeechSynthesisUtterance(text);
+  const voice = ttsGetVoice();
+  if (voice) { try { u.voice = voice; } catch (e) {} u.lang = voice.lang || 'zh-CN'; }
+  else { u.lang = 'zh-CN'; }
+  u.rate = tts.rate;
+  u.pitch = 1;
+  u.volume = 1;
+  u.onstart = function () { ttsHighlight(myIndex); };
+  u.onend = function () {
+    // 跳段/换章/停止会改变 index 或 playing，过期回调直接丢弃
+    if (!tts.playing || tts.paused || myIndex !== tts.index) return;
+    // 空转保护：较长文本在极短时间内“读完”，说明引擎并未真正发声
+    if (text.length >= 12 && Date.now() - startedAt < 250) {
+      ttsFail('语音未能正常发声，请检查系统语音包或音频设备后重试');
+      return;
+    }
+    tts.index++;
+    ttsSpeak();
+  };
+  u.onerror = function (e) {
+    if (!tts.playing || myIndex !== tts.index) return;
+    // 主动 cancel / 切换会触发 interrupted、canceled，属于正常情况
+    if (e && (e.error === 'interrupted' || e.error === 'canceled')) return;
+    // 其余错误（not-allowed / synthesis-failed 等）会持续复现，安全停下并提示，避免瞬间冲完全书
+    ttsFail('语音朗读启动失败' + (e && e.error ? '（' + e.error + '），请点击页面后重试或检查系统语音' : ''));
+  };
+  // 先更新高亮与 UI，再发起合成；这样即使 speak 同步触发错误回调，清理也能最后生效
+  ttsStartWatchdog();
+  ttsHighlight(myIndex);
+  ttsRefreshUI();
+  try { window.speechSynthesis.speak(u); } catch (e) { ttsFail('语音朗读启动失败：' + e.message); }
+}
+
+function ttsOnChapterEnd() {
+  tts.chapterEnded = true;
+  const book = getBookById(currentBookId);
+  if (book && currentChapterNum < book.chapters) {
+    // 自动连播下一章：nextChapter 会触发 render，ttsAfterRender 检测换章后续读
+    nextChapter();
+  } else {
+    ttsStop();
+    showToast('🎧 本书已听完');
+  }
+}
+
+// 播放 / 暂停 / 继续
+function ttsToggle() {
+  if (!TTS_SUPPORTED) { showToast('当前浏览器不支持语音朗读'); return; }
+  if (!tts.playing) { ttsStart(); return; }
+  if (tts.paused) {
+    try { window.speechSynthesis.resume(); } catch (e) {}
+    tts.paused = false;
+    ttsStartWatchdog();
+  } else {
+    try { window.speechSynthesis.pause(); } catch (e) {}
+    tts.paused = true;
+    ttsStopWatchdog();
+  }
+  ttsRefreshUI();
+}
+
+function ttsStop() {
+  if (!TTS_SUPPORTED) return;
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  tts.playing = false;
+  tts.paused = false;
+  tts.index = 0;
+  tts.chapterEnded = false;
+  tts.paragraphs = [];
+  ttsStopWatchdog();
+  ttsClearHighlight();
+  ttsRefreshUI();
+}
+
+// 引擎无法发声时的安全停止（复用 ttsStop 的清理逻辑）
+function ttsFail(msg) {
+  ttsStop();
+  if (msg) showToast(msg);
+}
+
+// 跳转上一段 / 下一段
+function ttsJumpPara(delta) {
+  if (!tts.playing) { ttsStart(); return; }
+  const next = tts.index + delta;
+  if (next < 0) { showToast('已经是本章第一段'); return; }
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  tts.paused = false;
+  tts.index = next; // 超出长度时 ttsSpeak 会触发自动连播
+  ttsSpeak();
+}
+
+function ttsOnVoiceChange(uri) {
+  tts.voiceURI = uri;
+  try { localStorage.setItem('biquge_tts_voice', uri); } catch (e) {}
+  // 朗读中即时切换音色：用新音色重读当前段
+  if (tts.playing && !tts.paused) {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    ttsSpeak();
+  } else {
+    ttsRefreshUI();
+  }
+}
+
+function ttsOnRateChange(val) {
+  const r = parseFloat(val);
+  if (isNaN(r) || r <= 0) return;
+  tts.rate = r;
+  try { localStorage.setItem('biquge_tts_rate', String(r)); } catch (e) {}
+  if (tts.playing && !tts.paused) {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    ttsSpeak();
+  } else {
+    ttsRefreshUI();
+  }
+}
+
+// Chrome 长文本会意外暂停，定时兜底恢复
+function ttsStartWatchdog() {
+  ttsStopWatchdog();
+  tts.watchdog = setInterval(function () {
+    if (tts.playing && !tts.paused) {
+      try { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); } catch (e) {}
+    }
+  }, 4000);
+}
+function ttsStopWatchdog() {
+  if (tts.watchdog) { clearInterval(tts.watchdog); tts.watchdog = null; }
+}
+
+function ttsHighlight(i) {
+  const container = document.querySelector('.reader-text');
+  if (!container) return;
+  const ps = container.querySelectorAll('p');
+  ps.forEach(p => p.classList.remove('tts-active'));
+  const cur = ps[i];
+  if (cur) {
+    cur.classList.add('tts-active');
+    try { cur.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+  }
+}
+function ttsClearHighlight() {
+  document.querySelectorAll('.reader-text p.tts-active').forEach(p => p.classList.remove('tts-active'));
+}
+
+// 同步所有听书控件的显示状态（render 重建 DOM 后也要调用）
+function ttsRefreshUI() {
+  const toggleBtn = document.getElementById('ttsToggleBtn');
+  if (toggleBtn) toggleBtn.textContent = tts.playing ? (tts.paused ? '▶ 继续' : '⏸ 暂停') : '🔊 开始听书';
+  const stopBtn = document.getElementById('ttsStopBtn');
+  if (stopBtn) {
+    stopBtn.disabled = !tts.playing;
+    stopBtn.style.opacity = tts.playing ? '' : '.45';
+    stopBtn.style.cursor = tts.playing ? 'pointer' : 'not-allowed';
+  }
+  const rateSel = document.getElementById('ttsRateSelect');
+  if (rateSel) rateSel.value = String(tts.rate);
+  const voiceSel = document.getElementById('ttsVoiceSelect');
+  if (voiceSel) {
+    ttsPopulateVoiceSelect();
+    if (tts.voiceURI) voiceSel.value = tts.voiceURI;
+  }
+  const bar = document.getElementById('ttsBar');
+  if (bar) {
+    bar.classList.toggle('show', !!tts.playing);
+    const barToggle = document.getElementById('ttsBarToggle');
+    if (barToggle) {
+      barToggle.textContent = tts.paused ? '▶' : '⏸';
+      barToggle.title = tts.paused ? '继续' : '暂停';
+    }
+    const barText = document.getElementById('ttsBarText');
+    if (barText) {
+      if (!tts.playing) {
+        barText.textContent = '准备听书';
+      } else {
+        const total = tts.paragraphs.length;
+        const pos = Math.min(tts.index + 1, total || 1);
+        barText.textContent = (tts.paused ? '已暂停 · ' : '正在朗读 · ') + '第 ' + pos + '/' + total + ' 段';
+      }
+    }
+  }
+}
+
+// render 之后同步朗读状态：换章自动续读、离开阅读页自动停止、同章重渲染不打断
+function ttsAfterRender() {
+  if (!TTS_SUPPORTED) return;
+  if (currentPage !== 'reader') {
+    if (tts.playing) ttsStop();
+    return;
+  }
+  if (!tts.playing) { ttsRefreshUI(); return; }
+  const same = (tts.bookId === currentBookId && tts.chapterNum === currentChapterNum);
+  if (same && tts.chapterEnded) {            // 末章读完且无下一章（双保险）
+    ttsStop();
+    showToast('🎧 本书已听完');
+    return;
+  }
+  if (!same) {                               // 章节被切换（翻章/目录跳转/自动连播），跟随朗读新章
+    ttsStartChapter(0);
+  } else {                                   // 仅主题/字号等重渲染，不打断正在进行的朗读
+    ttsHighlight(tts.index);
+    ttsRefreshUI();
+  }
+}
+
 // ==================== Main Render ====================
 function render() {
   const main = document.getElementById('mainContent');
@@ -2829,6 +3289,8 @@ function render() {
   }
   main.innerHTML = html;
 
+  ttsAfterRender();
+
   const searchInput = document.getElementById('searchInput');
   if (searchInput && currentPage === 'search') {
     searchInput.value = searchQuery;
@@ -2856,6 +3318,7 @@ function init() {
   const savedFF = localStorage.getItem('biquge_reader_font');
   if (savedFF && ['sans','serif','kai'].includes(savedFF)) readerFontFamily = savedFF;
 
+  ttsInit();
   applyTheme();
   render();
 }
@@ -2863,7 +3326,7 @@ function init() {
 // 阅读器键盘快捷键：← 上一章，→ 下一章
 document.addEventListener('keydown', (e) => {
   if (currentPage !== 'reader') return;
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (['INPUT','TEXTAREA','SELECT','OPTION'].indexOf(e.target.tagName) !== -1) return;
   if (e.key === 'ArrowLeft') { e.preventDefault(); prevChapter(); }
   else if (e.key === 'ArrowRight') { e.preventDefault(); nextChapter(); }
   else if (e.key === 'Escape') { e.preventDefault(); closeReader(); }
