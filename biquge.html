@@ -3010,7 +3010,7 @@ function closeReader() {
 // ==================== 有声书朗读（三引擎：系统语音 / 在线云端 / 离线神经） ====================
 // 引擎说明：
 //  system  —— 浏览器 Web Speech（免流量、多音色，Chrome/Edge/Safari 可用，微信内置内核多不支持）
-//  online  —— 百度翻译在线 TTS，播 MP3（需联网、标准女声，微信内置浏览器可直接用）
+//  online  —— 百度翻译在线 TTS，播 MP3（用少量流量，WiFi/移动网络均可、无需下载，标准女声，微信内置浏览器可直接用）
 //  offline —— sherpa-onnx WASM 本地神经 TTS（首次下载约 45MB，之后断网也能读，174 种音色）
 
 function ttsHasSynth() {
@@ -3072,7 +3072,7 @@ function ttsBuildHelp() {
     '<div class="tts-help-card">' +
       '<div class="tts-help-title">当前浏览器不支持系统语音朗读</div>' +
       '<div class="tts-help-body">' +
-        '<p>你多半是在微信/QQ/抖音等 App 的内置浏览器里打开的。本阅读器已提供<b>在线云端语音</b>与<b>离线引擎</b>，无需跳出微信也能听书，可在下方听书栏的「音源」里切换。</p>' +
+        '<p>你多半是在微信/QQ/抖音等 App 的内置浏览器里打开的。本阅读器已提供<b>在线语音（用手机流量即可，WiFi/移动网络都行，无需下载）</b>与<b>离线引擎（下载一次后不用流量、断网也能听）</b>，无需跳出微信也能听书，可在下方听书栏的「音源」里切换。</p>' +
         '<p>若想用系统自带的多音色语音：点右上角「···」选择「在浏览器打开」，安卓用 <b>Chrome/Edge</b>、iPhone 用 <b>Safari</b>。</p>' +
       '</div>' +
       '<button class="tts-help-ok" onclick="ttsHideUnsupported()">我知道了</button>' +
@@ -3099,12 +3099,12 @@ function ttsBuildEnginePicker() {
         '<p>检测到当前环境（微信/QQ 内置浏览器）没有系统语音，可选择两种方式听书：</p>' +
       '</div>' +
       '<div class="tts-engine-opt" onclick="ttsChooseEngine(\'online\')">' +
-        '<div class="tts-engine-opt-t">📶 流量充足 · 在线高清</div>' +
-        '<div class="tts-engine-opt-d">需联网，标准女声、即点即读、不占存储空间</div>' +
+        '<div class="tts-engine-opt-t">📶 用流量 · 在线语音</div>' +
+        '<div class="tts-engine-opt-d">手机流量 / WiFi 都能用，只用少量流量、无需下载，标准女声、即点即听、不占存储空间</div>' +
       '</div>' +
       '<div class="tts-engine-opt" onclick="ttsChooseEngine(\'offline\')">' +
-        '<div class="tts-engine-opt-t">💾 流量紧张 · 离线引擎</div>' +
-        '<div class="tts-engine-opt-d">首次需下载约 45MB 语音引擎（较慢，仅一次），之后<b>断网也能听</b>，含多种音色</div>' +
+        '<div class="tts-engine-opt-t">💾 想省流量 · 离线引擎</div>' +
+        '<div class="tts-engine-opt-d">首次需下载约 45MB 语音引擎（建议 WiFi，较慢、仅一次），之后<b>不用流量、断网也能听</b>，含多种音色</div>' +
       '</div>' +
       '<p class="tts-help-tip">之后可在听书栏「音源」随时切换；离线引擎会在本机缓存，第二次打开无需再下载。</p>' +
     '</div>');
@@ -3131,7 +3131,7 @@ function ttsChooseEngine(eng) {
   } else if (eng === 'online') {
     ttsOfflineEnsure(true); // 选在线也在后台静默备好离线引擎
   }
-  showToast(eng === 'offline' ? '已选择离线引擎，首次加载约 45MB，请稍候…' : (eng === 'online' ? '已选择在线语音，即点即读' : '已选择系统语音'));
+  showToast(eng === 'offline' ? '已选择离线引擎，首次加载约 45MB，请稍候…' : (eng === 'online' ? '已选择在线语音，用流量即点即听' : '已选择系统语音'));
   const from = (typeof tts._resumeFrom === 'number') ? tts._resumeFrom : 0;
   tts._resumeFrom = null;
   ttsStartChapter(from);
@@ -3197,7 +3197,7 @@ function ttsInit() {
 // ---------- 引擎选择 ----------
 function ttsEngineLabel(e) {
   if (e === 'system') return '🖥 系统语音·免流量';
-  if (e === 'online') return '📶 在线语音·需联网';
+  if (e === 'online') return '📶 在线语音·用流量';
   if (e === 'offline') return '💾 离线引擎·可断网';
   return e;
 }
@@ -3206,7 +3206,7 @@ function ttsPopulateEngineSelect() {
   if (!sel) return;
   const opts = [];
   if (ttsHasSynth()) opts.push(['system', '🖥 系统语音（免流量）']);
-  opts.push(['online', '📶 在线语音（联网即用）']);
+  opts.push(['online', '📶 在线语音（用流量·免下载）']);
   opts.push(['offline', '💾 离线引擎（可断网）']);
   sel.innerHTML = opts.map(o => '<option value="' + o[0] + '">' + o[1] + '</option>').join('');
   const cur = tts.engine || tts.enginePref || (ttsHasSynth() ? 'system' : 'online');
@@ -3481,7 +3481,7 @@ function onlinePlayNext(token, cb) {
       onlineClearDog();
       online.watchdog = setTimeout(function () { onlinePlayNext(token, cb); }, 400);
     } else {
-      onlineClearDog(); cb.fail(why || '在线语音获取失败（网络受限？），可切换离线引擎');
+      onlineClearDog(); cb.fail(why || '在线语音获取失败（未联网或网络不佳？），已为你改用离线引擎');
     }
   };
   // 看门狗：15 秒内既未播完也未报错，判定卡死并重试（避免弱网 stalled 永久挂起）
@@ -3490,7 +3490,7 @@ function onlinePlayNext(token, cb) {
     retryOrFail('在线语音加载超时，已尝试切换');
   }, 15000);
   a.onended = advance;
-  a.onerror = function () { retryOrFail('在线语音获取失败（网络受限？），可切换离线引擎'); };
+  a.onerror = function () { retryOrFail('在线语音获取失败（未联网或网络不佳？），已为你改用离线引擎'); };
   try {
     a.src = url;
     const p = a.play();
