@@ -42,11 +42,13 @@ _tts_ab_patch/
 tts-offline/
 *.bak2
 
-# ZipVoice 克隆本地验证产物（模型走 Release，不入 Pages 仓）
+# ZipVoice 克隆：本地验证/备份产物不入库；正式模型在 tts/zv/（同源部署）
 tts/zvmodel/
 tts/old_wasm_backup/
 tts/clone-test.worker.js
 tts/test_clone.html
+tts/test_final.html
 tts/test_aishell.html
+tts/fflate.js
 tts/zv_clone_test.wav
 tts/zv_clone_test.b64

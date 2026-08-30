@@ -3385,7 +3385,7 @@ function ttsPopulateVoiceSelect() {
       '<option value="off:' + s + '"' + (s === tts.offlineSid ? ' selected' : '') + '>离线音色 ' + (s + 1) + '</option>').join('');
     sel.value = 'off:' + tts.offlineSid;
   } else if (eng === 'online') {
-    const cloneTag = clone.hasRecording ? '🎤 我的声音（已录制·待启用）' : '🎤 录入我的声音（克隆·待启用）';
+    const cloneTag = clone.hasRecording ? '🎤 我的声音（已录制）' : '🎤 录入我的声音（克隆）';
     html = '<option value="online:baidu">在线标准女声</option>' +
            '<option value="online:clone">' + cloneTag + '</option>';
   } else {
@@ -3427,7 +3427,8 @@ function ttsOnVoiceChange(val) {
     if (val === 'online:clone') {
       tts.onlineVoice = 'clone';
       try { localStorage.setItem('biquge_tts_online_voice', 'clone'); } catch (e) {}
-      ttsOpenRecorder();
+      if (!clone.hasRecording) ttsOpenRecorder();
+      else if (tts.playing && !tts.paused) { tts.speakToken++; ttsEngineQuiet(); ttsSpeak(); }
     } else {
       tts.onlineVoice = 'baidu';
       try { localStorage.setItem('biquge_tts_online_voice', 'baidu'); } catch (e) {}
@@ -3483,10 +3484,7 @@ function ttsStartChapter(fromIndex) {
   ttsEngineQuiet();
   if (eng === 'system') { try { window.speechSynthesis.cancel(); } catch (e) {} }
   if (eng === 'offline') { ttsUnlockAudio(); ttsOfflineEnsure(true); }
-  // 选了“我的声音”但克隆合成尚未接入：先回落在线标准女声并提示一次
-  if (eng === 'online' && tts.onlineVoice === 'clone') {
-    if (!tts._cloneTipShown) { tts._cloneTipShown = true; showToast('声音克隆即将启用，已先用在线标准女声朗读'); }
-  }
+  // online:clone 由 cl 克隆引擎直接处理（本地 ZipVoice），无需回落
   ttsPopulateEngineSelect();
   ttsPopulateVoiceSelect();
   ttsSpeak();
@@ -3521,7 +3519,7 @@ function ttsSpeak() {
     }
   };
   if (tts.engine === 'system') sysSpeak(text, token, cb);
-  else if (tts.engine === 'online') onlineSpeak(text, token, cb);
+  else if (tts.engine === 'online') { if (tts.onlineVoice === 'clone') clSpeak(text, token, cb); else onlineSpeak(text, token, cb); }
   else offlineSpeak(text, token, cb);
 }
 
@@ -3554,17 +3552,21 @@ function sysSpeak(text, token, cb) {
 
 // ---------- 录入我的声音（克隆样本：录音/试听/本机保存；克隆合成待引擎接入后打通） ----------
 const clone = {
-  db: null, blob: null, mime: '', url: null, hasRecording: false,
+  db: null, blob: null, mime: '', url: null, hasRecording: false, refText: '',
   mr: null, stream: null, chunks: [], timer: null, seconds: 0, preview: null
 };
-const CLONE_DB = 'biquge_db', CLONE_STORE = 'kv', CLONE_KEY = 'my_voice';
+const CLONE_DB = 'biquge_db', CLONE_STORE = 'kv', CLONE_KEY = 'my_voice', CLONE_AUDIO_STORE = 'clone_audio';
 function cloneOpenDB() {
   return new Promise(function (res) {
     if (clone.db) return res(clone.db);
     if (!window.indexedDB) return res(null);
     let req;
-    try { req = indexedDB.open(CLONE_DB, 1); } catch (e) { return res(null); }
-    req.onupgradeneeded = function () { if (!req.result.objectStoreNames.contains(CLONE_STORE)) req.result.createObjectStore(CLONE_STORE); };
+    try { req = indexedDB.open(CLONE_DB, 2); } catch (e) { return res(null); }
+    req.onupgradeneeded = function (ev) {
+      const db = ev.target.result;
+      if (!db.objectStoreNames.contains(CLONE_STORE)) db.createObjectStore(CLONE_STORE);
+      if (!db.objectStoreNames.contains(CLONE_AUDIO_STORE)) db.createObjectStore(CLONE_AUDIO_STORE);
+    };
     req.onsuccess = function () { clone.db = req.result; res(clone.db); };
     req.onerror = function () { res(null); };
   });
@@ -3576,7 +3578,7 @@ async function cloneLoad() {
       const tx = db.transaction(CLONE_STORE, 'readonly').objectStore(CLONE_STORE).get(CLONE_KEY);
       tx.onsuccess = function () {
         const rec = tx.result;
-        if (rec && rec.blob) { clone.blob = rec.blob; clone.mime = rec.mime || ''; clone.hasRecording = true; clone.url = URL.createObjectURL(rec.blob); }
+        if (rec && rec.blob) { clone.blob = rec.blob; clone.mime = rec.mime || ''; clone.hasRecording = true; clone.refText = rec.refText || ''; clone.url = URL.createObjectURL(rec.blob); }
         res();
       };
       tx.onerror = function () { res(); };
@@ -3589,7 +3591,7 @@ function clonePersist() {
       if (!db) return res(false);
       try {
         const tx = db.transaction(CLONE_STORE, 'readwrite').objectStore(CLONE_STORE)
-          .put({ blob: clone.blob, mime: clone.mime, at: Date.now() }, CLONE_KEY);
+          .put({ blob: clone.blob, mime: clone.mime, refText: clone.refText, at: Date.now() }, CLONE_KEY);
         tx.onsuccess = function () { res(true); }; tx.onerror = function () { res(false); };
       } catch (e) { res(false); }
     });
@@ -3616,11 +3618,13 @@ function ttsBuildRecorder() {
   ttsEl('ttsCloneMask', 'tts-help-mask',
     '<div class="tts-help-card" style="max-width:420px;">' +
       '<div class="tts-help-title">🎤 录入我的声音</div>' +
-      '<div class="clone-hint">用正常语速、清晰朗读一段约 <b>10～20 秒</b>的话（建议直接念一段小说正文），作为你的专属音色样本。录音<b>只保存在本机浏览器、不会上传</b>。克隆朗读即将启用，当前版本先完成录制与保存。</div>' +
+      '<div class="clone-hint">用正常语速、清晰朗读一段约 <b>10～20 秒</b>的话（建议直接念一段小说正文），作为你的专属音色样本。录音<b>只保存在本机浏览器、不会上传</b>，模型也在本机运行。首次使用克隆会下载约 195MB 引擎（仅一次）。</div>' +
       (supported ? '' : '<div class="clone-hint" style="color:#c0504d;">当前浏览器不支持网页录音（部分微信内置内核或旧系统）。请用系统浏览器（Chrome / Edge / Safari）打开本页录制，或更新微信。</div>') +
       '<div class="clone-timer" id="cloneTimer">00:00</div>' +
       '<div class="clone-status" id="cloneStatus">' + (clone.hasRecording ? '已保存一段录音，可试听或重录' : '尚未录制') + '</div>' +
       '<div id="clonePreviewWrap"></div>' +
+      '<label style="display:block;text-align:left;font-size:12px;color:var(--text2,#666);margin:10px 2px 4px">这段录音你朗读的原文（克隆必需，逐字填写越准越像）</label>' +
+      '<textarea id="cloneRefText" rows="2" placeholder="请逐字输入刚才朗读的原话，例如：今天天气真好，我们一起去公园散步。" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:10px;border:1px solid var(--border,#ddd);background:var(--bg,#fff);color:var(--text,#222);font-size:13px;resize:none"></textarea>' +
       '<div class="clone-btns">' +
         '<button class="clone-btn primary" id="cloneRecBtn" onclick="cloneToggleRec()">● 开始录音</button>' +
         '<button class="clone-btn" id="clonePlayBtn" onclick="clonePreviewPlay()" disabled>▶ 试听</button>' +
@@ -3643,7 +3647,8 @@ function cloneRenderState() {
   if (play) play.disabled = !clone.blob;
   if (save) save.disabled = !clone.blob;
   if (del) del.disabled = !clone.hasRecording;
-  if (tip) tip.textContent = clone.hasRecording ? '本机已保存你的声音样本，克隆朗读启用后即可使用' : '';
+  if (tip) tip.textContent = clone.hasRecording ? '本机已保存你的声音样本，音色选「我的声音」即可用克隆朗读' : '';
+  { const rt = document.getElementById('cloneRefText'); if (rt && !rt.value) rt.value = clone.refText || ''; }
   if (wrap && clone.url) wrap.innerHTML = '<audio class="clone-audio" controls src="' + clone.url + '"></audio>';
 }
 function cloneStopStream() {
@@ -3692,15 +3697,21 @@ function cloneStopRec() {
 function clonePreviewPlay() { if (!clone.url) return; if (clone.preview) { try { clone.preview.pause(); } catch (e) {} } clone.preview = new Audio(clone.url); clone.preview.play().catch(function () {}); }
 async function cloneSaveRec() {
   if (!clone.blob) { cloneSetStatus('请先录制', false); return; }
+  const rtEl = document.getElementById('cloneRefText');
+  const refText = rtEl ? rtEl.value.trim() : '';
+  if (refText.length < 2) { cloneSetStatus('请填写这段录音对应的原文（克隆必需）', false); return; }
+  clone.refText = refText;
+  cl.refPcm = null; cl.refKey = '';
   const ok = await clonePersist();
   clone.hasRecording = ok;
-  cloneSetStatus(ok ? '已保存到本机（克隆朗读启用后生效）' : '保存失败：浏览器存储不可用', false);
+  cloneSetStatus(ok ? '已保存到本机，音色选「我的声音」即可克隆朗读' : '保存失败：浏览器存储不可用', false);
   ttsPopulateVoiceSelect();
   if (ok) showToast('声音样本已保存在本机');
 }
 async function cloneDeleteRec() {
   await cloneErase();
-  clone.blob = null; clone.hasRecording = false;
+  clone.blob = null; clone.hasRecording = false; clone.refText = '';
+  cl.refPcm = null; cl.refKey = '';
   if (clone.url) { URL.revokeObjectURL(clone.url); clone.url = null; }
   cloneSetStatus('尚未录制', false);
   const t = document.getElementById('cloneTimer'); if (t) t.textContent = '00:00';
@@ -3900,12 +3911,195 @@ function offStop() {
     if (off.source) { try { off.source.onended = null; off.source.stop(); } catch (e) {} off.source = null; }
   } catch (e) {}
 }
+// ---------- 引擎 C：我的声音克隆（本地 ZipVoice WASM；后台预生成 + 本机缓存播放） ----------
+// 说明：本地神经克隆单句耗时数倍于实时，故采用“后台逐段预生成、结果存 IndexedDB，
+// 播放优先命中缓存”的方案；首次需下载约 195MB 模型并由 Cache Storage 缓存，仅一次。
+const cl = {
+  worker: null, state: 'idle', actx: null, source: null,
+  refPcm: null, refText: '', refKey: '',
+  lastReq: 0, manualStop: false, busy: false,
+  queue: [], jobMap: new Map()
+};
+function clAudioCtx() {
+  if (!cl.actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) cl.actx = new AC(); }
+  try { if (cl.actx && cl.actx.state === 'suspended') cl.actx.resume(); } catch (e) {}
+  return cl.actx;
+}
+function clHash(s) {
+  let h = 2166136261; s = String(s);
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+}
+function clAudioKey(text) { return clHash([cl.refKey, text, tts.rate].join('|')); }
+function clIDB(mode, fn) {
+  return cloneOpenDB().then(function (db) {
+    return new Promise(function (res) {
+      if (!db) return res(null);
+      try {
+        const tx = db.transaction(CLONE_AUDIO_STORE, mode), st = tx.objectStore(CLONE_AUDIO_STORE), rq = fn(st);
+        if (rq && rq.onsuccess !== undefined) { rq.onsuccess = function () { res(rq.result); }; rq.onerror = function () { res(null); }; }
+        else { tx.oncomplete = function () { res(true); }; tx.onerror = function () { res(null); }; }
+      } catch (e) { res(null); }
+    });
+  });
+}
+function clCacheGet(key) { return clIDB('readonly', function (st) { return st.get(key); }); }
+function clCachePut(key, val) { return clIDB('readwrite', function (st) { return st.put(val, key); }); }
+function clI16ToF32(i16) { const f = new Float32Array(i16.length); for (let i = 0; i < i16.length; i++) f[i] = i16[i] / 32768; return f; }
+
+// 把录制的 webm/mp4 blob 解码并线性重采样为 24kHz 单声道 PCM（ZipVoice 要求）
+async function clBuildRef() {
+  if (!clone.blob) throw new Error('尚未录制声音样本');
+  const actx = clAudioCtx();
+  const ab = await clone.blob.arrayBuffer();
+  const decoded = await actx.decodeAudioData(ab);
+  const c0 = decoded.getChannelData(0);
+  let mono;
+  if (decoded.numberOfChannels > 1) {
+    const c1 = decoded.getChannelData(1); mono = new Float32Array(c0.length);
+    for (let i = 0; i < c0.length; i++) mono[i] = (c0[i] + c1[i]) * 0.5;
+  } else mono = c0;
+  const TARGET = 24000, ratio = decoded.sampleRate / TARGET, outLen = Math.max(1, Math.floor(mono.length / ratio));
+  const out = new Float32Array(outLen);
+  for (let i = 0; i < outLen; i++) {
+    const pos = i * ratio, i0 = Math.floor(pos), i1 = Math.min(mono.length - 1, i0 + 1), f = pos - i0;
+    out[i] = mono[i0] * (1 - f) + mono[i1] * f;
+  }
+  cl.refPcm = out;
+  cl.refText = (clone.refText || '').trim();
+  cl.refKey = clHash(clone.blob.size + '|' + (clone.mime || '') + '|' + cl.refText);
+  return out;
+}
+
+function clEnsure() {
+  if (cl.worker) { if (cl.state === 'idle' || cl.state === 'error') { cl.state = 'loading'; cl.worker.postMessage({ type: 'load', dir: 'zv' }); } return; }
+  cl.state = 'loading';
+  try { cl.worker = new Worker(ttsBase() + 'biquge-clone.worker.js'); }
+  catch (e) { cl.state = 'error'; showToast('克隆引擎加载失败：' + e.message); return; }
+  cl.worker.onmessage = clOnWorkerMsg;
+  cl.worker.onerror = function () {
+    cl.state = 'error'; cl.busy = false; ttsHideLoadBar();
+    if (tts.playing) ttsHandleEngineFail('克隆引擎脚本加载失败');
+  };
+  ttsUpdateLoadBar(1, '正在加载「我的声音」引擎…');
+  cl.worker.postMessage({ type: 'load', dir: 'zv' });
+}
+function clOnWorkerMsg(e) {
+  const d = e.data || {};
+  if (d.type === 'progress') {
+    ttsUpdateLoadBar(d.percent != null ? d.percent : 1, d.msg || '准备中…');
+  } else if (d.type === 'ready') {
+    cl.state = 'ready'; ttsHideLoadBar();
+    if (tts.playing) { tts.speakToken++; ttsSpeak(); }
+  } else if (d.type === 'result') {
+    cl.busy = false;
+    const job = cl.jobMap.get(d.reqId);
+    if (job) {
+      const samples = d.samples;
+      const i16 = new Int16Array(samples.length);
+      for (let i = 0; i < samples.length; i++) { let x = Math.max(-1, Math.min(1, samples[i])); i16[i] = x < 0 ? x * 0x8000 : x * 0x7fff; }
+      clCachePut(job.key, { sr: d.sampleRate, pcm: i16 });
+      if (job.kind === 'play') clPlaySamples(samples, d.sampleRate, job);
+      cl.jobMap.delete(d.reqId);
+    }
+    clPump();
+  } else if (d.type === 'error') {
+    cl.busy = false;
+    const job = d.reqId != null ? cl.jobMap.get(d.reqId) : null;
+    if (job) { cl.jobMap.delete(d.reqId); if (job.kind === 'play' && job.cb) job.cb.fail(d.message || '克隆合成失败'); clPump(); }
+    else { cl.state = 'error'; ttsHideLoadBar(); if (tts.playing) ttsHandleEngineFail(d.message || '克隆引擎异常'); }
+  }
+}
+function clEnqueue(text, key, kind, cb, token, front) {
+  for (const j of cl.jobMap.values()) if (j.key === key && j.kind === kind) return;
+  const reqId = ++cl.lastReq;
+  cl.jobMap.set(reqId, { reqId, text, key, kind, cb, token });
+  const job = { reqId, key, kind, front };
+  if (front) cl.queue.unshift(job); else cl.queue.push(job);
+  clPump();
+}
+function clPump() {
+  if (cl.busy || cl.state !== 'ready' || !cl.queue.length || !cl.refPcm) return;
+  // 新播放任务到来时，丢弃尚未开始的旧播放任务
+  const job = cl.queue.shift();
+  const meta = cl.jobMap.get(job.reqId);
+  if (!meta) { clPump(); return; }
+  cl.busy = true;
+  // 参考 PCM 需复用，不能 transfer，结构化克隆拷贝即可
+  cl.worker.postMessage({ type: 'gen', reqId: job.reqId, text: meta.text, ref: cl.refPcm, refSr: 24000, refText: cl.refText, speed: tts.rate });
+}
+function clPlaySamples(samples, sr, job) {
+  if (job.kind !== 'play') return;
+  if (ttsStale(job.token, tts.index)) return;
+  const actx = clAudioCtx();
+  try {
+    const buf = actx.createBuffer(1, samples.length, sr);
+    buf.getChannelData(0).set(samples);
+    const src = actx.createBufferSource();
+    src.buffer = buf; src.connect(actx.destination); cl.source = src;
+    src.onended = function () { if (cl.manualStop) return; if (job.cb) job.cb.end(); };
+    actx.resume().then(function () { src.start(); }).catch(function () { if (job.cb) job.cb.fail('克隆音频播放失败'); });
+  } catch (e) { if (job.cb) job.cb.fail('克隆音频处理失败：' + e.message); }
+}
+async function clSchedulePrewarm() {
+  if (cl.state !== 'ready' || !cl.refPcm) return;
+  const LOOK = 3;
+  for (let k = 1; k <= LOOK; k++) {
+    const idx = tts.index + k;
+    if (idx >= tts.paragraphs.length) break;
+    const text = tts.paragraphs[idx], key = clAudioKey(text);
+    let dup = false; for (const j of cl.jobMap.values()) if (j.key === key) { dup = true; break; }
+    if (dup) continue;
+    const hit = await clCacheGet(key);
+    if (hit) continue;
+    clEnqueue(text, key, 'prewarm', null, null, false);
+  }
+}
+async function clSpeak(text, token, cb) {
+  if (!clone.hasRecording || !clone.blob) { ttsOpenRecorder(); if (cb) cb.fail('请先录入一段你的声音'); return; }
+  clAudioCtx();
+  cl.manualStop = false;
+  if (cl.state !== 'ready') {
+    tts.waitingEngine = true;
+    clEnsure();
+    ttsUpdateLoadBar(3, '「我的声音」首次需下载约 195MB 模型（仅一次，之后离线可用），正在准备…');
+    return; // ready 后 onmessage 会重新 ttsSpeak
+  }
+  if (!cl.refPcm) { try { await clBuildRef(); } catch (err) { if (cb) cb.fail('参考音频处理失败：' + err.message); return; } }
+  const key = clAudioKey(text);
+  const cached = await clCacheGet(key);
+  if (ttsStale(token, tts.index)) return;
+  if (cached && cached.pcm) {
+    clPlaySamples(clI16ToF32(cached.pcm), cached.sr, { kind: 'play', token, cb, key });
+    clSchedulePrewarm();
+    return;
+  }
+  // 丢弃排队中的旧播放任务，当前段插队
+  cl.queue = cl.queue.filter(function (j) { if (j.kind === 'play') { cl.jobMap.delete(j.reqId); return false; } return true; });
+  showToast('正在用你的声音生成第 ' + (tts.index + 1) + ' 段，首次较慢，后续会自动缓存');
+  clEnqueue(text, key, 'play', cb, token, true);
+  clSchedulePrewarm();
+}
+function clStop() {
+  try {
+    cl.manualStop = true;
+    if (cl.source) { try { cl.source.onended = null; cl.source.stop(); } catch (e) {} cl.source = null; }
+  } catch (e) {}
+  cl.queue = [];
+}
+function clPause() { try { cl.actx && cl.actx.suspend(); } catch (e) {} }
+function clResume() {
+  try { if (cl.actx) { cl.actx.resume(); if (!cl.source && tts.playing && !tts.paused) ttsSpeak(); } } catch (e) {}
+}
+function clIsActive() { return tts.engine === 'online' && tts.onlineVoice === 'clone'; }
+
+
 
 // ---------- 引擎统一：暂停/停止/回退 ----------
 function ttsEngineQuiet() {
   // 停止当前发声体但不销毁会话状态（用于跳段/换音色/换引擎的即时中断）
   try { if (tts.engine === 'system' && window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-  if (tts.engine === 'online') onlineStop();
+  if (tts.engine === 'online') { onlineStop(); clStop(); }
   if (tts.engine === 'offline') offStop();
   ttsStopWatchdog();
 }
@@ -3926,13 +4120,13 @@ function ttsToggle() {
     if (tts.engine === 'system') {
       try { window.speechSynthesis.resume(); } catch (e) {}
       ttsStartWatchdog();
-    } else if (tts.engine === 'online') onlineResume();
+    } else if (tts.engine === 'online') { if (tts.onlineVoice === 'clone') clResume(); else onlineResume(); }
     else offResume();
   } else {
     tts.paused = true;
     tts.speakToken++;
     if (tts.engine === 'system') { try { window.speechSynthesis.pause(); } catch (e) {} }
-    else if (tts.engine === 'online') onlinePause();
+    else if (tts.engine === 'online') { if (tts.onlineVoice === 'clone') clPause(); else onlinePause(); }
     else offPause();
     ttsStopWatchdog();
   }
@@ -3941,7 +4135,7 @@ function ttsToggle() {
 function ttsStop() {
   tts.speakToken++;
   try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-  onlineStop();
+  onlineStop(); clStop();
   offStop();
   tts.playing = false;
   tts.paused = false;

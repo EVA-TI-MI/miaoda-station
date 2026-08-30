@@ -1,0 +1,6 @@
+# 克隆 TTS 模型与语音数据：保持字节原样，禁止任何 EOL/文本规范化转换
+tts/zv/** binary
+*.onnx binary
+*.wasm binary
+*.part0 binary
+*.part1 binary
