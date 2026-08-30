@@ -1520,6 +1520,19 @@ img { max-width: 100%; display: block; }
 .tts-load-fill { height: 100%; width: 0; background: var(--primary, #d4a84b); border-radius: 3px; transition: width 0.2s; }
 .tts-load-msg { font-size: 11.5px; color: var(--text-muted, #999); line-height: 1.5; }
 
+/* 录入我的声音（克隆样本）面板 */
+.clone-timer { font-size: 26px; font-weight: 700; text-align: center; color: var(--primary, #d4a84b); font-variant-numeric: tabular-nums; margin: 6px 0 2px; }
+.clone-hint { font-size: 12.5px; line-height: 1.7; color: var(--text-secondary, #666); margin: 4px 0 10px; }
+.clone-status { font-size: 12.5px; color: var(--text-secondary, #666); text-align: center; min-height: 18px; margin-bottom: 8px; }
+.clone-status.rec { color: #d44; font-weight: 700; }
+.clone-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.clone-btn { border: 1.5px solid var(--border, #e5e0d5); background: var(--bg-secondary, #faf7f0); color: var(--text-primary, #222); border-radius: 10px; padding: 9px 14px; font-size: 13.5px; cursor: pointer; font-family: var(--font-sans); }
+.clone-btn.primary { border-color: var(--primary, #d4a84b); background: var(--primary, #d4a84b); color: #fff; }
+.clone-btn.danger { border-color: #d98b8b; color: #c0504d; }
+.clone-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.clone-saved-tip { font-size: 12px; color: #2e7d32; text-align: center; margin-top: 8px; }
+.clone-audio { width: 100%; margin: 6px 0; }
+
 /* chapter list modal in reader */
 .chapter-modal-backdrop {
   position: fixed;
@@ -3042,6 +3055,7 @@ const tts = {
   engine: null,        // 当前实际使用的引擎
   enginePref: null,    // 用户偏好（localStorage）
   offlineSid: 0,       // 离线音色编号
+  onlineVoice: 'baidu',// 在线引擎子音色：baidu 标准女声 | clone 我的录音（克隆待启用）
   speakToken: 0,       // 发声代际令牌：停止/跳段/暂停即 +1，使旧回调失效
   waitingEngine: false,// 离线引擎加载中、待就绪后续读
   fbOnline: false,     // 本会话是否已向 online 回退过（防循环）
@@ -3061,6 +3075,8 @@ const TTS_OFFLINE_VOICES = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];
     tts.enginePref = localStorage.getItem('biquge_tts_engine') || null;
     const sid = parseInt(localStorage.getItem('biquge_tts_offline_sid'), 10);
     if (!isNaN(sid)) tts.offlineSid = sid;
+    const ov = localStorage.getItem('biquge_tts_online_voice');
+    if (ov === 'clone' || ov === 'baidu') tts.onlineVoice = ov;
   } catch (e) {}
 })();
 
@@ -3173,6 +3189,8 @@ function ttsInit() {
   ttsBuildEnginePicker();
   ttsBuildLoadBar();
   ttsBindTapParagraph();
+  // 读回本机已保存的克隆录音样本（仅更新入口状态）
+  cloneLoad().then(function () { ttsPopulateVoiceSelect(); }).catch(function () {});
   window.addEventListener('beforeunload', ttsStop);
   window.addEventListener('pagehide', ttsStop);
   if (ttsHasSynth()) {
@@ -3283,8 +3301,9 @@ function ttsPopulateVoiceSelect() {
       '<option value="off:' + s + '"' + (s === tts.offlineSid ? ' selected' : '') + '>离线音色 ' + (s + 1) + '</option>').join('');
     sel.value = 'off:' + tts.offlineSid;
   } else if (eng === 'online') {
-    html = '<option value="online:baidu">在线标准女声</option>';
-    sel.value = 'online:baidu';
+    const cloneTag = clone.hasRecording ? '🎤 我的声音（已录制·待启用）' : '🎤 录入我的声音（克隆·待启用）';
+    html = '<option value="online:baidu">在线标准女声</option>' +
+           '<option value="online:clone">' + cloneTag + '</option>';
   } else {
     if (ttsVoices.length === 0) { sel.innerHTML = '<option value="">未检测到语音包</option>'; return; }
     const zh = ttsVoices.filter(v => /^zh/i.test(v.lang));
@@ -3302,7 +3321,7 @@ function ttsPopulateVoiceSelect() {
   }
   sel.innerHTML = html;
   if (eng === 'offline') sel.value = 'off:' + tts.offlineSid;
-  if (eng === 'online') sel.value = 'online:baidu';
+  if (eng === 'online') sel.value = (tts.onlineVoice === 'clone') ? 'online:clone' : 'online:baidu';
 }
 function ttsGetVoice() {
   if (!ttsVoices.length) ttsLoadVoices();
@@ -3320,7 +3339,17 @@ function ttsOnVoiceChange(val) {
     }
     return;
   }
-  if (eng === 'online') return;
+  if (eng === 'online') {
+    if (val === 'online:clone') {
+      tts.onlineVoice = 'clone';
+      try { localStorage.setItem('biquge_tts_online_voice', 'clone'); } catch (e) {}
+      ttsOpenRecorder();
+    } else {
+      tts.onlineVoice = 'baidu';
+      try { localStorage.setItem('biquge_tts_online_voice', 'baidu'); } catch (e) {}
+    }
+    return;
+  }
   tts.voiceURI = val;
   try { localStorage.setItem('biquge_tts_voice', val); } catch (e) {}
   if (tts.playing && !tts.paused) {
@@ -3370,6 +3399,10 @@ function ttsStartChapter(fromIndex) {
   ttsEngineQuiet();
   if (eng === 'system') { try { window.speechSynthesis.cancel(); } catch (e) {} }
   if (eng === 'offline') { ttsUnlockAudio(); ttsOfflineEnsure(true); }
+  // 选了“我的声音”但克隆合成尚未接入：先回落在线标准女声并提示一次
+  if (eng === 'online' && tts.onlineVoice === 'clone') {
+    if (!tts._cloneTipShown) { tts._cloneTipShown = true; showToast('声音克隆即将启用，已先用在线标准女声朗读'); }
+  }
   ttsPopulateEngineSelect();
   ttsPopulateVoiceSelect();
   ttsSpeak();
@@ -3433,6 +3466,164 @@ function sysSpeak(text, token, cb) {
   };
   ttsStartWatchdog();
   try { window.speechSynthesis.speak(u); } catch (e) { cb.fail('系统语音启动失败：' + e.message); }
+}
+
+// ---------- 录入我的声音（克隆样本：录音/试听/本机保存；克隆合成待引擎接入后打通） ----------
+const clone = {
+  db: null, blob: null, mime: '', url: null, hasRecording: false,
+  mr: null, stream: null, chunks: [], timer: null, seconds: 0, preview: null
+};
+const CLONE_DB = 'biquge_db', CLONE_STORE = 'kv', CLONE_KEY = 'my_voice';
+function cloneOpenDB() {
+  return new Promise(function (res) {
+    if (clone.db) return res(clone.db);
+    if (!window.indexedDB) return res(null);
+    let req;
+    try { req = indexedDB.open(CLONE_DB, 1); } catch (e) { return res(null); }
+    req.onupgradeneeded = function () { if (!req.result.objectStoreNames.contains(CLONE_STORE)) req.result.createObjectStore(CLONE_STORE); };
+    req.onsuccess = function () { clone.db = req.result; res(clone.db); };
+    req.onerror = function () { res(null); };
+  });
+}
+async function cloneLoad() {
+  const db = await cloneOpenDB(); if (!db) return;
+  await new Promise(function (res) {
+    try {
+      const tx = db.transaction(CLONE_STORE, 'readonly').objectStore(CLONE_STORE).get(CLONE_KEY);
+      tx.onsuccess = function () {
+        const rec = tx.result;
+        if (rec && rec.blob) { clone.blob = rec.blob; clone.mime = rec.mime || ''; clone.hasRecording = true; clone.url = URL.createObjectURL(rec.blob); }
+        res();
+      };
+      tx.onerror = function () { res(); };
+    } catch (e) { res(); }
+  });
+}
+function clonePersist() {
+  return new Promise(function (res) {
+    cloneOpenDB().then(function (db) {
+      if (!db) return res(false);
+      try {
+        const tx = db.transaction(CLONE_STORE, 'readwrite').objectStore(CLONE_STORE)
+          .put({ blob: clone.blob, mime: clone.mime, at: Date.now() }, CLONE_KEY);
+        tx.onsuccess = function () { res(true); }; tx.onerror = function () { res(false); };
+      } catch (e) { res(false); }
+    });
+  });
+}
+function cloneErase() {
+  return new Promise(function (res) {
+    cloneOpenDB().then(function (db) {
+      if (!db) return res();
+      try {
+        const tx = db.transaction(CLONE_STORE, 'readwrite').objectStore(CLONE_STORE).delete(CLONE_KEY);
+        tx.onsuccess = tx.onerror = function () { res(); };
+      } catch (e) { res(); }
+    });
+  });
+}
+function cloneSupported() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder && window.indexedDB);
+}
+function ttsOpenRecorder() { ttsBuildRecorder(); const m = document.getElementById('ttsCloneMask'); if (m) m.classList.add('show'); cloneRenderState(); }
+function ttsCloseRecorder() { const m = document.getElementById('ttsCloneMask'); if (m) m.classList.remove('show'); cloneStopStream(); }
+function ttsBuildRecorder() {
+  const supported = cloneSupported();
+  ttsEl('ttsCloneMask', 'tts-help-mask',
+    '<div class="tts-help-card" style="max-width:420px;">' +
+      '<div class="tts-help-title">🎤 录入我的声音</div>' +
+      '<div class="clone-hint">用正常语速、清晰朗读一段约 <b>10～20 秒</b>的话（建议直接念一段小说正文），作为你的专属音色样本。录音<b>只保存在本机浏览器、不会上传</b>。克隆朗读即将启用，当前版本先完成录制与保存。</div>' +
+      (supported ? '' : '<div class="clone-hint" style="color:#c0504d;">当前浏览器不支持网页录音（部分微信内置内核或旧系统）。请用系统浏览器（Chrome / Edge / Safari）打开本页录制，或更新微信。</div>') +
+      '<div class="clone-timer" id="cloneTimer">00:00</div>' +
+      '<div class="clone-status" id="cloneStatus">' + (clone.hasRecording ? '已保存一段录音，可试听或重录' : '尚未录制') + '</div>' +
+      '<div id="clonePreviewWrap"></div>' +
+      '<div class="clone-btns">' +
+        '<button class="clone-btn primary" id="cloneRecBtn" onclick="cloneToggleRec()">● 开始录音</button>' +
+        '<button class="clone-btn" id="clonePlayBtn" onclick="clonePreviewPlay()" disabled>▶ 试听</button>' +
+        '<button class="clone-btn" id="cloneSaveBtn" onclick="cloneSaveRec()" disabled>💾 保存</button>' +
+        '<button class="clone-btn danger" id="cloneDelBtn" onclick="cloneDeleteRec()">删除</button>' +
+        '<button class="clone-btn" onclick="ttsCloseRecorder()">关闭</button>' +
+      '</div>' +
+      '<div class="clone-saved-tip" id="cloneSavedTip"></div>' +
+    '</div>');
+  const mask = document.getElementById('ttsCloneMask');
+  mask.onclick = function (e) { if (e.target === mask) ttsCloseRecorder(); };
+  if (!supported) { const b = document.getElementById('cloneRecBtn'); if (b) b.disabled = true; }
+}
+function cloneFmt(s) { s = Math.max(0, Math.floor(s)); return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + (s % 60)).slice(-2); }
+function cloneSetStatus(txt, isRec) { const el = document.getElementById('cloneStatus'); if (el) { el.textContent = txt; el.className = 'clone-status' + (isRec ? ' rec' : ''); } }
+function cloneRenderState() {
+  const play = document.getElementById('clonePlayBtn'), save = document.getElementById('cloneSaveBtn'),
+        del = document.getElementById('cloneDelBtn'), tip = document.getElementById('cloneSavedTip'),
+        wrap = document.getElementById('clonePreviewWrap');
+  if (play) play.disabled = !clone.blob;
+  if (save) save.disabled = !clone.blob;
+  if (del) del.disabled = !clone.hasRecording;
+  if (tip) tip.textContent = clone.hasRecording ? '本机已保存你的声音样本，克隆朗读启用后即可使用' : '';
+  if (wrap && clone.url) wrap.innerHTML = '<audio class="clone-audio" controls src="' + clone.url + '"></audio>';
+}
+function cloneStopStream() {
+  if (clone.timer) { clearInterval(clone.timer); clone.timer = null; }
+  try { if (clone.mr && clone.mr.state !== 'inactive') clone.mr.stop(); } catch (e) {}
+  try { (clone.stream || { getTracks: () => [] }).getTracks().forEach(t => t.stop()); } catch (e) {}
+  clone.stream = null;
+}
+async function cloneToggleRec() {
+  if (clone.mr && clone.mr.state === 'recording') { cloneStopRec(); return; }
+  try {
+    clone.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    let mime = '';
+    ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].forEach(function (c) {
+      if (!mime && window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) mime = c;
+    });
+    clone.chunks = []; clone.seconds = 0;
+    clone.mr = mime ? new MediaRecorder(clone.stream, { mimeType: mime }) : new MediaRecorder(clone.stream);
+    clone.mime = clone.mr.mimeType || mime || 'audio/webm';
+    clone.mr.ondataavailable = function (e) { if (e.data && e.data.size > 0) clone.chunks.push(e.data); };
+    clone.mr.onstop = function () {
+      clone.blob = new Blob(clone.chunks, { type: clone.mime || 'audio/webm' });
+      if (clone.url) URL.revokeObjectURL(clone.url);
+      clone.url = URL.createObjectURL(clone.blob);
+      cloneSetStatus('录制完成（' + cloneFmt(clone.seconds) + '），可试听后保存', false);
+      cloneRenderState();
+    };
+    clone.mr.start(250);
+    clone.timer = setInterval(function () {
+      clone.seconds += 0.25; const t = document.getElementById('cloneTimer'); if (t) t.textContent = cloneFmt(clone.seconds);
+    }, 250);
+    const btn = document.getElementById('cloneRecBtn');
+    if (btn) { btn.textContent = '■ 停止'; btn.classList.remove('primary'); }
+    cloneSetStatus('正在录音…再次点击停止', true);
+  } catch (err) {
+    cloneSetStatus('无法使用麦克风：' + (err && err.message ? err.message : '权限被拒绝') + '（请允许麦克风权限）', false);
+  }
+}
+function cloneStopRec() {
+  const btn = document.getElementById('cloneRecBtn');
+  try { if (clone.mr) clone.mr.stop(); } catch (e) {}
+  cloneStopStream();
+  if (btn) { btn.textContent = '● 重新录制'; btn.classList.add('primary'); }
+  const t = document.getElementById('cloneTimer'); if (t) t.textContent = cloneFmt(clone.seconds);
+}
+function clonePreviewPlay() { if (!clone.url) return; if (clone.preview) { try { clone.preview.pause(); } catch (e) {} } clone.preview = new Audio(clone.url); clone.preview.play().catch(function () {}); }
+async function cloneSaveRec() {
+  if (!clone.blob) { cloneSetStatus('请先录制', false); return; }
+  const ok = await clonePersist();
+  clone.hasRecording = ok;
+  cloneSetStatus(ok ? '已保存到本机（克隆朗读启用后生效）' : '保存失败：浏览器存储不可用', false);
+  ttsPopulateVoiceSelect();
+  if (ok) showToast('声音样本已保存在本机');
+}
+async function cloneDeleteRec() {
+  await cloneErase();
+  clone.blob = null; clone.hasRecording = false;
+  if (clone.url) { URL.revokeObjectURL(clone.url); clone.url = null; }
+  cloneSetStatus('尚未录制', false);
+  const t = document.getElementById('cloneTimer'); if (t) t.textContent = '00:00';
+  const wrap = document.getElementById('clonePreviewWrap'); if (wrap) wrap.innerHTML = '';
+  tts.onlineVoice = 'baidu'; try { localStorage.setItem('biquge_tts_online_voice', 'baidu'); } catch (e) {}
+  ttsPopulateVoiceSelect(); cloneRenderState();
+  showToast('已删除录音样本');
 }
 
 // ---------- 引擎 A：百度在线 TTS ----------
