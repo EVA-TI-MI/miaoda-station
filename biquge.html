@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 在线TTS(百度gettts)校验Referer：第三方页面带Referer会被返回空，全站不依赖Referer授权，故统一不发送，兼容手机流量/微信/X5 -->
+<meta name="referrer" content="no-referrer">
 <meta name="creative-medium" content="interactive-prototype">
 <title>笔趣阁 - 免费小说阅读</title>
 <style>
@@ -2260,7 +2262,12 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 function getBookById(id) {
-  return BOOKS_DATA.find(b => b.id === id);
+  return BOOKS_DATA.find(b => b.id === id || String(b.id) === String(id));
+}
+// 把书籍 id 渲染成可内联进 onclick 的 JS 字面量：数字原样，字符串(本地导入书 local_xxx)加单引号，避免 ReferenceError 导致点不开
+function JID(id) {
+  if (typeof id === 'number') return String(id);
+  return "'" + String(id).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 function getCategoryName(id) {
   const cat = CATEGORIES.find(c => c.id === id);
@@ -2288,7 +2295,7 @@ function renderBookCover(book, size) {
 
 function renderBookCard(book) {
   const sourceBadge = book.source === 'crawler' ? '<span style="position:absolute;top:6px;right:6px;background:rgba(76,217,100,0.9);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;z-index:1;">公版</span>' : '';
-  return `<div class="book-card" style="position:relative;" onclick="navigate('detail', {bookId:${book.id}})">
+  return `<div class="book-card" style="position:relative;" onclick="navigate('detail', {bookId:${JID(book.id)}})">
     ${sourceBadge}
     <div class="book-cover" style="background:${gradientStyle(book.gradient)};">
       <span>${book.title}</span>
@@ -2334,7 +2341,7 @@ function renderHome() {
     </div>` : '';
 
   return `
-    <div class="hero-banner" onclick="navigate('detail', {bookId:${featured.id}})">
+    <div class="hero-banner" onclick="navigate('detail', {bookId:${JID(featured.id)}})">
       <div class="hero-book-cover" style="background:${gradientStyle(featured.gradient)};">
         <span>${featured.title}</span>
         <small>${featured.author}</small>
@@ -2344,7 +2351,7 @@ function renderHome() {
         <div class="hero-title">${escapeHtml(featured.title)}</div>
         <div class="hero-author">作者：${escapeHtml(featured.author)} · ${featured.status === '连载' ? '连载中' : '已完结'} · ${featured.words}万字</div>
         <div class="hero-desc">${escapeHtml(featured.desc)}</div>
-        <button class="hero-btn" onclick="event.stopPropagation(); openReader(${featured.id})">立即阅读</button>
+        <button class="hero-btn" onclick="event.stopPropagation(); openReader(${JID(featured.id)})">立即阅读</button>
       </div>
     </div>
 
@@ -2470,8 +2477,8 @@ function renderBookshelf() {
     <div class="book-grid">
       ${filteredBooks.map(b => `
         <div class="shelf-book-wrapper">
-          <button class="shelf-remove-btn" onclick="event.stopPropagation();removeShelfBook(${b.id})" title="移出书架">✕</button>
-          <div class="book-card" onclick="navigate('detail', {bookId:${b.id}})">
+          <button class="shelf-remove-btn" onclick="event.stopPropagation();removeShelfBook(${JID(b.id)})" title="移出书架">✕</button>
+          <div class="book-card" onclick="navigate('detail', {bookId:${JID(b.id)}})">
             <div class="book-cover" style="background:${gradientStyle(b.gradient)};">
               <span>${b.title}</span>
               <small>${b.author}</small>
@@ -2615,7 +2622,7 @@ function renderRanking() {
       </div>
       <div class="ranking-list">
         ${ranked.map((b, i) => `
-          <div class="ranking-item" onclick="navigate('detail', {bookId:${b.id}})">
+          <div class="ranking-item" onclick="navigate('detail', {bookId:${JID(b.id)}})">
             <div class="rank-num ${rankClass(i)}">${i + 1}</div>
             <div class="rank-cover" style="background:${gradientStyle(b.gradient)};">
               ${b.title.length > 4 ? b.title.substring(0,4) : b.title}
@@ -2713,16 +2720,16 @@ function renderDetail() {
             </div>
           </div>
           <div class="detail-actions">
-            <button class="btn btn-primary" onclick="openReader(${book.id})">
+            <button class="btn btn-primary" onclick="openReader(${JID(book.id)})">
               📖 ${getReadProgress(book.id) > 1 ? '继续阅读' : '开始阅读'}
             </button>
-            <button class="btn ${inShelf ? 'btn-added' : 'btn-outline'}" onclick="toggleShelf(${book.id})">
+            <button class="btn ${inShelf ? 'btn-added' : 'btn-outline'}" onclick="toggleShelf(${JID(book.id)})">
               ${inShelf ? '✓ 已加入书架' : '➕ 加入书架'}
             </button>
-            <button class="btn-icon ${isFav ? 'active-fav' : ''}" onclick="toggleFavBtn(${book.id})">
+            <button class="btn-icon ${isFav ? 'active-fav' : ''}" onclick="toggleFavBtn(${JID(book.id)})">
               ${isFav ? '★ 已收藏' : '☆ 收藏'}
             </button>
-            <button class="btn-icon ${isLike ? 'active-like' : ''}" onclick="toggleLikeBtn(${book.id})">
+            <button class="btn-icon ${isLike ? 'active-like' : ''}" onclick="toggleLikeBtn(${JID(book.id)})">
               ${isLike ? '♥ 已喜欢' : '♡ 喜欢'}
             </button>
           </div>
@@ -2744,7 +2751,7 @@ function renderDetail() {
       </div>
       <div class="latest-chapters">
         ${latestChapters.slice(0, showAllChapters ? 0 : 10).map(c => `
-          <div class="chapter-item" onclick="openReader(${book.id}, ${c.num})">
+          <div class="chapter-item" onclick="openReader(${JID(book.id)}, ${c.num})">
             <span>${c.title}</span>
           </div>
         `).join('')}
@@ -2771,13 +2778,13 @@ function generateChapterList(book) {
 
   if (showAll) {
     for (let i = 1; i <= total; i++) {
-      html += `<div class="chapter-item" onclick="openReader(${book.id}, ${i})">
+      html += `<div class="chapter-item" onclick="openReader(${JID(book.id)}, ${i})">
         <span>${generateChapterTitle(book.id, i)}</span>
       </div>`;
     }
   } else {
     for (let i = 1; i <= 100; i++) {
-      html += `<div class="chapter-item" onclick="openReader(${book.id}, ${i})">
+      html += `<div class="chapter-item" onclick="openReader(${JID(book.id)}, ${i})">
         <span>${generateChapterTitle(book.id, i)}</span>
       </div>`;
     }
@@ -2785,7 +2792,7 @@ function generateChapterList(book) {
       中间章节请在阅读页目录中查看
     </div>`;
     for (let i = total - 99; i <= total; i++) {
-      html += `<div class="chapter-item" onclick="openReader(${book.id}, ${i})">
+      html += `<div class="chapter-item" onclick="openReader(${JID(book.id)}, ${i})">
         <span>${generateChapterTitle(book.id, i)}</span>
       </div>`;
     }
@@ -2943,13 +2950,13 @@ function renderReader() {
                 </div>
               </div>
               <div class="reader-tool-group">
-                <button class="reader-shelf-btn" onclick="toggleShelf(${book.id})">
+                <button class="reader-shelf-btn" onclick="toggleShelf(${JID(book.id)})">
                   ${inShelf ? '✓ 已加入书架' : '加入书架'}
                 </button>
-                <button class="reader-shelf-btn" onclick="toggleFavBtn(${book.id})" style="${isFavorite(book.id) ? 'background:#fff3cd;border-color:#d4a84b;color:#856404;' : ''}">
+                <button class="reader-shelf-btn" onclick="toggleFavBtn(${JID(book.id)})" style="${isFavorite(book.id) ? 'background:#fff3cd;border-color:#d4a84b;color:#856404;' : ''}">
                   ${isFavorite(book.id) ? '★ 已收藏' : '☆ 收藏'}
                 </button>
-                <button class="reader-shelf-btn" onclick="toggleLikeBtn(${book.id})" style="${isLiked(book.id) ? 'background:#f8d7da;border-color:#e74c3c;color:#c0392b;' : ''}">
+                <button class="reader-shelf-btn" onclick="toggleLikeBtn(${JID(book.id)})" style="${isLiked(book.id) ? 'background:#f8d7da;border-color:#e74c3c;color:#c0392b;' : ''}">
                   ${isLiked(book.id) ? '♥ 已喜欢' : '♡ 喜欢'}
                 </button>
               </div>
@@ -3764,6 +3771,8 @@ function onlinePlayNext(token, cb) {
   const url = 'https://fanyi.baidu.com/gettts?lan=zh&spd=' + onlineSpd() + '&source=web&text=' + encodeURIComponent(s);
   if (!online.audio) online.audio = new Audio();
   const a = online.audio;
+  // 关键：媒体请求不带 Referer，否则百度 gettts 对第三方来源返回空(手机流量/微信内同样适用)；老内核不支持该属性则由 <meta name=referrer> 兜底
+  try { a.referrerPolicy = 'no-referrer'; } catch (e) {}
   let advanced = false;
   const advance = function () {
     if (advanced || ttsStale(token, tts.index)) return;
