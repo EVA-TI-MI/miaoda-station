@@ -887,6 +887,19 @@ img { max-width: 100%; display: block; }
   border-radius: 4px;
   font-size: 12px;
 }
+.tag-clickable {
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.tag-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  background: var(--primary);
+  color: #fff;
+}
+.tag-clickable:active { transform: translateY(0); }
 .detail-stats {
   display: flex;
   gap: 24px;
@@ -2017,6 +2030,7 @@ let currentChapterNum = 1;
 let showAllChapters = false;
 let descExpanded = false;
 let searchQuery = '';
+let currentTag = ''; // 标签结果页当前标签
 let readerTheme = 'light';
 let readerFontSize = 18;
 let readerFontFamily = 'serif'; // 'sans' | 'serif' | 'kai'
@@ -2187,6 +2201,7 @@ function navigate(page, params) {
       bookId: currentBookId,
       category: currentCategory,
       query: searchQuery,
+      tag: currentTag,
       chapter: currentChapterNum,
       shelfTab: shelfTab,
     });
@@ -2198,6 +2213,7 @@ function navigate(page, params) {
     if (params.bookId) currentBookId = params.bookId;
     if (params.category) currentCategory = params.category;
     if (params.query !== undefined) searchQuery = params.query;
+    if (params.tag !== undefined) currentTag = params.tag;
     if (params.chapter !== undefined) currentChapterNum = params.chapter;
   }
   if (page === 'detail') {
@@ -2209,6 +2225,7 @@ function navigate(page, params) {
     item.classList.toggle('active', item.dataset.page === page ||
       (page === 'detail' && item.dataset.page === 'home') ||
       (page === 'search' && item.dataset.page === 'home') ||
+      (page === 'tag' && item.dataset.page === 'home') ||
       (page === 'reader' && item.dataset.page === 'home'));
   });
 
@@ -2223,6 +2240,7 @@ function goBack() {
     currentBookId = prev.bookId;
     currentCategory = prev.category;
     searchQuery = prev.query;
+    currentTag = prev.tag || '';
     currentChapterNum = prev.chapter;
     shelfTab = prev.shelfTab || 'all';
     navigate(prev.page);
@@ -2671,6 +2689,43 @@ function renderSearch() {
   `;
 }
 
+// ==================== Render: 标签结果（点标签看同标签的书） ====================
+// 精确匹配某标签下的书；状态/来源类标签走对应字段
+function booksByTag(tag) {
+  const t = String(tag || '').trim().toLowerCase();
+  if (!t) return [];
+  return BOOKS_DATA.filter(b => {
+    if (t === '已完结' || t === '完结') return b.status !== '连载';
+    if (t === '连载中' || t === '连载') return b.status === '连载';
+    if (t === '公版全文' || t === '公版书') return b.source === 'crawler';
+    return (b.tags || []).some(x => String(x).toLowerCase() === t);
+  });
+}
+function openTag(enc) {
+  const tag = decodeURIComponent(enc);
+  navigate('tag', { tag });
+}
+function renderTag() {
+  const results = booksByTag(currentTag);
+  return `
+    <div class="search-header">
+      <div class="search-query">标签：<strong>#${escapeHtml(currentTag)}</strong></div>
+      <div class="search-count">共 ${results.length} 本同标签书籍</div>
+    </div>
+    ${results.length === 0 ? `
+      <div class="empty-state">
+        <div class="empty-icon">🏷️</div>
+        <div class="empty-text">该标签下暂时没有书籍</div>
+        <div class="empty-hint">看看其他标签吧</div>
+      </div>
+    ` : `
+      <div class="book-grid">
+        ${results.map(b => renderBookCard(b)).join('')}
+      </div>
+    `}
+  `;
+}
+
 // ==================== Render: Detail ====================
 function renderDetail() {
   const book = getBookById(currentBookId);
@@ -2697,9 +2752,9 @@ function renderDetail() {
           <h1 class="detail-title">${book.title}</h1>
           <div class="detail-author">作者：${book.author}</div>
           <div class="detail-tags">
-            ${book.tags.map(t => `<span class="tag">${t}</span>`).join('')}
-            ${book.source === 'crawler' ? '<span class="tag" style="background:#4cd964;color:#fff;">公版全文</span>' : ''}
-            <span class="tag">${book.status === '连载' ? '连载中' : '已完结'}</span>
+            ${book.tags.map(t => `<span class="tag tag-clickable" title="查看所有「${t}」的书" onclick="openTag('${encodeURIComponent(t)}')">${escapeHtml(t)}</span>`).join('')}
+            ${book.source === 'crawler' ? `<span class="tag tag-clickable" style="background:#4cd964;color:#fff;" title="查看所有公版全文书籍" onclick="openTag('${encodeURIComponent('公版全文')}')">公版全文</span>` : ''}
+            <span class="tag tag-clickable" title="查看同状态书籍" onclick="openTag('${encodeURIComponent(book.status === '连载' ? '连载中' : '已完结')}')">${book.status === '连载' ? '连载中' : '已完结'}</span>
           </div>
           <div class="detail-stats">
             <div class="stat-item">
@@ -4735,6 +4790,9 @@ function render() {
       break;
     case 'search':
       html = renderSearch();
+      break;
+    case 'tag':
+      html = renderTag();
       break;
     case 'detail':
       html = renderDetail();
