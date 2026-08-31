@@ -1528,7 +1528,16 @@ img { max-width: 100%; display: block; }
   transform: translateY(12px);
   transition: opacity 0.25s, transform 0.25s;
 }
-.tts-load-card.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.tts-load-card.show { opacity: 1; pointer-events: none; transform: translateY(0); }
+/* 内容保护遮罩：页面切到后台/隐藏时盖住正文（网页无法真正拦截系统截屏，此为防后台预览/录屏的软防护） */
+.bq-shot-shield {
+  position: fixed; inset: 0; z-index: 99999; display: none;
+  align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  background: var(--bg-card, #f4efe2); color: var(--text-muted, #9a9384);
+  font-size: 15px; line-height: 1.7; text-align: center; padding: 32px;
+}
+.bq-shot-shield.show { display: flex; }
+.bq-shot-shield .ico { font-size: 42px; }
 .tts-load-t { font-size: 13px; font-weight: 700; color: var(--text-primary, #222); display: flex; justify-content: space-between; }
 .tts-load-t span { color: var(--primary, #d4a84b); }
 .tts-load-track { height: 6px; border-radius: 3px; background: var(--bg-secondary, #eee); margin: 8px 0 6px; overflow: hidden; }
@@ -2436,8 +2445,8 @@ function renderBookshelf() {
 
   const toolbarHtml = `
     <div class="shelf-toolbar">
-      <button class="shelf-tool-btn" onclick="exportShelfState()" title="导出书架状态 JSON，配合 cleanup_shelf.py 清理已删除小说的本地缓存">
-        📤 导出书架状态
+      <button class="shelf-tool-btn" onclick="exportShelfState()" title="把书架/收藏/喜欢清单导出成 bookshelf_state.json 备份；也用于配合电脑端 cleanup_shelf.py 清理已删除小说的本地缓存（普通读者一般用不到）">
+        📤 导出书架清单
       </button>
       <button class="shelf-tool-btn" onclick="pickLocalTxt()" title="选择 .txt 文件，逐个做纯文本安全检测后导入书架">
         📥 导入本地TXT
@@ -2574,7 +2583,7 @@ function exportShelfState() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('已导出 bookshelf_state.json');
+  showToast('已导出 bookshelf_state.json（书架/收藏/喜欢清单备份）');
 }
 
 function toggleFavBtn(bookId) {
@@ -3370,7 +3379,8 @@ function ttsInit() {
     const engNow = ttsPickEngine();
     if (engNow === 'system') return; // 系统语音足够，无需离线包
     ttsUnlockAudio();
-    ttsOfflineEnsure(engNow !== 'offline'); // 默认离线→显示进度；默认在线→静默后台下载
+    if (engNow === 'offline') { off.manualOffline = true; off.fgRetries = 0; ttsOfflineEnsure(false); } // 默认离线：前台下载、可续传
+    else { off.manualOffline = false; ttsOfflineEnsure(true); } // 默认在线：离线转后台静默下载
   }, 1200);
 }
 
@@ -3405,8 +3415,16 @@ function ttsOnEngineChange(eng) {
     return;
   }
   tts.engine = eng;
-  if (eng === 'offline') { ttsUnlockAudio(); ttsOfflineEnsure(false); }
-  else if (eng === 'online') { ttsOfflineEnsure(true); } // 选在线也在后台静默备好离线（断网保底）
+  if (eng === 'offline') {
+    // 用户手动选离线：前台可见进度、快速下载（不放进后台），下载期间仍可翻书，且不擅自切到在线
+    off.manualOffline = true; off.fgRetries = 0; off.bgRetries = 0;
+    ttsUnlockAudio(); ttsOfflineEnsure(false);
+  } else if (eng === 'online') {
+    // 用户手动选在线：离线模型转后台静默下载，断网时再保底
+    off.manualOffline = false; ttsOfflineEnsure(true);
+  } else {
+    off.manualOffline = false;
+  }
   ttsPopulateVoiceSelect();
   if (wasPlaying) ttsStartChapter(cur); else ttsRefreshUI();
 }
@@ -3886,22 +3904,30 @@ function onlineStop() {
 const off = { worker: null, state: 'idle', numSpeakers: 174, actx: null, source: null,
               lastReq: 0, manualStop: false, pendingWhenReady: false,
               wdTimer: null, lastPct: 0, lastPctAt: 0, stalledOnce: false,
-              silent: false, bgRetries: 0 };
-// 离线加载看门狗：前台正在等朗读时卡住要快速回退在线；后台静默预载则给足慢网络时间并自动重试
-const OFF_STALL_MS = 25000;     // 前台：25s 无进度即判定卡死
-const OFF_BG_STALL_MS = 70000;  // 后台静默预载：70s（QQ/微信慢网络下载 45MB）
+              silent: false, bgRetries: 0, manualOffline: false, fgRetries: 0 };
+// 离线加载看门狗，分三种场景：
+//  1) 后台静默预载（选在线时偷跑）：给足慢网络时间，卡住静默重试、不打扰
+//  2) 用户手动选离线（前台、可见进度、可翻书）：给更长时间，卡住自动“断点续传”，不擅自切到在线
+//  3) 播放中等待引擎（前台）：卡住要快速回退在线，保证能听到
+const OFF_STALL_MS = 25000;      // 场景3：25s 无进展即兜底
+const OFF_BG_STALL_MS = 70000;   // 场景1：后台 70s
+const OFF_MANUAL_STALL_MS = 90000; // 场景2：用户主动选离线，90s 无进展才续传
 function offIsBackground() { return off.silent && !tts.playing && !tts.waitingEngine; }
 function offClearWatchdog() { if (off.wdTimer) { clearInterval(off.wdTimer); off.wdTimer = null; } }
 function offKickWatchdog(pct) {
   if (typeof pct === 'number' && pct >= off.lastPct) { off.lastPct = pct; off.lastPctAt = Date.now(); }
 }
-// 后台静默预载失败/停滞：不打扰用户，退避后自动重试，最多 2 次
-function offRetryBackground() {
+// 终止当前 worker 并退避后按指定方式重新加载（已下载分片在 SW 缓存中，重试即断点续传）
+function offRetryLoad(silent, delay) {
   try { off.worker && off.worker.terminate(); } catch (e) {}
-  off.worker = null; offClearWatchdog();
-  if (off.bgRetries >= 2) { off.state = 'idle'; return; } // 多次仍失败则安静放弃，下次进页面再试
+  off.worker = null; offClearWatchdog(); off.state = 'loading';
+  setTimeout(function () { try { ttsOfflineEnsure(silent); } catch (e) {} }, delay || 4000);
+}
+// 后台静默预载失败/停滞：不打扰用户，自动重试，最多 2 次
+function offRetryBackground() {
+  if (off.bgRetries >= 2) { try { off.worker && off.worker.terminate(); } catch (e) {} off.worker = null; off.state = 'idle'; return; }
   off.bgRetries++;
-  setTimeout(function () { try { ttsOfflineEnsure(true); } catch (e) {} }, 5000);
+  offRetryLoad(true, 5000);
 }
 function offStartWatchdog() {
   offClearWatchdog();
@@ -3909,10 +3935,25 @@ function offStartWatchdog() {
   off.wdTimer = setInterval(function () {
     if (off.state !== 'loading') { offClearWatchdog(); return; }
     const bg = offIsBackground();
-    if (Date.now() - off.lastPctAt < (bg ? OFF_BG_STALL_MS : OFF_STALL_MS)) return;
+    const manual = !bg && off.manualOffline; // 用户主动选离线、前台下载
+    const lim = bg ? OFF_BG_STALL_MS : (manual ? OFF_MANUAL_STALL_MS : OFF_STALL_MS);
+    if (Date.now() - off.lastPctAt < lim) return;
     offClearWatchdog();
-    if (bg) { offRetryBackground(); return; } // 后台预载：悄悄重试，不打断在线听书
-    // 前台：判定卡死，终止并回退在线
+    if (bg) { offRetryBackground(); return; } // 场景1：悄悄续传，不打断在线听书
+    if (manual) {                             // 场景2：尊重用户选择，不切在线，断点续传继续下
+      if (off.fgRetries < 2) {
+        off.fgRetries++;
+        showToast('离线模型下载较慢，正在断点续传…（可正常翻书）');
+        ttsUpdateLoadBar(off.lastPct || 1, '继续下载离线模型…');
+        offRetryLoad(false, 2000);
+      } else {
+        try { off.worker && off.worker.terminate(); } catch (e) {}
+        off.worker = null; off.state = 'error'; ttsHideLoadBar();
+        showToast('离线模型下载受阻，可在网络好时再点离线，或暂时改用在线语音（未替你切换）');
+      }
+      return;
+    }
+    // 场景3：播放中等待，判定卡死，终止并回退在线
     try { off.worker && off.worker.terminate(); } catch (e) {}
     off.worker = null; off.state = 'error';
     ttsHideLoadBar();
@@ -3935,8 +3976,8 @@ function ttsUnlockAudio() {
   } catch (e) {}
 }
 function ttsOfflineEnsure(silent) {
+  off.silent = !!silent; // 无条件先更新：下载过程中手动切前台/后台能立即生效
   if (off.worker) { try { off.worker.postMessage({ type: 'load' }); } catch (e) {} if (off.state==='ready'&&!silent) ttsHideLoadBar(); return; }
-  off.silent = !!silent;
   off.state = 'loading';
   try {
     off.worker = new Worker(ttsBase() + 'biquge-tts.worker.js');
@@ -3955,7 +3996,7 @@ function ttsOfflineEnsure(silent) {
       if (!silent) ttsUpdateLoadBar(d.percent || 1, d.msg || '加载中…');
     } else if (d.type === 'ready') {
       offClearWatchdog();
-      off.bgRetries = 0;
+      off.bgRetries = 0; off.fgRetries = 0;
       off.state = 'ready'; off.numSpeakers = d.numSpeakers || 174;
       ttsHideLoadBar();
       if (!silent) showToast('离线语音引擎已就绪');
@@ -3972,7 +4013,8 @@ function ttsOfflineEnsure(silent) {
       off.worker = null;
       ttsHideLoadBar();
       if (tts.playing || tts.waitingEngine) { tts.waitingEngine = false; ttsHandleEngineFail(d.message || '离线引擎异常'); }
-      else if (off.silent) { offRetryBackground(); } // 后台静默出错：悄悄重试，不打扰
+      else if (off.silent) { offRetryBackground(); }                 // 后台静默出错：悄悄重试，不打扰
+      else if (off.manualOffline && off.fgRetries < 2) { off.fgRetries++; offRetryLoad(false, 2000); } // 主动选离线：续传，不切走
       else showToast(d.message || '离线引擎异常');
     }
   };
@@ -3984,6 +4026,7 @@ function ttsOfflineEnsure(silent) {
     ttsHideLoadBar();
     if (tts.playing || tts.waitingEngine) { tts.waitingEngine = false; ttsHandleEngineFail('离线引擎脚本加载失败'); }
     else if (off.silent) { offRetryBackground(); } // 后台静默出错：悄悄重试
+    else if (off.manualOffline && off.fgRetries < 2) { off.fgRetries++; offRetryLoad(false, 2000); } // 主动选离线：续传
   };
   off.worker.postMessage({ type: 'load' });
 }
@@ -5088,6 +5131,17 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     e.preventDefault();
   });
+
+  // 内容保护：切后台/页面隐藏时用遮罩盖住正文（防系统任务缩略图、录屏切走瞬间）。
+  // 注意：浏览器网页无法真正拦截系统截屏键，彻底禁止截图只有原生 App 能做到；此处为可实现的最强软防护。
+  var shield = document.createElement('div');
+  shield.className = 'bq-shot-shield';
+  shield.innerHTML = '<div class="ico">🔒</div><div>内容已隐藏<br>返回页面即可继续阅读</div>';
+  function bqShield(on){ shield.classList.toggle('show', !!on); }
+  document.addEventListener('visibilitychange', function(){ bqShield(document.hidden); });
+  window.addEventListener('pagehide', function(){ bqShield(true); });
+  window.addEventListener('pageshow', function(){ bqShield(false); });
+  (function mount(){ if (document.body) document.body.appendChild(shield); else setTimeout(mount, 60); })();
 })();
 </script>
 </body>
