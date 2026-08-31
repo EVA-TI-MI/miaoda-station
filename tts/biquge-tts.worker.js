@@ -15,31 +15,72 @@ let pendingGen = null;   // ready 前到达的合成请求，只保留最新一�
 
 function post(o) { try { self.postMessage(o); } catch (e) {} }
 
-// 带下载进度的文件读取
+// 全局兜底：glue/WASM/异步里的未捕获错误也要上报，避免在 QQ/微信(X5) 内核里静默卡死
+self.addEventListener('error', function (ev) {
+  post({ type: 'error', message: '离线引擎脚本错误：' + ((ev && ev.message) || '未知错误') });
+});
+self.addEventListener('unhandledrejection', function (ev) {
+  const r = ev && ev.reason;
+  post({ type: 'error', message: '离线引擎加载异常：' + ((r && r.message) || r || '未知异常') });
+});
+
+// 带下载进度的文件读取（兼容 QQ/微信 X5 内核）：
+// 1) 优先流式读取并回报进度；
+// 2) 流式若 STALL_MS 内无任何数据（X5 下 getReader 偶发永久挂起），降级为一次性 arrayBuffer；
+// 3) 仍失败则带 ?net=1 + cache:no-store 绕开 SW 缓存直连网络重试一次。
+const STALL_MS = 15000;
+async function fetchArrayBufferDirect(rel, useNetBypass) {
+  const url = useNetBypass ? (rel + (rel.indexOf('?') >= 0 ? '&' : '?') + 'net=1') : rel;
+  const opt = useNetBypass ? { cache: 'no-store' } : {};
+  return await fetch(url, opt);
+}
 async function fetchWithProgress(rel, label, onPct) {
-  const resp = await fetch(rel);
-  if (!resp.ok) throw new Error(label + ' 下载失败 HTTP ' + resp.status);
-  const len = Number(resp.headers.get('Content-Length') || 0);
-  if (!resp.body || !len) {
-    const ab = await resp.arrayBuffer();
-    onPct(100);
-    return new Uint8Array(ab);
+  // 第一遍：尝试流式
+  try {
+    const resp = await fetchArrayBufferDirect(rel, false);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const len = Number(resp.headers.get('Content-Length') || 0);
+    if (!resp.body || !len || typeof resp.body.getReader !== 'function') {
+      const ab0 = await resp.arrayBuffer(); onPct(100); return new Uint8Array(ab0);
+    }
+    const reader = resp.body.getReader();
+    const chunks = []; let loaded = 0, last = -1, stalled = false;
+    const stall = new Promise(function (resolve) {
+      setTimeout(function () { stalled = true; resolve(); }, STALL_MS * 6); // 总兜底 90s
+    });
+    let tick = Date.now();
+    while (true) {
+      const rd = await Promise.race([
+        reader.read(),
+        new Promise(function (resolve) { setTimeout(function () { resolve({ __stall: true }); }, STALL_MS); })
+      ]);
+      if (rd && rd.__stall) {
+        if (Date.now() - tick >= STALL_MS) { stalled = true; break; } // 15s 无进展
+        continue;
+      }
+      if (rd.done) break;
+      chunks.push(rd.value); loaded += rd.value.length; tick = Date.now();
+      const pct = Math.floor(loaded * 100 / len);
+      if (pct !== last) { last = pct; onPct(pct); }
+    }
+    if (!stalled) {
+      const out = new Uint8Array(loaded); let off = 0;
+      for (const c of chunks) { out.set(c, off); off += c.length; }
+      if (loaded > 0) { onPct(100); return out; }
+    }
+    try { reader.cancel(); } catch (e) {}
+    throw new Error('stream-stall');
+  } catch (e1) {
+    // 第二遍：一次性读取（X5 对 arrayBuffer 通常更稳）
+    try {
+      const r2 = await fetchArrayBufferDirect(rel, false);
+      if (r2.ok) { const ab = await r2.arrayBuffer(); onPct(100); return new Uint8Array(ab); }
+    } catch (e2) {}
+    // 第三遍：绕开 SW 缓存直连
+    const r3 = await fetchArrayBufferDirect(rel, true);
+    if (!r3.ok) throw new Error(label + ' 下载失败 HTTP ' + r3.status);
+    const ab3 = await r3.arrayBuffer(); onPct(100); return new Uint8Array(ab3);
   }
-  const reader = resp.body.getReader();
-  const chunks = [];
-  let loaded = 0, last = -1;
-  while (true) {
-    const r = await reader.read();
-    if (r.done) break;
-    chunks.push(r.value);
-    loaded += r.value.length;
-    const pct = Math.floor(loaded * 100 / len);
-    if (pct !== last) { last = pct; onPct(pct); }
-  }
-  const out = new Uint8Array(loaded);
-  let off = 0;
-  for (const c of chunks) { out.set(c, off); off += c.length; }
-  return out;
 }
 
 self.Module = {
@@ -96,7 +137,15 @@ self.Module = {
   }
 };
 
-importScripts('sherpa-onnx-wasm-main-tts.js', 'sherpa-onnx-tts.js');
+if (typeof WebAssembly === 'undefined') {
+  post({ type: 'error', message: '当前浏览器内核不支持 WebAssembly，离线引擎不可用，已为你保留在线语音' });
+} else {
+  try {
+    importScripts('sherpa-onnx-wasm-main-tts.js', 'sherpa-onnx-tts.js');
+  } catch (e) {
+    post({ type: 'error', message: '离线引擎组件加载失败：' + ((e && e.message) || e) });
+  }
+}
 
 function doGen(d) {
   if (!tts) { pendingGen = d; return; }

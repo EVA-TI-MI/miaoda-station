@@ -3405,18 +3405,27 @@ function ttsOnEngineChange(eng) {
 }
 // 返回本次应用的引擎：优先用户手动选择；否则按浏览器能力给默认
 // 条件足够（有系统语音）→ 系统语音；条件不足（如微信/QQ 内置浏览器）→ 离线引擎
+// 是否处于 App 内置 WebView（QQ/微信/微博/抖音等，多为 X5/TBS 内核，无系统语音、大 WASM 易卡）
+function ttsIsRestrictedWebView() {
+  const ua = navigator.userAgent || '';
+  return /MicroMessenger|MQQBrowser|QQBrowser|QQ\/|QHBrowser|Weibo|Alipay|Douyin|aweme|ByteSDK|XWEB|TBS|MiuiBrowser/i.test(ua);
+}
 function ttsPickEngine() {
   let pref = tts.enginePref;
   if (pref === 'system' && !ttsHasSynth()) pref = null;
   if (pref) return pref;
-  return ttsHasSynth() ? 'system' : 'offline';
+  if (ttsHasSynth()) return 'system';
+  // 无系统语音时：App 内置内核默认走在线（已修复、即点即用、免下载），普通浏览器才默认离线
+  return ttsIsRestrictedWebView() ? 'online' : 'offline';
 }
 // 是否将默认使用离线引擎（用于进入阅读页时提前后台预载）
 function ttsDefaultIsOffline() {
   let pref = tts.enginePref;
   if (pref === 'system' && !ttsHasSynth()) pref = null;
   if (pref) return pref === 'offline';
-  return !ttsHasSynth();
+  if (ttsHasSynth()) return false;
+  // 受限内置内核默认在线，不提前下载 45MB 离线模型，避免一进阅读页就占流量/卡死
+  return !ttsIsRestrictedWebView();
 }
 
 // ---------- 系统语音音色 ----------
@@ -3875,7 +3884,34 @@ function onlineStop() {
 
 // ---------- 引擎 B：sherpa-onnx WASM 离线 TTS ----------
 const off = { worker: null, state: 'idle', numSpeakers: 174, actx: null, source: null,
-              lastReq: 0, manualStop: false, pendingWhenReady: false };
+              lastReq: 0, manualStop: false, pendingWhenReady: false,
+              wdTimer: null, lastPct: 0, lastPctAt: 0, stalledOnce: false };
+// 离线加载看门狗：QQ/微信 X5 内核可能让 WASM/模型下载静默挂起，进度长时间不动就判卡死并回退在线
+const OFF_STALL_MS = 25000;
+function offClearWatchdog() { if (off.wdTimer) { clearInterval(off.wdTimer); off.wdTimer = null; } }
+function offKickWatchdog(pct) {
+  if (typeof pct === 'number' && pct >= off.lastPct) { off.lastPct = pct; off.lastPctAt = Date.now(); }
+}
+function offStartWatchdog() {
+  offClearWatchdog();
+  off.lastPct = 0; off.lastPctAt = Date.now();
+  off.wdTimer = setInterval(function () {
+    if (off.state !== 'loading') { offClearWatchdog(); return; }
+    if (Date.now() - off.lastPctAt < OFF_STALL_MS) return;
+    // 进度卡死
+    offClearWatchdog();
+    try { off.worker && off.worker.terminate(); } catch (e) {}
+    off.worker = null; off.state = 'error';
+    ttsHideLoadBar();
+    const msg = '离线引擎在此浏览器加载过慢（常见于 QQ/微信内置内核）';
+    if (tts.playing || tts.waitingEngine) {
+      tts.waitingEngine = false;
+      ttsHandleEngineFail(msg + '，已切换在线语音续读');
+    } else {
+      showToast(msg + '，建议改用在线语音');
+    }
+  }, 3000);
+}
 function ttsUnlockAudio() {
   try {
     if (!off.actx) {
@@ -3896,11 +3932,14 @@ function ttsOfflineEnsure(silent) {
     return;
   }
   if (!silent) ttsUpdateLoadBar(1, '正在加载离线语音引擎…');
+  offStartWatchdog();
   off.worker.onmessage = function (e) {
     const d = e.data || {};
     if (d.type === 'progress') {
+      offKickWatchdog(d.percent);
       if (!silent || d.stage === 'model') ttsUpdateLoadBar(d.percent || 1, d.msg || '加载中…');
     } else if (d.type === 'ready') {
+      offClearWatchdog();
       off.state = 'ready'; off.numSpeakers = d.numSpeakers || 174;
       ttsHideLoadBar();
       if (!silent) showToast('离线语音引擎已就绪');
@@ -3911,15 +3950,22 @@ function ttsOfflineEnsure(silent) {
     } else if (d.type === 'result') {
       offPlayResult(d);
     } else if (d.type === 'error') {
+      offClearWatchdog();
       off.state = 'error';
+      try { off.worker && off.worker.terminate(); } catch (x) {}
+      off.worker = null;
       ttsHideLoadBar();
-      if (tts.playing) ttsHandleEngineFail(d.message || '离线引擎异常');
+      if (tts.playing || tts.waitingEngine) { tts.waitingEngine = false; ttsHandleEngineFail(d.message || '离线引擎异常'); }
       else showToast(d.message || '离线引擎异常');
     }
   };
   off.worker.onerror = function () {
-    off.state = 'error'; ttsHideLoadBar();
-    if (tts.playing) ttsHandleEngineFail('离线引擎脚本加载失败');
+    offClearWatchdog();
+    off.state = 'error';
+    try { off.worker && off.worker.terminate(); } catch (e) {}
+    off.worker = null;
+    ttsHideLoadBar();
+    if (tts.playing || tts.waitingEngine) { tts.waitingEngine = false; ttsHandleEngineFail('离线引擎脚本加载失败'); }
   };
   off.worker.postMessage({ type: 'load' });
 }
@@ -4855,9 +4901,30 @@ document.addEventListener('keydown', (e) => {
 init();
 
 // PWA Service Worker 注册（离线语音引擎依赖它做持久缓存；file:// 下自动跳过）
+// 策略：页面 HTML 由 SW 网络优先（保证首次即新版）；发现新 SW 立即接管并只自动刷新一次，避免“要手动刷新才到新版”
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (refreshing) return;
+      refreshing = true;
+      try { sessionStorage.setItem('biquge_sw_reloaded', '1'); } catch (e) {}
+      location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      const askSkip = function (sw) { try { sw && sw.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {} };
+      if (reg.waiting) askSkip(reg.waiting);
+      reg.addEventListener('updatefound', function () {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function () {
+          // installed 且已有控制器 => 这是“更新”，让它立刻接管（controllerchange 会触发一次刷新）
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) askSkip(nw);
+        });
+      });
+      // 每 10 分钟后台查一次更新
+      setInterval(function () { try { reg.update(); } catch (e) {} }, 10 * 60 * 1000);
+    }).catch(function () {});
   });
 }
 </script>
