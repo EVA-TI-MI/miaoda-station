@@ -3357,13 +3357,13 @@ function ttsInit() {
     }, 500);
   }
   ttsPopulateEngineSelect();
-  // 无系统语音环境（微信等）：离线作为断网保底始终在后台备好
-  // 当前就要用离线（默认/选定）则显示进度；已选在线则静默偷跑、不打扰
+  // 断网保底：默认引擎不是系统语音时（含 QQ/微信等默认“在线”的受限内核），
+  // 都在后台静默把离线引擎(约45MB)提前下好缓存；当前就要用离线才显示进度，默认在线则静默偷跑、不打扰
   setTimeout(function () {
-    if (ttsHasSynth()) return;
-    const useNow = ttsDefaultIsOffline();
+    const engNow = ttsPickEngine();
+    if (engNow === 'system') return; // 系统语音足够，无需离线包
     ttsUnlockAudio();
-    ttsOfflineEnsure(!useNow);
+    ttsOfflineEnsure(engNow !== 'offline'); // 默认离线→显示进度；默认在线→静默后台下载
   }, 1200);
 }
 
@@ -3418,15 +3418,8 @@ function ttsPickEngine() {
   // 无系统语音时：App 内置内核默认走在线（已修复、即点即用、免下载），普通浏览器才默认离线
   return ttsIsRestrictedWebView() ? 'online' : 'offline';
 }
-// 是否将默认使用离线引擎（用于进入阅读页时提前后台预载）
-function ttsDefaultIsOffline() {
-  let pref = tts.enginePref;
-  if (pref === 'system' && !ttsHasSynth()) pref = null;
-  if (pref) return pref === 'offline';
-  if (ttsHasSynth()) return false;
-  // 受限内置内核默认在线，不提前下载 45MB 离线模型，避免一进阅读页就占流量/卡死
-  return !ttsIsRestrictedWebView();
-}
+// 是否将默认使用离线引擎（口径与 ttsPickEngine 一致）
+function ttsDefaultIsOffline() { return ttsPickEngine() === 'offline'; }
 
 // ---------- 系统语音音色 ----------
 function ttsLoadVoices() {
@@ -3885,21 +3878,34 @@ function onlineStop() {
 // ---------- 引擎 B：sherpa-onnx WASM 离线 TTS ----------
 const off = { worker: null, state: 'idle', numSpeakers: 174, actx: null, source: null,
               lastReq: 0, manualStop: false, pendingWhenReady: false,
-              wdTimer: null, lastPct: 0, lastPctAt: 0, stalledOnce: false };
-// 离线加载看门狗：QQ/微信 X5 内核可能让 WASM/模型下载静默挂起，进度长时间不动就判卡死并回退在线
-const OFF_STALL_MS = 25000;
+              wdTimer: null, lastPct: 0, lastPctAt: 0, stalledOnce: false,
+              silent: false, bgRetries: 0 };
+// 离线加载看门狗：前台正在等朗读时卡住要快速回退在线；后台静默预载则给足慢网络时间并自动重试
+const OFF_STALL_MS = 25000;     // 前台：25s 无进度即判定卡死
+const OFF_BG_STALL_MS = 70000;  // 后台静默预载：70s（QQ/微信慢网络下载 45MB）
+function offIsBackground() { return off.silent && !tts.playing && !tts.waitingEngine; }
 function offClearWatchdog() { if (off.wdTimer) { clearInterval(off.wdTimer); off.wdTimer = null; } }
 function offKickWatchdog(pct) {
   if (typeof pct === 'number' && pct >= off.lastPct) { off.lastPct = pct; off.lastPctAt = Date.now(); }
+}
+// 后台静默预载失败/停滞：不打扰用户，退避后自动重试，最多 2 次
+function offRetryBackground() {
+  try { off.worker && off.worker.terminate(); } catch (e) {}
+  off.worker = null; offClearWatchdog();
+  if (off.bgRetries >= 2) { off.state = 'idle'; return; } // 多次仍失败则安静放弃，下次进页面再试
+  off.bgRetries++;
+  setTimeout(function () { try { ttsOfflineEnsure(true); } catch (e) {} }, 5000);
 }
 function offStartWatchdog() {
   offClearWatchdog();
   off.lastPct = 0; off.lastPctAt = Date.now();
   off.wdTimer = setInterval(function () {
     if (off.state !== 'loading') { offClearWatchdog(); return; }
-    if (Date.now() - off.lastPctAt < OFF_STALL_MS) return;
-    // 进度卡死
+    const bg = offIsBackground();
+    if (Date.now() - off.lastPctAt < (bg ? OFF_BG_STALL_MS : OFF_STALL_MS)) return;
     offClearWatchdog();
+    if (bg) { offRetryBackground(); return; } // 后台预载：悄悄重试，不打断在线听书
+    // 前台：判定卡死，终止并回退在线
     try { off.worker && off.worker.terminate(); } catch (e) {}
     off.worker = null; off.state = 'error';
     ttsHideLoadBar();
@@ -3923,12 +3929,13 @@ function ttsUnlockAudio() {
 }
 function ttsOfflineEnsure(silent) {
   if (off.worker) { try { off.worker.postMessage({ type: 'load' }); } catch (e) {} if (off.state==='ready'&&!silent) ttsHideLoadBar(); return; }
+  off.silent = !!silent;
   off.state = 'loading';
   try {
     off.worker = new Worker(ttsBase() + 'biquge-tts.worker.js');
   } catch (e) {
     off.state = 'error';
-    showToast('离线引擎加载失败：' + e.message);
+    if (offIsBackground()) offRetryBackground(); else showToast('离线引擎加载失败：' + e.message);
     return;
   }
   if (!silent) ttsUpdateLoadBar(1, '正在加载离线语音引擎…');
@@ -3937,9 +3944,11 @@ function ttsOfflineEnsure(silent) {
     const d = e.data || {};
     if (d.type === 'progress') {
       offKickWatchdog(d.percent);
-      if (!silent || d.stage === 'model') ttsUpdateLoadBar(d.percent || 1, d.msg || '加载中…');
+      // 后台静默预载不弹加载条，避免打断前台在线听书
+      if (!silent) ttsUpdateLoadBar(d.percent || 1, d.msg || '加载中…');
     } else if (d.type === 'ready') {
       offClearWatchdog();
+      off.bgRetries = 0;
       off.state = 'ready'; off.numSpeakers = d.numSpeakers || 174;
       ttsHideLoadBar();
       if (!silent) showToast('离线语音引擎已就绪');
@@ -3956,6 +3965,7 @@ function ttsOfflineEnsure(silent) {
       off.worker = null;
       ttsHideLoadBar();
       if (tts.playing || tts.waitingEngine) { tts.waitingEngine = false; ttsHandleEngineFail(d.message || '离线引擎异常'); }
+      else if (off.silent) { offRetryBackground(); } // 后台静默出错：悄悄重试，不打扰
       else showToast(d.message || '离线引擎异常');
     }
   };
@@ -3966,6 +3976,7 @@ function ttsOfflineEnsure(silent) {
     off.worker = null;
     ttsHideLoadBar();
     if (tts.playing || tts.waitingEngine) { tts.waitingEngine = false; ttsHandleEngineFail('离线引擎脚本加载失败'); }
+    else if (off.silent) { offRetryBackground(); } // 后台静默出错：悄悄重试
   };
   off.worker.postMessage({ type: 'load' });
 }
