@@ -3018,6 +3018,11 @@ function renderReader() {
               <div class="reader-tool-group">
                 <button class="reader-shelf-btn" onclick="openStandaloneRecorder()">🎤 录音 / 保存 / 分享</button>
               </div>
+              <div class="reader-tool-group">
+                <span class="reader-tool-label">离线语音包（微信/QQ 共用，只下一次）</span>
+                <button class="reader-shelf-btn" onclick="ttsExportPack()">📦 导出离线语音包</button>
+                <button class="reader-shelf-btn" onclick="ttsImportPackClick()">📥 导入离线语音包</button>
+              </div>
             </div>
           </div>
         </div>
@@ -3331,6 +3336,8 @@ function ttsHideLoadBar() {
 }
 
 function ttsInit() {
+  ttsPersistStorage();
+  ensureFflate(function () {}); // 预热压缩库并让其进入 SW 缓存，保证离线时也能导入离线包
   ttsBuildHelp();
   ttsBuildEnginePicker();
   ttsBuildLoadBar();
@@ -4564,6 +4571,130 @@ function localLoadIntoMemory() {
 localLoadIntoMemory().then(function () { try { render(); } catch (e) {} });
 
 // ==================== 阅读器“更多”面板 + 独立录音（保存到手机 / 系统分享） ====================
+// ============ 离线语音包：持久化 + 跨 App(微信/QQ)导入导出共用 ============
+// 与 sw.js 的 TTS_CACHE 同名；离线引擎(约45MB)就缓存在这里
+const TTS_CACHE_NAME = 'biquge-tts-v1';
+// 请求持久化存储，尽量避免微信/QQ(X5)在空间不足时自动清掉已下好的离线包
+function ttsPersistStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persisted) {
+      navigator.storage.persisted().then(function (p) {
+        if (!p && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+      }).catch(function () {});
+    }
+  } catch (e) {}
+}
+// 按需加载压缩库 fflate（UMD，挂到 window.fflate）
+function ensureFflate(cb) {
+  if (window.fflate) { cb && cb(window.fflate); return; }
+  const s = document.createElement('script');
+  s.src = ttsBase() + 'fflate.js';
+  s.onload = function () { cb && cb(window.fflate); };
+  s.onerror = function () { showToast('打包组件加载失败，请联网后重试'); };
+  document.head.appendChild(s);
+}
+// 离线朗读引擎必需文件白名单（排除声音克隆 zvmodel、测试文件等“大而无关”的内容）
+function ttsPackWanted(pathname) {
+  if (pathname.indexOf('/tts/model/') >= 0) return true; // 6 个模型文件
+  const base = pathname.split('/').pop();
+  return ['biquge-tts.worker.js', 'sherpa-onnx-tts.js',
+          'sherpa-onnx-wasm-main-tts.js', 'sherpa-onnx-wasm-main-tts.wasm'].indexOf(base) >= 0;
+}
+// 导入写回缓存时按扩展名补 MIME，否则 importScripts 会因空 MIME 拒绝执行、wasm 也无法编译
+function ttsPackMime(rel) {
+  if (rel.endsWith('.js')) return 'text/javascript; charset=utf-8';
+  if (rel.endsWith('.wasm')) return 'application/wasm';
+  if (rel.endsWith('.txt')) return 'text/plain; charset=utf-8';
+  return 'application/octet-stream'; // .onnx / .fst
+}
+// 收集离线引擎文件（按路径去重，避免带不同参数的重复 Request）
+async function ttsPackCollect() {
+  const cache = await caches.open(TTS_CACHE_NAME);
+  const keys = await cache.keys();
+  const seen = {}; const list = [];
+  for (const req of keys) {
+    const u = new URL(req.url);
+    if (!ttsPackWanted(u.pathname) || seen[u.pathname]) continue;
+    seen[u.pathname] = 1;
+    list.push(req);
+  }
+  return { cache, list };
+}
+// 统计离线包已缓存情况（文件数、大小MB）
+async function ttsPackStats() {
+  if (!('caches' in window)) return { count: 0, mb: 0 };
+  try {
+    const { cache, list } = await ttsPackCollect();
+    let bytes = 0;
+    for (const req of list) { const r = await cache.match(req); if (r) bytes += (await r.arrayBuffer()).byteLength; }
+    return { count: list.length, mb: Math.round(bytes / 1048576 * 10) / 10 };
+  } catch (e) { return { count: 0, mb: 0 }; }
+}
+// 导出：把本 App 已下好的离线引擎打包成单个 .bqtts 文件，可发给微信/QQ另一端导入，免去重复下载
+async function ttsExportPack() {
+  if (!('caches' in window)) { showToast('当前浏览器不支持离线包导出'); return; }
+  const st = await ttsPackStats();
+  if (st.count < 8) { showToast('离线引擎还没下好（当前' + st.count + '个文件），请先用一次离线引擎再导出'); return; }
+  showToast('正在打包离线语音包（约' + st.mb + 'MB）…');
+  ensureFflate(async function (ff) {
+    try {
+      const { cache, list } = await ttsPackCollect();
+      const files = {};
+      for (const req of list) {
+        const u = new URL(req.url);
+        const i = u.pathname.indexOf('/tts/');
+        const rel = u.pathname.slice(i + 1);                 // 形如 tts/model/model.onnx
+        const resp = await cache.match(req);
+        files[rel] = new Uint8Array(await resp.arrayBuffer());
+      }
+      const zipped = ff.zipSync(files, { level: 0 });        // 仅存储不压缩，快
+      const blob = new Blob([zipped], { type: 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'biquge-tts-pack.bqtts';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      showToast('离线语音包已导出（' + list.length + '个文件），把该文件发到另一个 App 点“导入”即可共用');
+    } catch (e) { showToast('导出失败：' + (e.message || e)); }
+  });
+}
+// 导入：选择 .bqtts 文件，解压写回本 App 的离线缓存，之后离线引擎直接命中、无需联网下载
+function ttsImportPackClick() {
+  let inp = document.getElementById('ttsPackFileInput');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file'; inp.id = 'ttsPackFileInput'; inp.accept = '.bqtts,.zip';
+    inp.style.display = 'none';
+    inp.onchange = function () { const f = inp.files && inp.files[0]; if (f) ttsImportPack(f); inp.value = ''; };
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+async function ttsImportPack(file) {
+  if (!file) return;
+  if (!('caches' in window)) { showToast('当前浏览器不支持离线包导入'); return; }
+  showToast('正在导入离线语音包…');
+  ensureFflate(async function (ff) {
+    try {
+      const buf = await file.arrayBuffer();
+      const files = ff.unzipSync(new Uint8Array(buf));
+      const cache = await caches.open(TTS_CACHE_NAME);
+      let n = 0;
+      for (const rel in files) {
+        if (!ttsPackWanted('/' + rel)) continue;             // 只接受离线引擎白名单文件
+        const url = new URL(rel, location.href).href;       // 以当前页面目录为基还原成同源绝对 URL
+        await cache.put(new Request(url), new Response(files[rel], { headers: { 'Content-Type': ttsPackMime(rel) } }));
+        n++;
+      }
+      if (n < 8) { showToast('文件里离线引擎不完整（仅' + n + '项），请重新导出'); return; }
+      ttsPersistStorage();
+      showToast('离线语音包导入成功（' + n + ' 个文件），已可离线使用');
+      // 若当前有残留的失败 worker，重置后静默验证一次
+      try { if (off.state === 'error') { off.worker = null; } ttsOfflineEnsure(true); } catch (e) {}
+    } catch (e) { showToast('导入失败，请确认是本阅读器导出的 .bqtts 文件：' + (e.message || e)); }
+  });
+}
+
 let readerMoreOpen = false;
 function toggleReaderMore() {
   readerMoreOpen = !readerMoreOpen;

@@ -49,6 +49,5 @@ tts/clone-test.worker.js
 tts/test_clone.html
 tts/test_final.html
 tts/test_aishell.html
-tts/fflate.js
 tts/zv_clone_test.wav
 tts/zv_clone_test.b64
