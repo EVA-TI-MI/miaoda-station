@@ -6,7 +6,7 @@
 <!-- 在线TTS(百度gettts)校验Referer：第三方页面带Referer会被返回空，全站不依赖Referer授权，故统一不发送，兼容手机流量/微信/X5 -->
 <meta name="referrer" content="no-referrer">
 <meta name="creative-medium" content="interactive-prototype">
-<title>笔趣阁 - 免费小说阅读</title>
+<title>墨渊阁 - 免费小说阅读</title>
 <style>
 /* ========== CSS Variables & Themes ========== */
 :root {
@@ -1820,7 +1820,7 @@ img { max-width: 100%; display: block; }
     <div class="header-inner">
       <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
         <button class="back-home-btn" onclick="goBack()" title="返回上一页">←</button>
-        <div class="logo" onclick="navigate('home')">笔趣阁</div>
+        <div class="logo" onclick="navigate('home')">墨渊阁</div>
       </div>
       <div class="search-box">
         <span class="search-icon">🔍</span>
@@ -1916,11 +1916,11 @@ try {
     if (validData.length > 0) {
       // 真实小说排在前面，ID 从 100 开始避免与内置数据冲突
       BOOKS_DATA = validData.concat(BOOKS_DATA);
-      console.log('[笔趣阁] 已加载 ' + validData.length + ' 本爬取小说');
+      console.log('[墨渊阁] 已加载 ' + validData.length + ' 本爬取小说');
     }
   }
 } catch(e) {
-  console.warn('[笔趣阁] novels_data.js 加载异常，使用内置数据:', e);
+  console.warn('[墨渊阁] novels_data.js 加载异常，使用内置数据:', e);
 }
 
 // 爬虫下载的小说自动加入书架和喜欢
@@ -2174,7 +2174,7 @@ function autoLikeCrawlerBooks() {
     if (likesChanged) saveLikes(likes);
     if (shelfChanged) saveShelf(shelf);
   } catch (e) {
-    console.warn('[笔趣阁] 自动收藏爬虫小说失败:', e);
+    console.warn('[墨渊阁] 自动收藏爬虫小说失败:', e);
   }
 }
 
@@ -4939,7 +4939,7 @@ function authBuildDom() {
   lock.innerHTML =
     '<div class="auth-card">' +
       '<div class="auth-logo">📖</div>' +
-      '<div class="auth-brand">笔趣阁</div>' +
+      '<div class="auth-brand">墨渊阁</div>' +
       '<div class="auth-sub" id="authSub">登录后继续阅读</div>' +
       '<div class="auth-tabs">' +
         '<div class="auth-tab active" data-tab="login" onclick="authSwitchTab(\'login\')">登录</div>' +

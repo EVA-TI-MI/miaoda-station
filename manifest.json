@@ -1,7 +1,7 @@
 {
   "name": "妙搭小站 - 游戏与阅读",
   "short_name": "妙搭小站",
-  "description": "霓虹贪吃蛇游戏与笔趣阁小说阅读",
+  "description": "霓虹贪吃蛇游戏与墨渊阁小说阅读",
   "start_url": "index.html",
   "display": "standalone",
   "orientation": "any",
