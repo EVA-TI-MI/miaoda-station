@@ -3350,6 +3350,7 @@ function ttsInit() {
   ttsBuildHelp();
   ttsBuildEnginePicker();
   ttsBuildLoadBar();
+  ttsBindTapToClearSelection();
   ttsBindTapParagraph();
   // 读回本机已保存的克隆录音样本（仅更新入口状态）
   cloneLoad().then(function () { ttsPopulateVoiceSelect(); }).catch(function () {});
@@ -4364,6 +4365,43 @@ function ttsJumpTo(idx) {
   tts.index = idx;
   ttsSpeak();
   return true;
+}
+// 手机：选中文字后轻点屏幕任意处即取消选中（QQ/微信 X5 内点击不会自动收起选区，需手动 removeAllRanges）
+// 注册在“点段落朗读”之前；命中取消时拦截本次轻点，避免同时触发朗读跳转或工具栏显隐
+function ttsBindTapToClearSelection() {
+  let startHasSel = false, sx = 0, sy = 0, moved = false;
+  function selActive() {
+    const s = window.getSelection();
+    return !!(s && !s.isCollapsed && s.toString().length > 0);
+  }
+  function isEditable(t) {
+    if (!t || !t.tagName) return false;
+    return t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || !!t.isContentEditable;
+  }
+  document.addEventListener('touchstart', function (e) {
+    if (isEditable(e.target)) { startHasSel = false; return; }
+    startHasSel = selActive(); moved = false;
+    const t0 = e.touches && e.touches[0];
+    if (t0) { sx = t0.clientX; sy = t0.clientY; }
+  }, true);
+  document.addEventListener('touchmove', function (e) {
+    const t0 = e.touches && e.touches[0];
+    if (t0) { const dx = t0.clientX - sx, dy = t0.clientY - sy; if (dx * dx + dy * dy > 120) moved = true; }
+  }, true);
+  document.addEventListener('touchend', function (e) {
+    if (isEditable(e.target)) return;
+    if (startHasSel && !moved) { // 按下前已有选区且为轻点：本次只负责取消选中
+      const s = window.getSelection();
+      try { s && s.removeAllRanges(); } catch (_) {}
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    }
+    startHasSel = false;
+  }, true);
+  // 桌面/鼠标兜底：按下时若存在选区则清除（不拦截正常点击）
+  document.addEventListener('mousedown', function (e) {
+    if (isEditable(e.target)) return;
+    if (selActive()) { const s = window.getSelection(); try { s.removeAllRanges(); } catch (_) {} }
+  }, true);
 }
 // 开启听书后：点哪段就读哪段（捕获阶段拦截，避免冒泡触发工具栏显隐）
 function ttsBindTapParagraph() {
