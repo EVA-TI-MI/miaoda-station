@@ -1352,7 +1352,8 @@
     if (theme === 'neon' || theme === 'rainbow') {
       let bodyC = bodyColor, darkC = s.dark, glowC = s.glow;
       if (theme === 'rainbow') {
-        const hue = ((idx * 30) + Date.now() / 25) % 360;
+        // 色相 = 沿蛇身分布的彩虹梯度(idx) + 随时间向前流动的相位(约3.6秒流转一圈)
+        const hue = ((idx * 22) + Date.now() / 10) % 360;
         bodyC = 'hsl(' + hue + ',90%,55%)';
         darkC = 'hsl(' + hue + ',75%,25%)';
         glowC = 'hsla(' + hue + ',90%,55%,0.7)';
@@ -1671,8 +1672,11 @@
   // Animation loop for golden food pulse, rainbow & ripple effects
   function animLoop() {
     const skin = SKINS[skinIndex];
-    const needsRedraw = (gameState === 'playing' && (goldenFood || skin.theme === 'rainbow')) ||
-                        skinRipple;
+    // 彩虹皮肤的流动变色在任何界面（开始/暂停/结束/进行中）都持续播放；
+    // 金苹果脉冲仅在游戏进行中需要；皮肤切换涟漪按需播放
+    const rainbowFlow = skin.theme === 'rainbow';
+    const goldenPulse = gameState === 'playing' && !!goldenFood;
+    const needsRedraw = rainbowFlow || goldenPulse || !!skinRipple;
     if (needsRedraw) draw();
     requestAnimationFrame(animLoop);
   }
