@@ -39,10 +39,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view ${{ github.ref_name }} --json assets --jq '.assets[].name' | while read asset; do
-            echo "Deleting asset: $asset"
-            gh release delete-asset ${{ github.ref_name }} "$asset" --yes || true
-          done
+          # 新 tag 首次发布时 Release 尚不存在，gh release view 会非零退出；
+          # Actions 的 bash 默认 set -eo pipefail，旧写法的管道会让整个步骤失败并跳过上传。
+          # 容错取资产列表：没有 Release/资产就安全跳过，有旧资产才逐个删除（重跑同 tag 时清理旧 exe）。
+          assets=$(gh release view ${{ github.ref_name }} --json assets --jq '.assets[].name' 2>/dev/null || true)
+          if [ -n "$assets" ]; then
+            while IFS= read -r asset; do
+              [ -z "$asset" ] && continue
+              echo "Deleting asset: $asset"
+              gh release delete-asset ${{ github.ref_name }} "$asset" --yes || true
+            done <<< "$assets"
+          else
+            echo "No existing release/assets yet for ${{ github.ref_name }}; skip deletion."
+          fi
 
       - name: Upload EXE to Release
         uses: softprops/action-gh-release@v2
