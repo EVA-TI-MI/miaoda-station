@@ -73,4 +73,4 @@ python novel_crawler.py -u <小说目录页URL> --build
 [https://eva-ti-mi.github.io/games/](https://eva-ti-mi.github.io/games/)
 
 ## 版本
-当前版本：V3.6（新增有声书朗读）
+当前版本：V3.7（彩虹皮肤流动变色、发布流程修复，版本号统一为大写 V）
