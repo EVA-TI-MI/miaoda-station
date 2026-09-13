@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#160d09">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>象棋 · 选择 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#120c08; --txt:#f1e6da; --sub:#b69c84; --gold:#d4a84b; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:40px 20px 30px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(224,121,74,.12) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(201,162,95,.12) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:900px;display:flex;justify-content:flex-start;margin-bottom:26px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;text-decoration:none;
+    background:rgba(40,30,20,.85);border:1px solid rgba(212,168,75,.25);color:var(--gold);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(212,168,75,.14);border-color:var(--gold);}
+  .head{text-align:center;margin-bottom:34px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:40px;letter-spacing:8px;margin-bottom:12px;
+    background:linear-gradient(135deg,#e8c77a,#d4a84b 50%,#f0dc9e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:14px;letter-spacing:2px;line-height:1.9;}
+  .pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;width:100%;max-width:900px;}
+  .game-card{--c:#e0794a;position:relative;overflow:hidden;border-radius:16px;text-decoration:none;min-height:380px;
+    border:1px solid color-mix(in srgb,var(--c) 28%,transparent);
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 10%,#14110b) 0%,#14110b 72%);
+    padding:30px;display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s,border-color .3s;}
+  .game-card:hover{transform:translateY(-6px);box-shadow:0 18px 48px color-mix(in srgb,var(--c) 26%,transparent);border-color:var(--c);}
+  .game-card::before{content:"";position:absolute;top:-26%;right:-20%;width:260px;height:260px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--c) 30%,transparent) 0%,transparent 70%);opacity:.5;}
+  .ico{width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:18px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 14%,transparent);border:2px solid color-mix(in srgb,var(--c) 42%,transparent);
+    box-shadow:0 0 26px color-mix(in srgb,var(--c) 18%,transparent);}
+  .gt{font-family:"STKaiti","KaiTi",serif;color:var(--c);font-size:27px;letter-spacing:3px;margin-bottom:6px;}
+  .gen{font-size:11px;letter-spacing:2px;color:var(--sub);text-transform:uppercase;margin-bottom:14px;}
+  .gd{font-size:13.5px;line-height:1.9;color:rgba(255,255,255,.62);margin-bottom:16px;flex:1;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+  .tag{padding:3px 10px;border-radius:5px;font-size:11.5px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);}
+  .go{align-self:flex-start;padding:11px 22px;border-radius:8px;font-size:14.5px;letter-spacing:2px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid var(--c);transition:.2s;}
+  .game-card:hover .go{background:var(--c);color:#160d09;}
+  .foot{margin-top:40px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;line-height:1.9;}
+  @media (max-width:680px){.head h1{font-size:30px;letter-spacing:4px;}.game-card{min-height:0;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+
+  <div class="head">
+    <h1>象 棋</h1>
+    <p>东西方两种棋艺，同一套 AI 对弈体验<br>人机 / 双人 / AI 观战 · 四档难度 · 悔棋提示 · 棋谱导出 · 离线可玩</p>
+  </div>
+
+  <div class="pick">
+    <a class="game-card" style="--c:#e0794a" href="xiangqi.html">
+      <div class="ico">♟&#xFE0E;</div>
+      <div class="gt">中国象棋 · 楚河</div>
+      <div class="gen">XIANGQI · ALPHA-BETA AI</div>
+      <p class="gd">九路十行、楚河汉界。完整还原蹩马腿、塞象眼、飞将照面、将军/将死/困毙；内置中文着法棋谱、合法走法高亮、翻转棋盘与经典残局挑战。</p>
+      <div class="tags"><span class="tag">七兵种规则</span><span class="tag">残局闯关</span><span class="tag">中文棋谱</span></div>
+      <span class="go">楚河对弈 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#c9a25f" href="intchess.html">
+      <div class="ico">♞&#xFE0E;</div>
+      <div class="gt">国际象棋</div>
+      <div class="gen">CHESS · ALPHA-BETA AI</div>
+      <p class="gd">8×8 标准棋盘，完整支持王车易位、吃过路兵、兵到底线升变，准确判定将死、逼和与子力不足和棋；代数记谱（SAN）、合法走法提示、吃子陈列与子力优势条一应俱全。</p>
+      <div class="tags"><span class="tag">王车易位</span><span class="tag">过路兵/升变</span><span class="tag">代数棋谱</span></div>
+      <span class="go">进入对局 →</span>
+    </a>
+  </div>
+
+  <div class="foot">方寸之间，自有天地<br>妙搭小站 V4.0.0</div>
+
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

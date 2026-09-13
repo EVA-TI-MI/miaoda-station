@@ -4,366 +4,91 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="creative-medium" content="other">
-<title>妙搭小站 - 游戏与阅读</title>
+<meta name="theme-color" content="#0f0d08">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>妙搭小站 - 弈境棋院 · 游戏与阅读</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  :root{
+    --bg:#0f0d08; --paper:#16130c; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b;
+  }
+  html,body{background:var(--bg);}
   body {
     min-height: 100vh;
     font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    color: #e8dcc8;
+    color: var(--txt);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    padding: 40px 20px;
+    padding: 44px 20px 30px;
     background:
-      radial-gradient(ellipse at 20% 20%, rgba(184, 134, 11, 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 80%, rgba(0, 255, 200, 0.08) 0%, transparent 50%),
-      #0f0d08;
+      radial-gradient(ellipse at 18% 0%, rgba(212,168,75,.12) 0%, transparent 52%),
+      radial-gradient(ellipse at 85% 8%, rgba(70,195,154,.08) 0%, transparent 48%),
+      radial-gradient(ellipse at 80% 100%, rgba(110,168,254,.07) 0%, transparent 50%),
+      var(--bg);
   }
-
-  @media (min-height: 700px) {
-    body {
-      justify-content: center;
-    }
-  }
-
-  .site-header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
+  .site-header { text-align: center; margin-bottom: 14px; }
   .site-title {
-    font-family: "STKaiti", "KaiTi", "楷体", serif;
-    font-size: 42px;
-    font-weight: bold;
-    background: linear-gradient(135deg, #d4a84b 0%, #e8c77a 50%, #d4a84b 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 8px;
-    margin-bottom: 12px;
+    font-family: "STKaiti","KaiTi","楷体",serif;
+    font-size: 44px; font-weight: bold; letter-spacing: 10px;
+    background: linear-gradient(135deg,#e8c77a 0%,#d4a84b 45%,#f0dc9e 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 36px rgba(212,168,75,.18);
   }
+  .site-subtitle { margin-top: 12px; font-size: 13px; color: var(--sub); letter-spacing: 6px; }
+  .site-slogan{margin-top:10px;font-size:14px;color:#cbb88f;letter-spacing:2px;font-family:"STKaiti","KaiTi",serif;}
 
-  .site-subtitle {
-    font-size: 14px;
-    color: #8a7555;
-    letter-spacing: 4px;
+  .section-label{width:100%;max-width:1180px;display:flex;align-items:center;gap:14px;margin:34px auto 18px;}
+  .section-label .line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,75,.35),transparent);}
+  .section-label span{font-family:"STKaiti","KaiTi",serif;letter-spacing:5px;font-size:18px;color:var(--gold);white-space:nowrap;}
+  .section-label small{color:var(--sub);font-size:12px;letter-spacing:1px;white-space:nowrap;}
+
+  .cards-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;width:100%;max-width:1180px;}
+  .app-card{
+    --c:#d4a84b;
+    height:392px;border-radius:16px;position:relative;overflow:hidden;text-decoration:none;
+    border:1px solid color-mix(in srgb,var(--c) 28%,transparent);
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 10%,#14110b) 0%,#14110b 70%);
+    display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s,border-color .3s;
   }
+  .app-card:hover{transform:translateY(-6px);box-shadow:0 18px 48px color-mix(in srgb,var(--c) 26%,transparent);border-color:var(--c);}
+  .app-card::before{content:"";position:absolute;top:-26%;right:-26%;width:280px;height:280px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--c) 30%,transparent) 0%,transparent 70%);opacity:.5;pointer-events:none;}
+  .card-content{position:relative;z-index:1;height:100%;padding:28px;display:flex;flex-direction:column;}
+  .card-icon{width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:18px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 14%,transparent);border:2px solid color-mix(in srgb,var(--c) 42%,transparent);
+    box-shadow:0 0 26px color-mix(in srgb,var(--c) 18%,transparent);}
+  .card-title{font-size:26px;font-weight:bold;margin-bottom:6px;color:var(--c);font-family:"STKaiti","KaiTi","楷体",serif;letter-spacing:3px;}
+  .card-en{font-size:11px;letter-spacing:2px;color:var(--sub);margin-bottom:12px;text-transform:uppercase;}
+  .card-desc{font-size:13.5px;line-height:1.85;color:rgba(255,255,255,.62);margin-bottom:14px;flex:1;}
+  .card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+  .card-tag{padding:3px 10px;border-radius:5px;font-size:11.5px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);}
+  .card-btn{padding:11px 22px;border-radius:8px;font-size:14.5px;font-weight:500;align-self:flex-start;letter-spacing:2px;
+    color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid var(--c);transition:.2s;}
+  .app-card:hover .card-btn{background:var(--c);color:#14110b;}
 
-  .cards-container {
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 900px;
-  }
+  /* 介绍文章 */
+  .article{width:100%;max-width:1180px;margin-top:40px;background:linear-gradient(160deg,rgba(212,168,75,.06),rgba(20,17,11,.6));
+    border:1px solid rgba(212,168,75,.18);border-radius:16px;padding:34px 38px;}
+  .article h2{font-family:"STKaiti","KaiTi",serif;color:var(--gold);font-size:24px;letter-spacing:3px;margin-bottom:8px;}
+  .article .lead{color:#cbb88f;font-size:14px;letter-spacing:1px;margin-bottom:20px;}
+  .article h3{font-size:16px;color:#e8dcc8;margin:22px 0 8px;letter-spacing:1px;border-left:3px solid var(--gold);padding-left:10px;}
+  .article p{font-size:14px;line-height:2;color:rgba(255,255,255,.7);}
+  .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;}
+  .feature{background:rgba(255,255,255,.03);border:1px solid rgba(212,168,75,.14);border-radius:10px;padding:14px 16px;}
+  .feature b{color:var(--gold);font-size:14px;letter-spacing:1px;display:block;margin-bottom:5px;}
+  .feature span{font-size:12.5px;line-height:1.7;color:rgba(255,255,255,.6);}
+  .footer{margin-top:46px;text-align:center;color:#6a5a3e;font-size:12px;letter-spacing:2px;}
+  .footer .version{margin-top:6px;font-size:11px;color:#8a7555;letter-spacing:1px;}
 
-  .app-card {
-    width: 340px;
-    height: 440px;
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
-    text-decoration: none;
-    display: block;
-  }
-
-  .app-card:hover {
-    transform: translateY(-6px);
-  }
-
-  .app-card.snake:hover {
-    box-shadow: 0 16px 48px rgba(0, 255, 200, 0.25);
-  }
-
-  .app-card.biquge:hover {
-    box-shadow: 0 16px 48px rgba(212, 168, 75, 0.25);
-  }
-
-  .card-bg {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 0;
-  }
-
-  .app-card.snake .card-bg {
-    background: linear-gradient(135deg, #0a0a1f 0%, #1a1a3e 50%, #0d0d2a 100%);
-  }
-
-  .app-card.biquge .card-bg {
-    background: linear-gradient(135deg, #1a0f05 0%, #3d2510 50%, #2a1a0a 100%);
-  }
-
-  .card-bg::before {
-    content: "";
-    position: absolute;
-    top: -30%;
-    right: -30%;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    opacity: 0.2;
-  }
-
-  .app-card.snake .card-bg::before {
-    background: radial-gradient(circle, #00ffc8 0%, transparent 70%);
-  }
-
-  .app-card.biquge .card-bg::before {
-    background: radial-gradient(circle, #d4a84b 0%, transparent 70%);
-  }
-
-  .card-bg::after {
-    content: "";
-    position: absolute;
-    bottom: -20%;
-    left: -20%;
-    width: 250px;
-    height: 250px;
-    border-radius: 50%;
-    opacity: 0.15;
-  }
-
-  .app-card.snake .card-bg::after {
-    background: radial-gradient(circle, #ff6b9d 0%, transparent 70%);
-  }
-
-  .app-card.biquge .card-bg::after {
-    background: radial-gradient(circle, #8b4513 0%, transparent 70%);
-  }
-
-  .card-content {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  .card-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 40px;
-    margin-bottom: 20px;
-  }
-
-  .app-card.snake .card-icon {
-    background: rgba(0, 255, 200, 0.15);
-    border: 2px solid rgba(0, 255, 200, 0.4);
-    box-shadow: 0 0 30px rgba(0, 255, 200, 0.2);
-  }
-
-  .app-card.biquge .card-icon {
-    background: rgba(212, 168, 75, 0.15);
-    border: 2px solid rgba(212, 168, 75, 0.4);
-    box-shadow: 0 0 30px rgba(212, 168, 75, 0.2);
-  }
-
-  .card-title {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-
-  .app-card.snake .card-title {
-    color: #00ffc8;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 2px;
-    text-shadow: 0 0 20px rgba(0, 255, 200, 0.5);
-  }
-
-  .app-card.biquge .card-title {
-    color: #d4a84b;
-    font-family: "STKaiti", "KaiTi", "楷体", serif;
-    letter-spacing: 4px;
-    text-shadow: 0 0 20px rgba(212, 168, 75, 0.5);
-  }
-
-  .card-desc {
-    font-size: 14px;
-    line-height: 1.8;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 12px;
-  }
-
-  .card-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 20px;
-  }
-
-  .card-tag {
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    backdrop-filter: blur(10px);
-  }
-
-  .app-card.snake .card-tag {
-    background: rgba(0, 255, 200, 0.15);
-    border: 1px solid rgba(0, 255, 200, 0.3);
-    color: #00ffc8;
-  }
-
-  .app-card.biquge .card-tag {
-    background: rgba(212, 168, 75, 0.15);
-    border: 1px solid rgba(212, 168, 75, 0.3);
-    color: #d4a84b;
-  }
-
-  .card-btn {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    align-self: flex-start;
-  }
-
-  .app-card.snake .card-btn {
-    background: rgba(0, 255, 200, 0.2);
-    border: 1px solid #00ffc8;
-    color: #00ffc8;
-  }
-
-  .app-card.biquge .card-btn {
-    background: rgba(212, 168, 75, 0.2);
-    border: 1px solid #d4a84b;
-    color: #d4a84b;
-  }
-
-  .app-card.snake:hover .card-btn {
-    background: #00ffc8;
-    color: #0a0a1f;
-  }
-
-  .app-card.biquge:hover .card-btn {
-    background: #d4a84b;
-    color: #1a0f05;
-  }
-
-  .card-preview {
-    position: absolute;
-    right: -20px;
-    bottom: -20px;
-    width: 160px;
-    height: 120px;
-    border-radius: 8px;
-    opacity: 0.6;
-    transform: rotate(-5deg);
-    transition: all 0.3s;
-  }
-
-  .app-card:hover .card-preview {
-    opacity: 0.8;
-    transform: rotate(-3deg) translateY(-4px);
-  }
-
-  .app-card.snake .card-preview {
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 9px, rgba(0,255,200,0.1) 9px, rgba(0,255,200,0.1) 10px),
-      repeating-linear-gradient(90deg, transparent, transparent 9px, rgba(0,255,200,0.1) 9px, rgba(0,255,200,0.1) 10px),
-      #0d0d1a;
-    border: 1px solid rgba(0, 255, 200, 0.3);
-  }
-
-  .app-card.snake .card-preview::before {
-    content: "🐍";
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 32px;
-    filter: drop-shadow(0 0 8px rgba(0,255,200,0.6));
-  }
-
-  .app-card.snake .card-preview::after {
-    content: "🍎";
-    position: absolute;
-    top: 50px;
-    right: 30px;
-    font-size: 20px;
-    filter: drop-shadow(0 0 8px rgba(255,59,59,0.6));
-  }
-
-  .app-card.biquge .card-preview {
-    background: linear-gradient(135deg, #3d2510, #6b4423);
-    border: 1px solid rgba(212, 168, 75, 0.3);
-  }
-
-  .app-card.biquge .card-preview::before {
-    content: "笔";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-family: "STKaiti", "KaiTi", "楷体", serif;
-    font-size: 48px;
-    color: #d4a84b;
-    opacity: 0.7;
-    text-shadow: 0 0 10px rgba(212, 168, 75, 0.5);
-  }
-
-  .app-card.biquge .card-preview::after {
-    content: "";
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    height: 6px;
-    background: repeating-linear-gradient(90deg, rgba(212,168,75,0.3) 0, rgba(212,168,75,0.3) 20px, transparent 20px, transparent 24px);
-  }
-
-  .footer {
-    margin-top: 60px;
-    text-align: center;
-    color: #5a4a35;
-    font-size: 12px;
-    letter-spacing: 2px;
-  }
-
-  .footer .version {
-    margin-top: 6px;
-    font-size: 11px;
-    color: #7a6548;
-    letter-spacing: 1px;
-  }
-
-  @media (max-width: 768px) {
-    .site-title { font-size: 32px; letter-spacing: 4px; }
-    .site-header { margin-bottom: 32px; }
-    .cards-container { gap: 20px; }
-    .app-card { width: 100%; max-width: 340px; min-height: 380px; height: auto; }
-    .card-icon { width: 64px; height: 64px; font-size: 32px; border-radius: 12px; }
-    .card-title { font-size: 24px; }
-    .card-preview { width: 110px; height: 80px; right: -10px; bottom: -10px; }
-    .card-content { padding: 24px; }
-  }
-
-  @media (max-width: 380px) {
-    body { padding: 24px 16px; }
-    .site-title { font-size: 26px; letter-spacing: 2px; }
-    .site-subtitle { font-size: 12px; letter-spacing: 2px; }
-    .site-header { margin-bottom: 24px; }
-    .card-desc { font-size: 13px; line-height: 1.6; }
-    .card-title { font-size: 22px; }
-    .card-icon { width: 56px; height: 56px; font-size: 28px; border-radius: 10px; margin-bottom: 14px; }
-    .card-content { padding: 20px; }
-    .card-btn { padding: 10px 18px; font-size: 14px; }
-    .card-preview { width: 90px; height: 65px; }
+  @media (max-width:768px){
+    body{padding:30px 14px;}
+    .site-title{font-size:32px;letter-spacing:5px;}
+    .cards-container{gap:18px;}
+    .app-card{height:auto;min-height:340px;}
+    .article{padding:22px 18px;}
   }
 </style>
 </head>
@@ -371,55 +96,104 @@
 
   <div class="site-header">
     <h1 class="site-title">妙搭小站</h1>
-    <p class="site-subtitle">GAMES & READING</p>
+    <p class="site-subtitle">BOARD GAMES · GAMES · READING</p>
+    <p class="site-slogan">弈境棋院 · 休闲小游戏 · 沉浸式阅读，一站尽得</p>
   </div>
 
+  <!-- 模块一~三：三弈棋院 -->
+  <div class="section-label">
+    <small>BOARD GAMES</small><span>弈境棋院 · 四棋</span><div class="line"></div>
+  </div>
   <div class="cards-container">
-    <a href="snake.html" class="app-card snake" title="霓虹贪吃蛇 - 经典贪吃蛇游戏" aria-label="进入霓虹贪吃蛇游戏">
-      <div class="card-bg"></div>
+
+    <a href="go.html" class="app-card" style="--c:#46c39a" title="AI 围棋 · 弈境" aria-label="进入 AI 围棋">
       <div class="card-content">
-        <div>
-          <div class="card-icon">🐍</div>
-          <h2 class="card-title">霓虹贪吃蛇</h2>
-          <p class="card-desc">经典贪吃蛇游戏，霓虹像素风格。7种蛇色自由切换，越吃越快，挑战你的最高分！</p>
-          <div class="card-tags">
-            <span class="card-tag">休闲</span>
-            <span class="card-tag">经典</span>
-            <span class="card-tag">霓虹风</span>
-          </div>
-        </div>
-        <div class="card-btn">
-          开始游戏 →
-        </div>
+        <div class="card-icon">⚫</div>
+        <h2 class="card-title">围棋 · 弈境</h2>
+        <div class="card-en">Weiqi / Go · MCTS AI</div>
+        <p class="card-desc">9/13/19 路标准棋盘，自动提子、打劫与禁着判定、让子贴目、终局数子。AI 以蒙特卡洛树搜索千局推演，支持人机、双人、AI 观战与 SGF 棋谱导出。</p>
+        <div class="card-tags"><span class="card-tag">MCTS AI</span><span class="card-tag">提子打劫</span><span class="card-tag">终局数子</span><span class="card-tag">SGF</span></div>
+        <div class="card-btn">手谈一局 →</div>
       </div>
-      <div class="card-preview"></div>
     </a>
 
-    <a href="biquge.html" class="app-card biquge" title="墨渊阁 - 小说阅读" aria-label="进入墨渊阁小说阅读">
-      <div class="card-bg"></div>
+    <a href="chess.html" class="app-card" style="--c:#e0794a" title="象棋 · 中国象棋 / 国际象棋" aria-label="进入象棋选择">
       <div class="card-content">
-        <div>
-          <div class="card-icon">📚</div>
-          <h2 class="card-title">墨渊阁</h2>
-          <p class="card-desc">海量精品小说免费阅读。沉浸式阅读器、多主题切换、书架收藏，尽享阅读时光。</p>
-          <div class="card-tags">
-            <span class="card-tag">玄幻</span>
-            <span class="card-tag">仙侠</span>
-            <span class="card-tag">都市</span>
-            <span class="card-tag">历史</span>
-          </div>
-        </div>
-        <div class="card-btn">
-          进入书阁 →
-        </div>
+        <div class="card-icon">♞&#xFE0E;</div>
+        <h2 class="card-title">象棋 · 中西</h2>
+        <div class="card-en">Xiangqi & Chess · AI</div>
+        <p class="card-desc">二级页面任选：中国象棋（蹩马腿、塞象眼、飞将、残局挑战、中文谱）与国际象棋（王车易位、过路兵、兵升变、代数谱）。两者均配四档迭代加深 AI、走法高亮、悔棋提示。</p>
+        <div class="card-tags"><span class="card-tag">中国象棋</span><span class="card-tag">国际象棋</span><span class="card-tag">Alpha-Beta</span><span class="card-tag">残局/棋谱</span></div>
+        <div class="card-btn">选择棋种 →</div>
       </div>
-      <div class="card-preview"></div>
+    </a>
+
+    <a href="gomoku.html" class="app-card" style="--c:#6ea8fe" title="AI 五子棋 · 连珠" aria-label="进入 AI 五子棋">
+      <div class="card-content">
+        <div class="card-icon">◉</div>
+        <h2 class="card-title">五子棋 · 连珠</h2>
+        <div class="card-en">Gomoku · Minimax AI</div>
+        <p class="card-desc">15 路连珠，识别活四冲四活三诸般棋型，极小化极大加 Alpha-Beta 剪枝深算连攻。四档 AI、可选连珠禁手、落子编号、杀点提示、悔棋与棋谱导出。</p>
+        <div class="card-tags"><span class="card-tag">Minimax</span><span class="card-tag">连珠禁手</span><span class="card-tag">杀点提示</span><span class="card-tag">棋型评估</span></div>
+        <div class="card-btn">连珠对战 →</div>
+      </div>
     </a>
   </div>
+
+  <!-- 模块四~五：休闲与阅读 -->
+  <div class="section-label">
+    <small>LEISURE & READING</small><span>休闲 · 阅读</span><div class="line"></div>
+  </div>
+  <div class="cards-container">
+
+    <a href="snake.html" class="app-card" style="--c:#00ffc8" title="霓虹贪吃蛇" aria-label="进入霓虹贪吃蛇">
+      <div class="card-content">
+        <div class="card-icon">🐍</div>
+        <h2 class="card-title">霓虹贪吃蛇</h2>
+        <div class="card-en">Neon Snake · Arcade</div>
+        <p class="card-desc">经典贪吃蛇的霓虹像素演绎。多款皮肤自由切换，三种难度、穿墙模式与多档地图尺寸，本地排行榜与用户系统，越吃越快，挑战你的极限手速。</p>
+        <div class="card-tags"><span class="card-tag">休闲</span><span class="card-tag">经典街机</span><span class="card-tag">霓虹风</span><span class="card-tag">排行榜</span></div>
+        <div class="card-btn">开始游戏 →</div>
+      </div>
+    </a>
+
+    <a href="biquge.html" class="app-card" style="--c:#d4a84b" title="墨渊阁 · 小说阅读" aria-label="进入墨渊阁小说阅读">
+      <div class="card-content">
+        <div class="card-icon">📚</div>
+        <h2 class="card-title">墨渊阁</h2>
+        <div class="card-en">Novel Reader · Library</div>
+        <p class="card-desc">精品书库免费畅读，玄幻仙侠都市历史应有尽有。沉浸式阅读器、多主题与字号调节、书架收藏、进度自动保存，更有多音色有声书逐段高亮连播。</p>
+        <div class="card-tags"><span class="card-tag">在线书库</span><span class="card-tag">有声朗读</span><span class="card-tag">书架收藏</span><span class="card-tag">离线阅读</span></div>
+        <div class="card-btn">进入书阁 →</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- 介绍文章：与本站适配 -->
+  <article class="article">
+    <h2>关于妙搭小站</h2>
+    <p class="lead">一个把「棋 · 戏 · 书」装进同一扇门的轻量小站，打开浏览器即玩即读，无需注册、无需联网、没有广告。</p>
+
+    <h3>五大功能模块</h3>
+    <p>本站由五个相互独立又彼此呼应的模块组成：上半区是「弈境棋院」——<b>围棋、中国象棋、国际象棋、五子棋</b>（象棋为中西两种，进入后可选），均内置可离线运行的 AI 对手；下半区是休闲与阅读——<b>霓虹贪吃蛇</b>用来放松片刻（含道具、障碍与 AI 自动寻路演示），<b>墨渊阁</b>承载长篇阅读时光。无论你想静思手谈、爽快一局，还是沉浸书香，都能在此找到去处。</p>
+
+    <h3>弈境棋院：把 AI 装进浏览器</h3>
+    <div class="feature-grid">
+      <div class="feature"><b>围棋 · 弈境</b><span>完整实现气、提子、禁着点与打劫规则；AI 采用蒙特卡洛树搜索（MCTS），通过大量随机模拟为每个候选点累计胜率，难度越高模拟越多。终局按中国规则数子，支持让子、贴目与标准 SGF 棋谱导入导出。</span></div>
+      <div class="feature"><b>象棋 · 中西两种</b><span>中国象棋还原七兵种、蹩马腿塞象眼、飞将照面、将死困毙与残局闯关、中文谱；国际象棋完整支持王车易位、吃过路兵、兵升变与将死/逼和、代数谱。两者 AI 均以子力位置表评估，用 Negamax + Alpha-Beta 剪枝与迭代加深逐层推演。</span></div>
+      <div class="feature"><b>五子棋 · 连珠</b><span>程序识别活四、冲四、活三、活二等棋型并打分，经极小化极大搜索与剪枝向前预判，能主动造杀也会及时封堵；可选连珠禁手、落子编号与 AI 杀点提示，新手老手皆宜。</span></div>
+    </div>
+
+    <h3>统一的对局体验</h3>
+    <p>四种棋共享一套一致的操作语言：都支持「人机对战 / 双人对坐 / AI 观战」三种模式与四档难度；都能悔棋、重做、请求 AI 提示、一键新开与换边；都有实时着法棋谱、对局计时、局势指示、吃提子统计与本地战绩；棋局自动保存，刷新页面也能接着下，并可一键导出棋谱复盘。</p>
+
+    <h3>纯本地、可离线、重隐私</h3>
+    <p>所有 AI 推演、游戏逻辑与阅读数据都在你的设备本地完成，不向任何服务器上传棋谱或阅读记录。站点基于 PWA 技术，首次打开后即可离线访问，也可安装到桌面，像本地应用一样随时启动。</p>
+  </article>
 
   <div class="footer">
-    两个小站，各自精彩
-    <p class="version">V1.0.0</p>
+    方寸之间，自有天地
+    <p class="version">妙搭小站 V4.0.0 · 弈境棋院四棋（新增国际象棋）· 贪吃蛇道具与 AI 演示</p>
   </div>
 
 <script>
@@ -439,6 +213,11 @@
     e.preventDefault();
   });
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
 </script>
 </body>
 </html>

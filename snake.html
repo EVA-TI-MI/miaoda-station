@@ -629,16 +629,28 @@
         <span class="hud-value" id="length">3</span>
       </div>
       <div class="hud-item">
+        <span class="hud-label">食物</span>
+        <span class="hud-value" id="foodCnt">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">用时</span>
+        <span class="hud-value" id="timeCnt">00:00</span>
+      </div>
+      <div class="hud-item">
         <span class="hud-label">皮肤</span>
         <span class="color-dot" id="colorDot" style="background:#00ffc8;color:#00ffc8;"></span>
       </div>
-      <div class="hud-item" id="modeBadgeWrap" style="display:none;">
-        <span class="mode-badge">穿墙</span>
+      <div class="hud-item" id="modeBadgeWrap" style="display:none;gap:4px;">
+        <span class="mode-badge" id="wrapBadge">穿墙</span>
+        <span class="mode-badge" id="obsBadge" style="display:none;color:#b08bff;border-color:#b08bff;">障碍</span>
+        <span class="mode-badge" id="aiBadge" style="display:none;color:#ffd166;border-color:#ffd166;">AI</span>
       </div>
       <div class="hud-item">
         <span class="hud-label">最高</span>
         <span class="hud-value gold" id="highScore">0</span>
       </div>
+      <button id="aiBtn" title="开启/关闭 AI 自动寻路（I 键）"
+        style="margin-left:4px;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;letter-spacing:1px;color:#ffd166;background:transparent;border:1px solid rgba(255,209,102,.5);">🤖 AI演示</button>
     </div>
 
     <div class="canvas-container" id="canvasContainer">
@@ -647,17 +659,18 @@
       <!-- Start Overlay -->
       <div class="overlay show" id="startOverlay">
         <h2>霓虹贪吃蛇</h2>
-        <p>方向键 / WASD：控制方向</p>
-        <p>空格 / P：暂停　R：重新开始</p>
-        <p>C / V：顺 / 逆时针切换皮肤　吃到金苹果得 30 分</p>
-        <p id="startSettingsHint" style="color:#ffd700;margin-top:6px;">⚙ 设置难度 / 穿墙 / 地图　⛶ 切换窗口大小　O 键打开设置</p>
+        <p>方向键 / WASD：控制方向　I：AI 自动寻路演示</p>
+        <p>空格 / P：暂停　R：重新开始　手动转向即接管 AI</p>
+        <p>C / V：顺 / 逆时针切换皮肤　金苹果 +30 分</p>
+        <p style="color:#7be0ff;">🔻减速　🛡金身(短暂穿越自身/障碍)　✂缩身　道具限时出现</p>
+        <p id="startSettingsHint" style="color:#ffd700;margin-top:6px;">⚙ 设置难度 / 穿墙 / 障碍 / 地图　⛶ 切换窗口大小　O 键打开设置</p>
         <div class="btn-row">
           <button class="neon-btn" id="startBtn">开始游戏</button>
           <button class="neon-btn" id="startSettingsBtn">⚙ 设置 <span style="font-size:10px;opacity:0.6;">(O)</span></button>
           <button class="neon-btn gold" id="startLbBtn">排行榜</button>
         </div>
         <div class="hint">按 空格键 开始</div>
-        <div class="version-tag">V3.7</div>
+        <div class="version-tag">V4.0.0</div>
       </div>
 
       <!-- Pause Overlay -->
@@ -685,7 +698,7 @@
 
       <!-- Settings Overlay -->
       <div class="overlay" id="settingsOverlay">
-        <h2 style="font-size:22px;">游戏设置 <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">V3.7</span></h2>
+        <h2 style="font-size:22px;">游戏设置 <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">V4.0.0</span></h2>
 
         <div class="settings-group">
           <div class="settings-label">难度（影响初始速度）</div>
@@ -710,6 +723,14 @@
           <div class="option-row" id="wallOptions">
             <button class="option-btn active" data-wall="solid">撞墙死亡</button>
             <button class="option-btn" data-wall="wrap">穿墙模式</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-label">障碍物（场内随机障碍，撞上结束）</div>
+          <div class="option-row" id="obstacleOptions">
+            <button class="option-btn active" data-obstacle="off">无障碍</button>
+            <button class="option-btn" data-obstacle="on">障碍物</button>
           </div>
         </div>
 
@@ -764,6 +785,7 @@
       <div class="side-buttons">
         <button class="side-btn pink-btn" id="mColorBtn">换色</button>
         <button class="side-btn" id="mPauseBtn">暂停</button>
+        <button class="side-btn" id="mAiBtn" style="color:#ffd166;">AI</button>
       </div>
       <div class="dpad">
         <div class="dpad-center"></div>
@@ -791,6 +813,12 @@
   const highScoreEl = document.getElementById('highScore');
   const colorDot = document.getElementById('colorDot');
   const modeBadgeWrap = document.getElementById('modeBadgeWrap');
+  const foodCntEl = document.getElementById('foodCnt');
+  const timeCntEl = document.getElementById('timeCnt');
+  const wrapBadge = document.getElementById('wrapBadge');
+  const obsBadge = document.getElementById('obsBadge');
+  const aiBadge = document.getElementById('aiBadge');
+  const aiBtn = document.getElementById('aiBtn');
 
   const startOverlay = document.getElementById('startOverlay');
   const pauseOverlay = document.getElementById('pauseOverlay');
@@ -820,6 +848,15 @@
   const MAX_LEN = 200;
   const GOLDEN_CHANCE = 0.12;
   const GOLDEN_LIFETIME = 7000;
+  const SCORE_POWER = 20;
+  const POWER_CHANCE = 0.22;
+  const POWER_LIFETIME = 8000;
+  const SLOW_MS = 6000, SLOW_MUL = 1.8, GHOST_MS = 5000, SHRINK_N = 4;
+  const POWER_TYPES = {
+    slow:   { color: '#4ad8ff', label: '减速' },
+    ghost:  { color: '#c79bff', label: '金身' },
+    shrink: { color: '#7dff9b', label: '缩身' }
+  };
   const WIN_SIZES = { small: '600px', medium: '900px', large: '75vw' };
   const WIN_SIZE_LABELS = { small: '小', medium: '中', large: '大' };
 
@@ -880,10 +917,16 @@
   let snake = [], direction = 'right', nextDirection = 'right', food = null, goldenFood = null;
   let score = 0, highScore = 0, gameSpeed = 120, skinIndex = 0;
   let gameState = 'start', gameLoop = null, goldenTimer = null;
-  let settings = { difficulty: 'normal', wallMode: 'solid', sound: 'on', mapSize: 'medium', winSize: 'small' };
+  let settings = { difficulty: 'normal', wallMode: 'solid', sound: 'on', mapSize: 'medium', winSize: 'small', obstacle: 'off' };
   let currentUser = null; // { username }
   let skinRipple = null; // { time, color } 皮肤切换边界涟漪
   let pausedForModal = false; // 因打开设置/排行榜而暂停，关闭后直接恢复
+  // 新增：障碍物 / 道具 / 增益 / 统计 / AI 自动寻路
+  let obstacles = [], obstacleSet = new Set();
+  let powerup = null, powerTimer = null;
+  let slowUntil = 0, ghostUntil = 0;
+  let foodEaten = 0, elapsedSec = 0, statTimer = null;
+  let aiMode = false;
 
   // ===== Auth (local-only, SHA-256 + salt) =====
   function getUsers() {
@@ -996,6 +1039,7 @@
       const s = JSON.parse(localStorage.getItem(userKey('neonSnakeSettings')) || '{}');
       if (s.difficulty && DIFFICULTY[s.difficulty]) settings.difficulty = s.difficulty;
       if (s.wallMode === 'wrap' || s.wallMode === 'solid') settings.wallMode = s.wallMode;
+      if (s.obstacle === 'on' || s.obstacle === 'off') settings.obstacle = s.obstacle;
       if (s.sound === 'on' || s.sound === 'off') settings.sound = s.sound;
       if (s.mapSize && MAP_SIZES[s.mapSize]) settings.mapSize = s.mapSize;
       if (s.winSize && WIN_SIZES[s.winSize]) settings.winSize = s.winSize;
@@ -1056,6 +1100,23 @@
   }
 
   // ===== Game Logic =====
+  function buildObstacles() {
+    obstacles = [];
+    obstacleSet = new Set();
+    if (settings.obstacle !== 'on') return;
+    const cx = Math.floor(COLS / 2), cy = Math.floor(ROWS / 2);
+    const target = Math.min(70, Math.floor(COLS * ROWS * 0.04));
+    const safe = (x, y) => Math.abs(x - cx) + Math.abs(y - cy) > 5;
+    let tries = 0;
+    while (obstacles.length < target && tries < target * 40) {
+      tries++;
+      const x = Math.floor(Math.random() * COLS), y = Math.floor(Math.random() * ROWS);
+      const k = x + ',' + y;
+      if (!safe(x, y) || obstacleSet.has(k)) continue;
+      obstacleSet.add(k);
+      obstacles.push({ x, y });
+    }
+  }
   function resetGame() {
     const cx = Math.floor(COLS / 2);
     const cy = Math.floor(ROWS / 2);
@@ -1068,36 +1129,56 @@
     gameSpeed = DIFFICULTY[settings.difficulty];
     goldenFood = null;
     if (goldenTimer) { clearTimeout(goldenTimer); goldenTimer = null; }
+    powerup = null;
+    if (powerTimer) { clearTimeout(powerTimer); powerTimer = null; }
+    slowUntil = 0; ghostUntil = 0;
+    foodEaten = 0; elapsedSec = 0;
+    if (timeCntEl) timeCntEl.textContent = '00:00';
+    buildObstacles();
     spawnFood();
     updateHUD();
   }
 
-  function spawnFood() {
-    const occupied = new Set(snake.map(s => s.x + ',' + s.y));
-    if (goldenFood) occupied.add(goldenFood.x + ',' + goldenFood.y);
+  function freeCell(occupied) {
     let pos, tries = 0;
     do {
       pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
       tries++;
-    } while (occupied.has(pos.x + ',' + pos.y) && tries < 500);
-    food = pos;
+    } while (occupied.has(pos.x + ',' + pos.y) && tries < 800);
+    return pos;
+  }
+  function spawnFood() {
+    const occupied = new Set(snake.map(s => s.x + ',' + s.y));
+    if (goldenFood) occupied.add(goldenFood.x + ',' + goldenFood.y);
+    if (powerup) occupied.add(powerup.x + ',' + powerup.y);
+    obstacles.forEach(o => occupied.add(o.x + ',' + o.y));
+    food = freeCell(occupied);
 
     // Maybe spawn golden food
     if (!goldenFood && Math.random() < GOLDEN_CHANCE && score > 0) {
-      let gpos, gtries = 0;
-      do {
-        gpos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
-        gtries++;
-      } while ((occupied.has(gpos.x + ',' + gpos.y) || (gpos.x === pos.x && gpos.y === pos.y)) && gtries < 500);
+      occupied.add(food.x + ',' + food.y);
+      const gpos = freeCell(occupied);
       goldenFood = gpos;
       goldenTimer = setTimeout(() => { goldenFood = null; if (gameState === 'playing') draw(); }, GOLDEN_LIFETIME);
     }
+    maybeSpawnPower(occupied);
   }
 
+  function fmtTime(sec) {
+    sec = sec || 0;
+    const m = Math.floor(sec / 60), ss = sec % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss;
+  }
   function updateHUD() {
     scoreEl.textContent = (typeof score === 'number') ? score : 0;
     lengthEl.textContent = snake ? snake.length : 3;
-    modeBadgeWrap.style.display = settings.wallMode === 'wrap' ? '' : 'none';
+    if (foodCntEl) foodCntEl.textContent = foodEaten;
+    if (timeCntEl) timeCntEl.textContent = fmtTime(elapsedSec);
+    const anyBadge = settings.wallMode === 'wrap' || settings.obstacle === 'on' || aiMode;
+    modeBadgeWrap.style.display = anyBadge ? '' : 'none';
+    if (wrapBadge) wrapBadge.style.display = settings.wallMode === 'wrap' ? '' : 'none';
+    if (obsBadge) obsBadge.style.display = settings.obstacle === 'on' ? '' : 'none';
+    if (aiBadge) aiBadge.style.display = aiMode ? '' : 'none';
   }
 
   function updateSkinDisplay() {
@@ -1154,14 +1235,29 @@
     _skinToastTimer = setTimeout(() => { toast.classList.remove('show'); }, 1200);
   }
 
+  function effSpeed() {
+    return (Date.now() < slowUntil) ? Math.round(gameSpeed * SLOW_MUL) : gameSpeed;
+  }
+  function restartLoop() {
+    if (gameLoop) clearInterval(gameLoop);
+    gameLoop = setInterval(tick, effSpeed());
+  }
+  function startStatTimer() {
+    stopStatTimer();
+    statTimer = setInterval(() => {
+      if (gameState === 'playing') { elapsedSec++; if (timeCntEl) timeCntEl.textContent = fmtTime(elapsedSec); }
+    }, 1000);
+  }
+  function stopStatTimer() { if (statTimer) { clearInterval(statTimer); statTimer = null; } }
+
   function startGame() {
     if (!currentUser) return;
     resetGame();
     pausedForModal = false;
     gameState = 'playing';
     hideAllOverlays();
-    if (gameLoop) clearInterval(gameLoop);
-    gameLoop = setInterval(tick, gameSpeed);
+    restartLoop();
+    startStatTimer();
     sfx.start();
   }
 
@@ -1170,35 +1266,47 @@
       gameState = 'paused';
       showOverlay(pauseOverlay);
       if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+      stopStatTimer();
     } else if (gameState === 'paused') {
       gameState = 'playing';
       hideAllOverlays();
-      gameLoop = setInterval(tick, gameSpeed);
+      restartLoop();
+      startStatTimer();
     }
   }
 
   function gameOver() {
     gameState = 'gameover';
     if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+    stopStatTimer();
     if (goldenTimer) { clearTimeout(goldenTimer); goldenTimer = null; }
+    if (powerTimer) { clearTimeout(powerTimer); powerTimer = null; }
     sfx.over();
 
     finalScoreEl.textContent = '最终得分：' + score;
-    finalLengthEl.textContent = '蛇身长度：' + snake.length;
+    finalLengthEl.textContent = '蛇身长度：' + snake.length + '　食物：' + foodEaten + '　用时：' + fmtTime(elapsedSec);
     const isNew = saveHighScore();
     newHighScoreEl.style.display = isNew ? 'block' : 'none';
     if (score > 0) addToLeaderboard(score);
     showOverlay(gameOverOverlay);
   }
 
-  function setDirection(dir) {
+  function setDirection(dir, fromAI) {
     const opp = { up: 'down', down: 'up', left: 'right', right: 'left' };
     if (opp[dir] === direction) return;
+    if (!fromAI && aiMode) setAiMode(false);
     if (dir !== nextDirection) sfx.turn();
     nextDirection = dir;
   }
 
+  function isCellBlocked(x, y) {
+    return obstacleSet.has(x + ',' + y);
+  }
   function tick() {
+    if (aiMode) {
+      const ad = aiChoose();
+      if (ad) nextDirection = ad;
+    }
     direction = nextDirection;
     const head = { x: snake[0].x, y: snake[0].y };
 
@@ -1209,6 +1317,7 @@
       case 'right': head.x++; break;
     }
 
+    const ghost = Date.now() < ghostUntil;
     // Wall handling
     if (settings.wallMode === 'wrap') {
       if (head.x < 0) head.x = COLS - 1;
@@ -1222,8 +1331,11 @@
       }
     }
 
-    // Self collision (exclude tail which will move)
-    if (snake.slice(0, -1).some(seg => seg.x === head.x && seg.y === head.y)) {
+    // 障碍物碰撞（金身可穿越）
+    if (!ghost && isCellBlocked(head.x, head.y)) { gameOver(); return; }
+
+    // Self collision (exclude tail which will move；金身可穿越自身)
+    if (!ghost && snake.slice(0, -1).some(seg => seg.x === head.x && seg.y === head.y)) {
       gameOver();
       return;
     }
@@ -1233,17 +1345,23 @@
     let ate = false;
     if (head.x === food.x && head.y === food.y) {
       score += SCORE_FOOD;
-      ate = true;
+      ate = true; foodEaten++;
       sfx.eat();
       showScorePopup(head.x, head.y, '+' + SCORE_FOOD, SKINS[skinIndex].accent);
       spawnFood();
     } else if (goldenFood && head.x === goldenFood.x && head.y === goldenFood.y) {
       score += SCORE_GOLDEN;
-      ate = true;
+      ate = true; foodEaten++;
       sfx.golden();
       showScorePopup(head.x, head.y, '+' + SCORE_GOLDEN + '!', '#ffd700');
       goldenFood = null;
       if (goldenTimer) { clearTimeout(goldenTimer); goldenTimer = null; }
+    } else if (powerup && head.x === powerup.x && head.y === powerup.y) {
+      const ptype = powerup.type;
+      applyPower(ptype, head);
+      powerup = null;
+      if (powerTimer) { clearTimeout(powerTimer); powerTimer = null; }
+      ate = (ptype !== 'shrink');
     }
 
     if (ate) {
@@ -1252,7 +1370,7 @@
       const newSpeed = Math.max(MIN_SPEED, DIFFICULTY[settings.difficulty] - levels * SPEED_STEP);
       if (newSpeed !== gameSpeed) {
         gameSpeed = newSpeed;
-        if (gameLoop) { clearInterval(gameLoop); gameLoop = setInterval(tick, gameSpeed); }
+        restartLoop();
       }
       if (snake.length > MAX_LEN) snake.pop();
     } else {
@@ -1276,6 +1394,202 @@
     popup.style.textShadow = '0 0 10px ' + color;
     canvasContainer.appendChild(popup);
     setTimeout(() => popup.remove(), 800);
+  }
+
+  // ===== 道具系统 =====
+  function maybeSpawnPower(occupied) {
+    if (powerup || Math.random() >= POWER_CHANCE || score <= 0) return;
+    const types = Object.keys(POWER_TYPES);
+    const pos = freeCell(occupied);
+    powerup = { x: pos.x, y: pos.y, type: types[Math.floor(Math.random() * types.length)] };
+    powerTimer = setTimeout(() => { powerup = null; if (gameState === 'playing') draw(); }, POWER_LIFETIME);
+  }
+  function applyPower(type, head) {
+    const meta = POWER_TYPES[type];
+    if (type === 'slow') {
+      score += SCORE_POWER;
+      slowUntil = Date.now() + SLOW_MS;
+      if (gameState === 'playing') restartLoop();
+      setTimeout(() => { if (gameState === 'playing') restartLoop(); }, SLOW_MS);
+      showScorePopup(head.x, head.y, '减速' + (SLOW_MS / 1000) + 's', meta.color);
+    } else if (type === 'ghost') {
+      score += SCORE_POWER;
+      ghostUntil = Date.now() + GHOST_MS;
+      showScorePopup(head.x, head.y, '金身' + (GHOST_MS / 1000) + 's', meta.color);
+    } else if (type === 'shrink') {
+      let n = 0;
+      while (n < SHRINK_N && snake.length > 3) { snake.pop(); n++; }
+      showScorePopup(head.x, head.y, '缩身-' + n, meta.color);
+    }
+    sfx.golden();
+  }
+
+  // ===== AI 自动寻路（BFS 最短路 + 洪水填充存活兜底）=====
+  const AI_DIRS = [
+    { d: 'up', dx: 0, dy: -1 }, { d: 'down', dx: 0, dy: 1 },
+    { d: 'left', dx: -1, dy: 0 }, { d: 'right', dx: 1, dy: 0 }
+  ];
+  function wrapCell(x, y) {
+    if (settings.wallMode === 'wrap') return { x: (x + COLS) % COLS, y: (y + ROWS) % ROWS, ok: true };
+    if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return { x, y, ok: false };
+    return { x, y, ok: true };
+  }
+  function aiNeighbors(x, y) {
+    const out = [];
+    for (const q of AI_DIRS) { const c = wrapCell(x + q.dx, y + q.dy); if (c.ok) out.push({ x: c.x, y: c.y, d: q.d }); }
+    return out;
+  }
+  function aiBlocked(x, y, bodySet) {
+    return obstacleSet.has(x + ',' + y) || bodySet.has(x + ',' + y);
+  }
+  // BFS：返回从蛇头到目标的第一步方向，无路返回 null
+  function bfsFirstStep(sx, sy, tx, ty, bodySet) {
+    const key = (x, y) => x + ',' + y;
+    const start = key(sx, sy);
+    const prev = new Map(); prev.set(start, null);
+    const q = [[sx, sy]];
+    let found = false, qi = 0;
+    while (qi < q.length) {
+      const cur = q[qi++];
+      const x = cur[0], y = cur[1];
+      if (x === tx && y === ty) { found = true; break; }
+      for (const nb of aiNeighbors(x, y)) {
+        const k = key(nb.x, nb.y);
+        if (prev.has(k)) continue;
+        if (!(nb.x === tx && nb.y === ty) && aiBlocked(nb.x, nb.y, bodySet)) continue;
+        prev.set(k, { px: x, py: y, d: nb.d });
+        q.push([nb.x, nb.y]);
+      }
+    }
+    if (!found) return null;
+    let cx = tx, cy = ty, first = null;
+    while (!(cx === sx && cy === sy)) {
+      const pv = prev.get(key(cx, cy));
+      if (!pv) return null;
+      if (pv.px === sx && pv.py === sy) { first = pv.d; break; }
+      cx = pv.px; cy = pv.py;
+    }
+    return first;
+  }
+  // 洪水填充：评估某格出发的可活动空间大小
+  function floodArea(sx, sy, bodySet) {
+    const seen = new Set([sx + ',' + sy]);
+    const st = [[sx, sy]];
+    let cnt = 0;
+    while (st.length) {
+      const cur = st.pop(); cnt++;
+      if (cnt > 400) break;
+      for (const nb of aiNeighbors(cur[0], cur[1])) {
+        const k = nb.x + ',' + nb.y;
+        if (seen.has(k) || aiBlocked(nb.x, nb.y, bodySet)) continue;
+        seen.add(k); st.push([nb.x, nb.y]);
+      }
+    }
+    return cnt;
+  }
+  function aiChoose() {
+    const body = new Set(snake.slice(0, -1).map(t => t.x + ',' + t.y));
+    const h = snake[0];
+    const opp = { up: 'down', down: 'up', left: 'right', right: 'left' };
+    const tail = snake[snake.length - 1];
+    const simBodyAt = (x, y) => {
+      const b = new Set(body);
+      b.delete(tail.x + ',' + tail.y);
+      return { ok: !b.has(x + ',' + y) && !obstacleSet.has(x + ',' + y), body: b };
+    };
+    // 1) 到食物的最短路，且落点要留足逃生空间
+    const step = bfsFirstStep(h.x, h.y, food.x, food.y, body);
+    if (step && opp[step] !== direction) {
+      const q = AI_DIRS.find(z => z.d === step);
+      const c = wrapCell(h.x + q.dx, h.y + q.dy);
+      if (c.ok) {
+        const t = simBodyAt(c.x, c.y);
+        if (t.ok && floodArea(c.x, c.y, t.body) >= Math.min(snake.length, 12)) return step;
+      }
+    }
+    // 2) 兜底：在合法方向里选活动空间最大、离食物更近者
+    let best = null, bestScore = -Infinity;
+    for (const q of AI_DIRS) {
+      if (opp[q.d] === direction) continue;
+      const c = wrapCell(h.x + q.dx, h.y + q.dy);
+      if (!c.ok) continue;
+      const t = simBodyAt(c.x, c.y);
+      if (!t.ok) continue;
+      const area = floodArea(c.x, c.y, t.body);
+      const dist = Math.abs(c.x - food.x) + Math.abs(c.y - food.y);
+      const sc = area * 4 - dist;
+      if (sc > bestScore) { bestScore = sc; best = q.d; }
+    }
+    return best;
+  }
+  function setAiMode(on) {
+    aiMode = !!on;
+    if (aiBtn) {
+      aiBtn.textContent = aiMode ? '🤖 AI接管中' : '🤖 AI演示';
+      aiBtn.style.background = aiMode ? 'rgba(255,209,102,.18)' : 'transparent';
+    }
+    const m = document.getElementById('mAiBtn');
+    if (m) m.classList.toggle('ai-on', aiMode);
+    updateHUD();
+  }
+  function toggleAi() {
+    if (gameState === 'playing') { setAiMode(!aiMode); }
+    else if (gameState === 'start' || gameState === 'gameover') { setAiMode(true); startGame(); }
+  }
+
+  // ===== 障碍物 / 道具 / 增益 渲染 =====
+  function drawObstacles() {
+    if (!obstacles.length) return;
+    ctx.save();
+    for (const o of obstacles) {
+      const x = o.x * GRID, y = o.y * GRID;
+      ctx.shadowBlur = 6; ctx.shadowColor = 'rgba(176,139,255,.55)';
+      ctx.fillStyle = '#332a4d'; ctx.fillRect(x + 1, y + 1, GRID - 2, GRID - 2);
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(176,139,255,.8)'; ctx.lineWidth = 1;
+      ctx.strokeRect(x + 1.5, y + 1.5, GRID - 3, GRID - 3);
+      ctx.fillStyle = 'rgba(176,139,255,.5)';
+      ctx.fillRect(x + 4, y + 4, 2, 2); ctx.fillRect(x + GRID - 6, y + 4, 2, 2);
+      ctx.fillRect(x + 4, y + GRID - 6, 2, 2); ctx.fillRect(x + GRID - 6, y + GRID - 6, 2, 2);
+    }
+    ctx.restore();
+  }
+  function drawPower() {
+    if (!powerup) return;
+    const meta = POWER_TYPES[powerup.type];
+    const x = powerup.x * GRID, y = powerup.y * GRID;
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 140);
+    const sym = { slow: '慢', ghost: '盾', shrink: '缩' };
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.shadowBlur = 12 * pulse; ctx.shadowColor = meta.color;
+    ctx.fillStyle = meta.color;
+    ctx.beginPath(); ctx.arc(x + GRID / 2, y + GRID / 2, GRID / 2 - 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0d0d1a';
+    ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(sym[powerup.type] || '?', x + GRID / 2, y + GRID / 2 + 0.5);
+    ctx.restore();
+  }
+  function drawBuffs() {
+    const now = Date.now();
+    if (now < ghostUntil && snake[0]) {
+      const x = snake[0].x * GRID, y = snake[0].y * GRID;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(199,155,255,.95)'; ctx.lineWidth = 1.5;
+      ctx.shadowBlur = 10; ctx.shadowColor = '#c79bff';
+      ctx.strokeRect(x + 0.5, y + 0.5, GRID - 1, GRID - 1);
+      ctx.restore();
+    }
+    const lines = [];
+    if (now < slowUntil) lines.push(['减速 ' + Math.ceil((slowUntil - now) / 1000) + 's', POWER_TYPES.slow.color]);
+    if (now < ghostUntil) lines.push(['金身 ' + Math.ceil((ghostUntil - now) / 1000) + 's', POWER_TYPES.ghost.color]);
+    if (aiMode) lines.push(['AI 自动寻路', '#ffd166']);
+    if (!lines.length) return;
+    ctx.save();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = '11px monospace';
+    lines.forEach((l, i) => { ctx.fillStyle = l[1]; ctx.fillText(l[0], 6, 4 + i * 14); });
+    ctx.restore();
   }
 
   // ===== Rendering =====
@@ -1664,9 +1978,12 @@
     ctx.fillStyle = '#0d0d1a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawGrid();
+    drawObstacles();
     drawFood();
+    drawPower();
     drawSnake();
     drawRipple();
+    drawBuffs();
   }
 
   // Animation loop for golden food pulse, rainbow & ripple effects
@@ -1676,7 +1993,8 @@
     // 金苹果脉冲仅在游戏进行中需要；皮肤切换涟漪按需播放
     const rainbowFlow = skin.theme === 'rainbow';
     const goldenPulse = gameState === 'playing' && !!goldenFood;
-    const needsRedraw = rainbowFlow || goldenPulse || !!skinRipple;
+    const powerPulse = gameState === 'playing' && (!!powerup || Date.now() < ghostUntil || aiMode);
+    const needsRedraw = rainbowFlow || goldenPulse || powerPulse || !!skinRipple;
     if (needsRedraw) draw();
     requestAnimationFrame(animLoop);
   }
@@ -1736,6 +2054,8 @@
       b.classList.toggle('active', b.dataset.diff === settings.difficulty));
     document.querySelectorAll('#wallOptions .option-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.wall === settings.wallMode));
+    document.querySelectorAll('#obstacleOptions .option-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.obstacle === settings.obstacle));
     document.querySelectorAll('#soundOptions .option-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.sound === settings.sound));
     document.querySelectorAll('#mapSizeOptions .option-btn').forEach(b =>
@@ -1846,6 +2166,7 @@
       return;
     }
     if (key === 'r') { startGame(); return; }
+    if (key === 'i') { toggleAi(); return; }
     if (key === 'c') { cycleSkin(); return; }
     if (key === 'v') { cycleSkin(-1); return; }
 
@@ -1930,6 +2251,13 @@
     saveSettings();
     syncSettingsUI();
   }));
+  document.querySelectorAll('#obstacleOptions .option-btn').forEach(b => b.addEventListener('click', () => {
+    settings.obstacle = b.dataset.obstacle;
+    saveSettings();
+    syncSettingsUI();
+    if (gameState === 'playing' || gameState === 'paused') startGame();
+    else { resetGame(); draw(); }
+  }));
   document.querySelectorAll('#soundOptions .option-btn').forEach(b => b.addEventListener('click', () => {
     settings.sound = b.dataset.sound;
     saveSettings();
@@ -1957,6 +2285,10 @@
     applyWinSize();
     syncSettingsUI();
   }));
+
+  if (aiBtn) aiBtn.addEventListener('click', toggleAi);
+  const mAiBtnEl = document.getElementById('mAiBtn');
+  if (mAiBtnEl) mAiBtnEl.addEventListener('click', toggleAi);
 
   // Canvas clicks
   canvas.addEventListener('click', (e) => {
