@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-小说爬虫 (Novel Crawler) v2.0
+小说爬虫 (Novel Crawler) v3.0
 ==============================
 一个用于学习目的的多站点小说下载工具。
 
 功能：
   - 多站点适配（笔趣阁模板 / 国学荟萃 / 通用自动识别），支持自动检测
   - 异步并发下载（aiohttp），可控制并发数和延时
-  - 断点续传（跳过已下载章节）
-  - 自动重试（指数退避）
+  - 断点续传 / 增量更新（跳过已下载章节，只补新章）
+  - 自动重试（指数退避）+ 终轮失败补抓 + 失败章节清单
+  - 智能编码检测（meta/BOM/chardet，自动兼容 UTF-8 与 GBK/GB18030）
+  - 章节分页自动合并（如 123.html / 123_2.html 自动拼接）
   - 内置文本清洗（广告过滤、错字修正钩子）
+  - 导出 TXT / EPUB（电子书，可用阅读器打开）+ meta.json 元数据
+  - 关键词搜索（需指定站点搜索入口 --search-site）
+  - 批量下载（-l 清单文件，一行一个目录页 URL）
+  - 自定义代理 / UA / Referer / Cookie
   - 可选一键流程：爬取 → 文本修正 → 生成网页数据
-  - 导出 TXT 整本小说 + meta.json 元数据
   - 实时进度条显示
 
 法律声明：
@@ -26,13 +31,15 @@
 
 import argparse
 import asyncio
+import html as html_lib
 import json
 import os
 import re
 import sys
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 try:
     import aiohttp
@@ -114,6 +121,64 @@ class SiteAdapter:
         for pat in ad_patterns:
             text = re.sub(pat, "", text)
         return text.strip()
+
+    def next_page_url(self, html_text: str, current_url: str):
+        """识别章节内分页（如 123.html -> 123_2.html），返回绝对 URL；无则 None。
+        只认可“同一章节序号 + _N 后缀”的链接，避免把下一章误当分页拼接。"""
+        if BeautifulSoup is None:
+            return None
+        soup = BeautifulSoup(html_text, "html.parser")
+        stem = re.sub(r'(_\d+)?\.s?html?$', '', urlparse(current_url).path, flags=re.IGNORECASE)
+        for a in soup.find_all("a", href=True):
+            t = a.get_text(strip=True).replace(" ", "")
+            if not t or not (t in ("下一页", "下页", "next", "Next", "››", "»") or t.startswith("下一页")):
+                continue
+            href = a["href"].strip()
+            if not href or href.startswith("#") or href.lower().startswith("javascript"):
+                continue
+            nxt = urljoin(current_url, href)
+            npath = urlparse(nxt).path
+            if nxt != current_url and npath.startswith(stem) and re.search(r'_\d+\.s?html?$', npath, re.IGNORECASE):
+                return nxt
+        return None
+
+
+# ============================================================
+#  编码检测
+# ============================================================
+
+def detect_html_encoding(raw: bytes) -> str:
+    """按 BOM、meta charset、chardet、UTF-8 试解的顺序判断网页编码，GB 系列统一到 GB18030。"""
+    if not raw:
+        return "utf-8"
+    if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):
+        return "utf-16"
+    if raw.startswith(b"\xef\xbb\xbf"):
+        return "utf-8-sig"
+    head = raw[:4096].decode("ascii", "ignore").lower()
+    m = re.search(r'charset=["\']?\s*([a-z0-9_\-]+)', head)
+    enc = None
+    if m and m.group(1) not in ("", "unicode"):
+        enc = m.group(1)
+    if not enc:
+        try:
+            import chardet  # 可选依赖
+            r = chardet.detect(raw)
+            if r and r.get("encoding"):
+                enc = r["encoding"]
+        except Exception:
+            enc = None
+    if enc:
+        return {"gb2312": "gb18030", "gbk": "gb18030"}.get(enc.lower(), enc)
+    try:
+        raw.decode("utf-8")
+        return "utf-8"
+    except UnicodeDecodeError:
+        return "gb18030"
+
+
+def decode_html(raw: bytes, forced: str = None) -> str:
+    return raw.decode(forced or detect_html_encoding(raw), errors="replace")
 
 
 class GuoxueHuicuiAdapter(SiteAdapter):
@@ -418,6 +483,14 @@ class GenericAdapter(SiteAdapter):
         title = ""
         if soup.title:
             title = soup.title.get_text(strip=True).split("_")[0].split("-")[0].strip()
+        if not title:  # 回退到 h1 / og:title
+            h1 = soup.find("h1")
+            if h1:
+                title = h1.get_text(strip=True)
+        if not title:
+            og = soup.find("meta", property="og:title")
+            if og:
+                title = og.get("content", "")
         if not title:
             title = "未知书名"
 
@@ -425,6 +498,14 @@ class GenericAdapter(SiteAdapter):
         og_author = soup.find("meta", attrs={"name": "author"})
         if og_author:
             author = og_author.get("content", "未知")
+        if author == "未知":  # 回退到 #info 内“作者：”行
+            info = soup.find("div", id="info")
+            if info:
+                for p in info.find_all("p"):
+                    txt = p.get_text(strip=True)
+                    if "作者" in txt:
+                        author = re.split(r"[：:]", txt, maxsplit=1)[-1].strip()
+                        break
 
         description = ""
         og_desc = soup.find("meta", attrs={"name": "description"})
@@ -582,6 +663,12 @@ class NovelCrawler:
         output_dir: str = "novels",
         encoding: str = None,
         auto_fix: bool = False,
+        proxy: str = None,
+        user_agent: str = None,
+        referer: str = None,
+        cookie: str = None,
+        export_format: str = "txt",
+        merge_pages: bool = True,
     ):
         self.adapter = adapter or GenericAdapter()
         self.delay = delay
@@ -591,24 +678,33 @@ class NovelCrawler:
         self.output_dir = Path(output_dir)
         self.encoding = encoding
         self.auto_fix = auto_fix
+        self.proxy = proxy
+        self.export_format = (export_format or "txt").lower()
+        self.merge_pages = merge_pages
+        # 允许覆盖 UA / 追加 Referer、Cookie
+        self.req_headers = dict(self.adapter.headers)
+        if user_agent:
+            self.req_headers["User-Agent"] = user_agent
+        if referer:
+            self.req_headers["Referer"] = referer
+        if cookie:
+            self.req_headers["Cookie"] = cookie
         self.session = None
         self.stats = {"done": 0, "error": 0, "total": 0}
+        self._cached_count = 0
 
     async def _fetch(self, url: str) -> str:
         """带重试和延时的 HTTP GET"""
         for attempt in range(1, self.max_retries + 1):
             try:
                 async with self.semaphore:
-                    async with self.session.get(
-                        url,
-                        headers=self.adapter.headers,
-                        timeout=self.timeout,
-                    ) as resp:
+                    kw = dict(headers=self.req_headers, timeout=self.timeout)
+                    if self.proxy:
+                        kw["proxy"] = self.proxy
+                    async with self.session.get(url, **kw) as resp:
                         if resp.status == 200:
-                            if self.encoding:
-                                raw = await resp.read()
-                                return raw.decode(self.encoding, errors="replace")
-                            return await resp.text(errors="replace")
+                            raw = await resp.read()
+                            return decode_html(raw, self.encoding)
                         elif resp.status in (429, 503):
                             wait = self.delay * attempt * 2
                             print(f"  [!] 服务器繁忙 ({resp.status})，等待 {wait:.1f}s 后重试...")
@@ -664,6 +760,25 @@ class NovelCrawler:
 
         title, content = self.adapter.parse_chapter(html)
         chapter.title = title or chapter.title
+        parts = [content] if content else []
+
+        # 章节内分页自动合并（123.html -> 123_2.html ...），最多 30 页防死循环
+        if self.merge_pages:
+            page_url, guard = chapter.url, 0
+            while guard < 30:
+                nxt = self.adapter.next_page_url(html, page_url)
+                if not nxt:
+                    break
+                guard += 1
+                page_url = nxt
+                html = await self._fetch(nxt)
+                if not html:
+                    break
+                _, more = self.adapter.parse_chapter(html)
+                if more:
+                    parts.append(more)
+
+        content = "\n\n".join(p for p in parts if p)
         chapter.content = content
 
         # 自动文本修正
@@ -723,6 +838,7 @@ class NovelCrawler:
                         ch.content = cached
                         ch.status = "done"
                         self.stats["done"] += 1
+                        self._cached_count += 1
                         continue
                 pending.append(ch)
 
@@ -738,7 +854,32 @@ class NovelCrawler:
                     await coro
                     self._print_progress()
 
-        self._merge_to_txt(novel, cache_dir)
+            # 终轮补抓：首轮失败的章节顺序重试一次
+            failed_ch = [ch for ch in novel.chapters if ch.status != "done"]
+            if failed_ch:
+                print(f"[*] 终轮补抓 {len(failed_ch)} 个失败章节...")
+                for ch in failed_ch:
+                    self.stats["error"] = max(0, self.stats["error"] - 1)
+                    await self._fetch_and_cache(ch, cache_dir)
+                    if ch.status == "done":
+                        self.stats["done"] += 1
+                    else:
+                        self.stats["error"] += 1
+
+        # 失败章节清单
+        failed_idx = [ch.index + 1 for ch in novel.chapters if ch.status != "done"]
+        if failed_idx:
+            safe_title = re.sub(r'[\\/:*?"<>|]', "_", novel.title)
+            fl = self.output_dir / f"{safe_title}.failed.txt"
+            fl.write_text("\n".join(map(str, failed_idx)), encoding="utf-8")
+            print(f"[!] 仍有 {len(failed_idx)} 章失败，清单已写入: {fl}")
+
+        newly = max(0, self.stats["done"] - self._cached_count)
+        print(f"[*] 本次新获取 {newly} 章，沿用缓存 {self._cached_count} 章")
+        if self.export_format in ("txt", "both"):
+            self._merge_to_txt(novel, cache_dir)
+        if self.export_format in ("epub", "both"):
+            self._merge_to_epub(novel, cache_dir)
         self._save_meta(novel)
         return novel
 
@@ -816,6 +957,135 @@ class NovelCrawler:
             json.dump(meta, f, ensure_ascii=False, indent=2)
         print(f"[+] 元数据已保存: {meta_file}")
 
+    def _iter_saved_chapters(self, novel: Novel, cache_dir: Path):
+        """统一从内存/缓存读取章节正文，返回 (chapter, 正文) 列表。"""
+        out = []
+        for ch in novel.chapters:
+            content = ch.content
+            if not content:
+                cf = cache_dir / f"{ch.index:05d}.txt"
+                if cf.exists():
+                    content = cf.read_text(encoding="utf-8")
+            out.append((ch, content or ""))
+        return out
+
+    def _merge_to_epub(self, novel: Novel, cache_dir: Path):
+        """导出为标准 EPUB2 电子书（仅用标准库 zipfile，无需第三方依赖）。"""
+        safe_title = re.sub(r'[\\/:*?"<>|]', "_", novel.title)
+        epub_path = self.output_dir / f"{safe_title}.epub"
+        print(f"[*] 正在生成 EPUB: {epub_path}")
+        esc = lambda t: html_lib.escape(t or "", quote=True)
+
+        def xhtml_doc(title, paras):
+            body = "\n".join(f"<p>{esc(p)}</p>" for p in paras.split("\n") if p.strip())
+            return (
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n'
+                '<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>'
+                f"<title>{esc(title)}</title></head><body>\n"
+                f"<h2>{esc(title)}</h2>\n{body}\n</body></html>"
+            )
+
+        chapters = self._iter_saved_chapters(novel, cache_dir)
+        manifest, spine, ncx_items, files = [], [], [], []
+        # 封面/书名页
+        cover = xhtml_doc(novel.title, f"作者：{novel.author}\n\n{novel.description}".strip())
+        files.append(("OEBPS/Text/cover.xhtml", cover))
+        manifest.append(('<item id="cover" href="Text/cover.xhtml" media-type="application/xhtml+xml"/>'))
+        spine.append('<itemref idref="cover"/>')
+        for i, (ch, content) in enumerate(chapters, start=1):
+            cid = f"ch{i:05d}"
+            href = f"Text/{cid}.xhtml"
+            files.append((f"OEBPS/{href}", xhtml_doc(ch.title, content)))
+            manifest.append(f'<item id="{cid}" href="{href}" media-type="application/xhtml+xml"/>')
+            spine.append(f'<itemref idref="{cid}"/>')
+            ncx_items.append(
+                f'<navPoint id="np{i}" playOrder="{i}"><navLabel><text>{esc(ch.title)}</text></navLabel>'
+                f'<content src="{href}"/></navPoint>'
+            )
+
+        uid = "urn:uuid:" + re.sub(r"[^a-f0-9]", "", f"{novel.title}{novel.author}".encode("utf-8").hex())[:32].zfill(32)
+        content_opf = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            '<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">\n'
+            f'<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n'
+            f'<dc:identifier id="bookid">{uid}</dc:identifier>\n'
+            f'<dc:title>{esc(novel.title)}</dc:title>\n'
+            f'<dc:creator>{esc(novel.author)}</dc:creator>\n'
+            '<dc:language>zh-CN</dc:language>\n</metadata>\n'
+            '<manifest>\n' + "\n".join(manifest) +
+            '\n<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n</manifest>\n'
+            '<spine toc="ncx">\n' + "\n".join(spine) + "\n</spine>\n</package>"
+        )
+        toc_ncx = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n'
+            f'<head><meta name="dtb:uid" content="{uid}"/></head>\n'
+            f'<docTitle><text>{esc(novel.title)}</text></docTitle>\n<navMap>\n'
+            + "\n".join(ncx_items) + "\n</navMap>\n</ncx>"
+        )
+        container = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n'
+            '<rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>'
+            '</rootfiles></container>'
+        )
+
+        with zipfile.ZipFile(epub_path, "w", zipfile.ZIP_DEFLATED) as z:
+            # mimetype 必须是第一个条目且不压缩
+            z.writestr(zipfile.ZipInfo("mimetype"), "application/epub+zip", compress_type=zipfile.ZIP_STORED)
+            z.writestr("META-INF/container.xml", container)
+            z.writestr("OEBPS/content.opf", content_opf)
+            z.writestr("OEBPS/toc.ncx", toc_ncx)
+            for path, data in files:
+                z.writestr(path, data)
+        print(f"[+] EPUB 已保存: {epub_path}（{len(chapters)} 章）")
+
+
+# ============================================================
+#  关键词搜索（需提供站点搜索入口；结果解析为通用规则，失败时明确提示而非臆造）
+# ============================================================
+
+def parse_search_results(html_text: str, base_url: str, limit: int = 30):
+    """从搜索结果页通用解析书籍链接：链接文本像书名、href 像书籍目录页。"""
+    if BeautifulSoup is None:
+        return []
+    soup = BeautifulSoup(html_text, "html.parser")
+    results, seen = [], set()
+    book_href = re.compile(r"(/\d+/?$)|(book|novel|/\d+\.s?html?$)", re.IGNORECASE)
+    for a in soup.find_all("a", href=True):
+        title = a.get_text(strip=True)
+        href = a["href"].strip()
+        if not title or len(title) < 2 or len(title) > 60:
+            continue
+        if not book_href.search(href):
+            continue
+        url = urljoin(base_url, href)
+        if url in seen:
+            continue
+        seen.add(url)
+        results.append({"title": title, "url": url})
+        if len(results) >= limit:
+            break
+    return results
+
+
+async def search_books(keyword: str, search_url: str, timeout: int = 15, proxy: str = None):
+    """按站点搜索入口检索。search_url 用 {q} 占位关键词，如 https://site/search?q={q}。"""
+    if aiohttp is None:
+        raise RuntimeError("缺少 aiohttp，请先 pip install aiohttp beautifulsoup4")
+    if not search_url or "{q}" not in search_url:
+        raise ValueError("需要用 --search-site 指定含 {q} 占位的搜索入口 URL")
+    from urllib.parse import quote
+    url = search_url.replace("{q}", quote(keyword, encoding="utf-8"))
+    timeout_obj = aiohttp.ClientTimeout(total=timeout)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=timeout_obj, proxy=proxy or None) as resp:
+            if resp.status != 200:
+                raise RuntimeError(f"搜索请求失败 HTTP {resp.status}")
+            raw = await resp.read()
+    return parse_search_results(decode_html(raw), url)
+
 
 # ============================================================
 #  命令行接口
@@ -847,64 +1117,10 @@ def run_pipeline_step(script_name: str, args: list, cwd: str = None):
     return result.returncode == 0
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="小说爬虫 v2.0 - 多站点小说下载工具（仅供学习使用）",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-使用示例:
-  # 自动检测站点并下载（推荐）
-  python novel_crawler.py -u https://www.guoxuehuicui.com/novel/sanguoyanyi/
-
-  # 指定适配器
-  python novel_crawler.py -u URL -a biquge
-  python novel_crawler.py -u URL -a generic
-
-  # 一键流程：爬取 + 文本修正 + 生成网页数据
-  python novel_crawler.py -u URL --web
-
-  # 仅爬取后自动修正文本
-  python novel_crawler.py -u URL --fix
-
-  # 爬取后生成网页数据（输出到 biquge.html 所在目录）
-  python novel_crawler.py -u URL --build -o novels --web-dir D:\\tanlan
-
-法律提示: 请遵守目标网站 robots.txt，仅下载公有领域或已授权内容。
-        """,
-    )
-    parser.add_argument("-u", "--url", required=True, help="小说目录页 URL")
-    parser.add_argument(
-        "-a", "--adapter",
-        choices=["auto", "biquge", "generic", "guoxue"],
-        default="auto",
-        help="站点适配器: auto=自动检测(默认), biquge, guoxue, generic",
-    )
-    parser.add_argument("-o", "--output", default="novels", help="TXT 输出目录 (默认: novels)")
-    parser.add_argument("-d", "--delay", type=float, default=1.0, help="每章请求间隔秒数 (默认: 1.0)")
-    parser.add_argument("-c", "--concurrent", type=int, default=3, help="最大并发数 (默认: 3)")
-    parser.add_argument("-t", "--timeout", type=int, default=15, help="请求超时秒数 (默认: 15)")
-    parser.add_argument("-r", "--retries", type=int, default=3, help="失败重试次数 (默认: 3)")
-    parser.add_argument("-e", "--encoding", default=None, help="指定页面编码 (如 gbk, utf-8)")
-    parser.add_argument("--fix", action="store_true", help="爬取后自动运行 fix_text.py 修正文本")
-    parser.add_argument("--build", action="store_true", help="爬取后自动运行 build_data.py 生成网页数据")
-    parser.add_argument("--web", action="store_true", help="一键流程: 爬取 + 修正 + 生成网页数据 (等价于 --fix --build)")
-    parser.add_argument("--web-dir", default=None, help="网页数据输出目录 (默认: 爬虫脚本所在目录)")
-
-    args = parser.parse_args()
-
-    print("=" * 55)
-    print("  小说爬虫 Novel Crawler v2.0")
-    print("  仅供学习使用，请遵守相关法律法规")
-    print("=" * 55)
-    print()
-
-    if not check_dependencies():
-        sys.exit(1)
-
-    # 自动检测适配器
-    adapter = get_adapter(args.adapter, args.url)
+def run_one(url, args):
+    """下载单本小说，并按参数执行后续修正/构建流水线，返回 Novel。"""
+    adapter = get_adapter(args.adapter, url)
     print(f"[*] 使用适配器: {adapter.name}")
-
     crawler = NovelCrawler(
         adapter=adapter,
         delay=args.delay,
@@ -914,29 +1130,152 @@ def main():
         output_dir=args.output,
         encoding=args.encoding,
         auto_fix=args.fix or args.web,
+        proxy=args.proxy,
+        user_agent=args.ua,
+        referer=args.referer,
+        cookie=args.cookie,
+        export_format=args.format,
+        merge_pages=not args.no_merge_pages,
     )
+    novel = asyncio.run(crawler.crawl(url))
 
-    try:
-        novel = asyncio.run(crawler.crawl(args.url))
-    except KeyboardInterrupt:
-        print("\n[!] 用户中断，已下载的章节已缓存，重新运行可续传")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n[!] 错误: {e}")
-        sys.exit(1)
-
-    # 流水线：文本修正
     if args.fix or args.web:
         safe_title = re.sub(r'[\\/:*?"<>|]', "_", novel.title)
         txt_path = Path(args.output) / f"{safe_title}.txt"
         if txt_path.exists():
             run_pipeline_step("fix_text.py", [str(txt_path)])
-
-    # 流水线：生成网页数据
     if args.build or args.web:
         web_dir = args.web_dir or str(Path(__file__).parent)
         run_pipeline_step("build_data.py", ["-i", args.output, "-o", web_dir])
         print(f"\n[+] 完成！刷新 {web_dir} 中的 biquge.html 即可阅读")
+    return novel
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="小说爬虫 v3.0 - 多站点小说下载/搜索/批量工具（仅供学习使用）",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+使用示例:
+  # 自动检测站点并下载（推荐）
+  python novel_crawler.py -u https://www.guoxuehuicui.com/novel/sanguoyanyi/
+
+  # 导出 EPUB 电子书（或 txt / both）
+  python novel_crawler.py -u URL --format epub
+
+  # 增量更新（只补新章，其余走缓存）
+  python novel_crawler.py -u URL --update
+
+  # 批量下载：urls.txt 一行一个目录页
+  python novel_crawler.py -l urls.txt
+
+  # 关键词搜索（需给出该站搜索入口，{q} 为关键词占位）
+  python novel_crawler.py --search 三国演义 --search-site "https://example.com/search?q={q}"
+
+  # 走代理 / 自定义 UA、Referer、Cookie
+  python novel_crawler.py -u URL --proxy http://127.0.0.1:7890 --ua "Mozilla/5.0 ..."
+
+  # 一键流程：爬取 + 文本修正 + 生成网页数据
+  python novel_crawler.py -u URL --web
+
+法律提示: 请遵守目标网站 robots.txt，仅下载公有领域或已授权内容。
+        """,
+    )
+    parser.add_argument("-u", "--url", required=False, help="小说目录页 URL")
+    parser.add_argument(
+        "-a", "--adapter",
+        choices=["auto", "biquge", "generic", "guoxue"],
+        default="auto",
+        help="站点适配器: auto=自动检测(默认), biquge, guoxue, generic",
+    )
+    parser.add_argument("-l", "--list", dest="list_file", default=None,
+                        help="批量下载清单文件（一行一个目录页 URL，# 开头为注释）")
+    parser.add_argument("-o", "--output", default="novels", help="输出目录 (默认: novels)")
+    parser.add_argument("-d", "--delay", type=float, default=1.0, help="每章请求间隔秒数 (默认: 1.0)")
+    parser.add_argument("-c", "--concurrent", type=int, default=3, help="最大并发数 (默认: 3)")
+    parser.add_argument("-t", "--timeout", type=int, default=15, help="请求超时秒数 (默认: 15)")
+    parser.add_argument("-r", "--retries", type=int, default=3, help="失败重试次数 (默认: 3)")
+    parser.add_argument("-e", "--encoding", default=None, help="指定页面编码 (如 gbk, utf-8)，默认自动检测")
+    parser.add_argument("--format", choices=["txt", "epub", "both"], default="txt",
+                        help="导出格式: txt(默认) / epub 电子书 / both 同时导出")
+    parser.add_argument("--update", action="store_true", help="增量更新：已下载章节走缓存，只补新章")
+    parser.add_argument("--no-merge-pages", action="store_true", help="关闭章节分页自动合并")
+    parser.add_argument("--proxy", default=None, help="HTTP/SOCKS 代理，如 http://127.0.0.1:7890")
+    parser.add_argument("--ua", default=None, help="自定义 User-Agent")
+    parser.add_argument("--referer", default=None, help="自定义 Referer")
+    parser.add_argument("--cookie", default=None, help="自定义 Cookie 字符串")
+    parser.add_argument("--search", dest="search_kw", default=None, help="按关键词搜索书籍（需配合 --search-site）")
+    parser.add_argument("--search-site", dest="search_site", default=None,
+                        help='站点搜索入口，用 {q} 占位关键词，如 "https://x.com/search?q={q}"')
+    parser.add_argument("--fix", action="store_true", help="爬取后自动运行 fix_text.py 修正文本")
+    parser.add_argument("--build", action="store_true", help="爬取后自动运行 build_data.py 生成网页数据")
+    parser.add_argument("--web", action="store_true", help="一键流程: 爬取 + 修正 + 生成网页数据 (等价于 --fix --build)")
+    parser.add_argument("--web-dir", default=None, help="网页数据输出目录 (默认: 爬虫脚本所在目录)")
+
+    args = parser.parse_args()
+
+    print("=" * 55)
+    print("  小说爬虫 Novel Crawler v3.0")
+    print("  仅供学习使用，请遵守相关法律法规")
+    print("=" * 55)
+    print()
+
+    if not check_dependencies():
+        sys.exit(1)
+
+    # 模式一：关键词搜索
+    if args.search_kw:
+        if not args.search_site:
+            print("[!] 搜索需要 --search-site 指定站点搜索入口（其中用 {q} 作为关键词占位）")
+            sys.exit(2)
+        try:
+            results = asyncio.run(search_books(args.search_kw, args.search_site,
+                                               timeout=args.timeout, proxy=args.proxy))
+        except Exception as e:
+            print(f"[!] 搜索失败: {e}")
+            print("    提示：各站搜索接口不同，可在浏览器打开该站搜索页后，把地址中的关键词换成 {q} 再试")
+            sys.exit(1)
+        if not results:
+            print("[*] 未解析到书籍结果（该站结构可能不受通用规则支持，可直接用 -u 传目录页）")
+            return
+        print(f"[+] 找到 {len(results)} 条结果：")
+        for i, it in enumerate(results, 1):
+            print(f"  {i:>2}. {it['title']}  ->  {it['url']}")
+        return
+
+    # 汇总待下载 URL
+    urls = []
+    if args.list_file:
+        p = Path(args.list_file)
+        if not p.exists():
+            print(f"[!] 清单文件不存在: {args.list_file}")
+            sys.exit(1)
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                urls.append(line.split()[0])
+    if args.url:
+        urls.append(args.url)
+    if not urls:
+        parser.error("请用 -u 指定目录页 URL，或用 -l 指定批量清单，或用 --search 搜索")
+
+    ok_n, fail_n = 0, 0
+    for idx, url in enumerate(urls, 1):
+        if len(urls) > 1:
+            print(f"\n{'#' * 20} 批量进度 {idx}/{len(urls)}: {url} {'#' * 20}")
+        try:
+            run_one(url, args)
+            ok_n += 1
+        except KeyboardInterrupt:
+            print("\n[!] 用户中断，已下载的章节已缓存，重新运行可续传")
+            sys.exit(1)
+        except Exception as e:
+            fail_n += 1
+            print(f"\n[!] 下载失败 ({url}): {e}")
+    if len(urls) > 1:
+        print(f"\n[*] 批量结束：成功 {ok_n} 本，失败 {fail_n} 本")
+        if fail_n:
+            sys.exit(1)
 
 
 if __name__ == "__main__":
