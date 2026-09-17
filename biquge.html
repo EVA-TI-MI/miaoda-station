@@ -1845,6 +1845,40 @@ img { max-width: 100%; display: block; }
   .chapter-modal-backdrop { padding: 12px; }
   .chapter-modal { max-width: 100%; }
 }
+
+/* ========== 手机 / 平板阅读页适配（桌面端不受影响） ========== */
+@media (max-width: 760px) {
+  .reader-header { padding: 10px 12px; }
+  .reader-back { padding: 0 10px; font-size: 13px; }
+  .reader-book-title { font-size: 15px; letter-spacing: 0; }
+  .reader-chapter-btn { font-size: 12px; padding-left: 6px; }
+  .reader-content { padding: 18px 14px; }
+  .reader-chapter-title { font-size: 19px; letter-spacing: 1px; }
+  .reader-footer { padding: 8px 10px; }
+  .reader-nav { gap: 8px; margin-bottom: 6px; }
+  .reader-nav-btn { padding: 6px 12px; font-size: 12px; }
+  /* 工具条在窄屏改为单行横向滚动，避免折成多行把正文挤没 */
+  .reader-tools {
+    flex-wrap: nowrap; justify-content: flex-start; gap: 10px;
+    overflow-x: auto; padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .reader-tool-group { flex-shrink: 0; }
+  .tts-select { max-width: 106px; font-size: 11px; }
+  .tts-bar { bottom: 102px; }
+  /* “更多”面板改为底部抽屉，内容超高时面板内部滚动，不再被屏幕边缘裁切 */
+  .reader-more-panel {
+    position: fixed; left: 10px; right: 10px; bottom: 10px; top: auto;
+    min-width: 0; width: auto; max-width: none;
+    max-height: 74vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 12px 14px; z-index: 2600;
+  }
+  .reader-more-title { flex: 0 0 auto; position: sticky; top: -12px; background: var(--bg-card,#fff);
+    padding: 2px 0 8px; margin: -2px 0 2px; z-index: 2; }
+}
+@media (min-width: 761px) and (max-width: 1024px) {
+  .reader-more-panel { max-height: 72vh; overflow-y: auto; }
+}
 </style>
 </head>
 <body>
@@ -3079,6 +3113,10 @@ function renderReader() {
           <div class="reader-tool-group reader-more-wrap">
             <button class="reader-shelf-btn" onclick="toggleReaderMore()">⋯ 更多</button>
             <div class="reader-more-panel" id="readerMorePanel">
+              <div class="reader-more-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <b style="font-size:13px;color:var(--text-primary);letter-spacing:2px;">阅读设置</b>
+                <button class="seg-btn" onclick="closeReaderMore()">✕ 关闭</button>
+              </div>
               <div class="reader-tool-group">
                 <span class="reader-tool-label">主题</span>
                 <div class="theme-options">

@@ -563,15 +563,46 @@
     border-radius: 50%;
   }
 
+  /* ===== 平板 / 手机适配（桌面端不受影响） ===== */
+  /* 小屏/窄窗：棋盘内的弹层改为全屏遮罩，避免被又矮又窄的棋盘裁切、被触屏键遮挡 */
+  @media (max-width: 1024px) {
+    .canvas-container .overlay {
+      position: fixed; inset: 0; z-index: 600;
+      border-radius: 0; padding: 26px 16px;
+    }
+    .canvas-container .overlay .login-box { max-width: 360px; }
+    .version-tag { position: fixed; bottom: 10px; right: 14px; }
+  }
+  /* 触屏设备或窄窗：显示触屏方向键 */
+  @media (max-width: 760px), (pointer: coarse) {
+    .mobile-controls { display: flex; }
+  }
   @media (max-width: 640px) {
-    .top-bar { font-size: 12px; }
+    body { padding: 8px; gap: 6px; }
+    .top-bar { font-size: 12px; gap: 6px; }
     .game-title { font-size: 13px; letter-spacing: 1px; }
-    .hud { font-size: 11px; padding: 6px 10px; }
-    .hud-value { font-size: 13px; }
+    .hud {
+      font-size: 11px; padding: 6px 8px; gap: 4px 8px;
+      flex-wrap: wrap; justify-content: center; row-gap: 4px;
+    }
+    .hud-value { font-size: 13px; min-width: 20px; }
+    .hud-label { font-size: 10px; }
     .overlay h2 { font-size: 22px; }
     .overlay p { font-size: 12px; }
-    .mobile-controls { display: flex; }
-    .top-btn { padding: 5px 10px; font-size: 12px; }
+    .top-btn { padding: 5px 9px; font-size: 12px; }
+    .mobile-controls { max-width: 100%; padding: 6px 2px; gap: 8px; }
+    .side-buttons { gap: 8px; }
+    .side-btn { width: 46px; height: 46px; font-size: 10px; }
+    .dpad { width: 132px; height: 132px; }
+    .dpad-btn { width: 44px; height: 44px; }
+    .dpad-up, .dpad-down { left: 44px; }
+    .dpad-left, .dpad-right { top: 44px; }
+    .dpad-center { top: 44px; left: 44px; width: 44px; height: 44px; }
+    .settings-group { max-width: 320px; margin-bottom: 12px; }
+  }
+  @media (max-width: 430px) {
+    .game-title { display: none; }
+    .user-name { display: none; }
   }
 </style>
 </head>
@@ -618,7 +649,7 @@
     </div>
   </div>
 
-  <div class="game-wrapper" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+  <div class="game-wrapper" style="display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:var(--game-w);margin:0 auto;">
     <div class="hud">
       <div class="hud-item">
         <span class="hud-label">分数</span>
@@ -670,7 +701,7 @@
           <button class="neon-btn gold" id="startLbBtn">排行榜</button>
         </div>
         <div class="hint">按 空格键 开始</div>
-        <div class="version-tag">V4.1.0</div>
+        <div class="version-tag">V4.1.1</div>
       </div>
 
       <!-- Pause Overlay -->
@@ -698,7 +729,7 @@
 
       <!-- Settings Overlay -->
       <div class="overlay" id="settingsOverlay">
-        <h2 style="font-size:22px;">游戏设置 <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">V4.1.0</span></h2>
+        <h2 style="font-size:22px;">游戏设置 <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">V4.1.1</span></h2>
 
         <div class="settings-group">
           <div class="settings-label">难度（影响初始速度）</div>
