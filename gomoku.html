@@ -101,6 +101,8 @@
     .layout{flex-direction:column;align-items:center;}
     .side{width:100%;max-width:560px;}
     .title{font-size:20px;letter-spacing:2px;}
+    .board-wrap{width:100%;max-width:628px;margin:0 auto;}
+    canvas{width:100%!important;height:auto!important;}
   }
 </style>
 </head>
@@ -254,11 +256,13 @@ const sndLose=()=>{beep(330,.15,'sine',.08);setTimeout(()=>beep(220,.25,'sine',.
 /* ============================ 坐标 / 绘制 ============================ */
 let cell=38,pad=30,Wsize=600;
 function layoutCanvas(){
-  const maxW=Math.min(600, (window.innerWidth>860?600:window.innerWidth-56));
+  const mobile=window.matchMedia('(max-width:860px)').matches;
+  const avail=cv.parentElement.clientWidth-28; // board-wrap 左右内边距各 14px
+  const maxW=mobile&&avail>0?Math.max(240,Math.min(600,avail)):600;
   Wsize=maxW; cell=(Wsize-pad*2)/(N-1);
   const dpr=window.devicePixelRatio||1;
-  cv.style.width=Wsize+'px';cv.style.height=Wsize+'px';
-  cv.width=Wsize*dpr;cv.height=Wsize*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(mobile){cv.style.width='';cv.style.height='';}else{cv.style.width=Wsize+'px';cv.style.height=Wsize+'px';}
+  cv.width=Math.round(Wsize*dpr);cv.height=Math.round(Wsize*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
   draw();
 }
 function posXY(r,c){return [pad+c*cell,pad+r*cell];}
@@ -660,11 +664,11 @@ function render(){
 
 /* ============================ 事件绑定 ============================ */
 cv.addEventListener('click',e=>{
-  const rect=cv.getBoundingClientRect();const rc=xyToRC(e.clientX-rect.left,e.clientY-rect.top);
+  const rect=cv.getBoundingClientRect();const rc=xyToRC((e.clientX-rect.left)*Wsize/rect.width,(e.clientY-rect.top)*Wsize/rect.height);
   if(!rc)return;tryHuman(rc[0],rc[1]);
 });
 cv.addEventListener('mousemove',e=>{
-  const rect=cv.getBoundingClientRect();const rc=xyToRC(e.clientX-rect.left,e.clientY-rect.top);
+  const rect=cv.getBoundingClientRect();const rc=xyToRC((e.clientX-rect.left)*Wsize/rect.width,(e.clientY-rect.top)*Wsize/rect.height);
   const nh=rc?rc:null;if((nh&&hover&&nh[0]===hover[0]&&nh[1]===hover[1])||(!nh&&!hover))return;hover=nh;draw();
 });
 cv.addEventListener('mouseleave',()=>{hover=null;draw();});
@@ -685,6 +689,7 @@ $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;localStorage.setIte
 $('skinBtn').addEventListener('click',()=>{skinIdx=(skinIdx+1)%SKINS.length;localStorage.setItem('gm_skin',String(skinIdx));draw();flashStatus('棋盘皮肤：'+SKINS[skinIdx].name);});
 $('soundBtn').textContent=(soundOn?'🔊':'🔇')+' 音效';
 window.addEventListener('resize',layoutCanvas);
+if(window.ResizeObserver)new ResizeObserver(layoutCanvas).observe(cv.parentElement);
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='SELECT')return;
   const k=e.key.toLowerCase();

@@ -85,7 +85,10 @@
   .thinking{display:none;align-items:center;gap:8px;font-size:12px;color:var(--accent);}.thinking.on{display:flex;}
   .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite;}
   @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
-  @media (max-width:860px){.layout{flex-direction:column;align-items:center;}.side{width:100%;max-width:560px;}.title{font-size:20px;letter-spacing:2px;}}
+  @media (max-width:860px){.layout{flex-direction:column;align-items:center;}.side{width:100%;max-width:560px;}.title{font-size:20px;letter-spacing:2px;}
+    .board-wrap{width:100%;max-width:628px;margin:0 auto;}
+    canvas{width:100%!important;height:auto!important;}
+  }
 </style>
 </head>
 <body>
@@ -485,9 +488,13 @@ function loadAuto(){let d;try{d=JSON.parse(localStorage.getItem(SAVE));}catch(e)
 /* ============================ 绘制 ============================ */
 let pad=28,cell=0,DW=0;
 function layoutCanvas(){
-  const target=Math.min(600,(window.innerWidth>860?600:window.innerWidth-56));
+  const mobile=window.matchMedia('(max-width:860px)').matches;
+  const avail=cv.parentElement.clientWidth-28; // board-wrap 左右内边距各 14px
+  const target=mobile&&avail>0?Math.max(240,Math.min(600,avail)):600;
   cell=(target-pad*2)/(size-1);DW=target;
-  const dpr=window.devicePixelRatio||1;cv.style.width=DW+'px';cv.style.height=DW+'px';cv.width=DW*dpr;cv.height=DW*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
+  const dpr=window.devicePixelRatio||1;
+  if(mobile){cv.style.width='';cv.style.height='';}else{cv.style.width=DW+'px';cv.style.height=DW+'px';}
+  cv.width=Math.round(DW*dpr);cv.height=Math.round(DW*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
 function xy(r,c){return [pad+c*cell,pad+r*cell];}
 function toRC(x,y){const c=Math.round((x-pad)/cell),r=Math.round((y-pad)/cell);if(r<0||r>=size||c<0||c>=size)return null;
   const [px,py]=xy(r,c);if(Math.hypot(x-px,y-py)>cell*.5)return null;return [r,c];}
@@ -557,10 +564,10 @@ function render(){draw();
 }
 
 /* ============================ 事件 ============================ */
-cv.addEventListener('click',e=>{const rc=cv.getBoundingClientRect();const q=toRC(e.clientX-rc.left,e.clientY-rc.top);if(!q)return;
+cv.addEventListener('click',e=>{const rc=cv.getBoundingClientRect();const q=toRC((e.clientX-rc.left)*DW/rc.width,(e.clientY-rc.top)*DW/rc.height);if(!q)return;
   if(scoringMode){const [r,c]=q;if(!core.g[r][c])return;const k=r+','+c;deadSet.has(k)?deadSet.delete(k):deadSet.add(k);render();return;}
   hintPoint=null;humanPlace(q[0],q[1]);});
-cv.addEventListener('mousemove',e=>{const rc=cv.getBoundingClientRect();const q=toRC(e.clientX-rc.left,e.clientY-rc.top);if((q&&hover&&q[0]===hover[0]&&q[1]===hover[1])||(!q&&!hover))return;hover=q;draw();});
+cv.addEventListener('mousemove',e=>{const rc=cv.getBoundingClientRect();const q=toRC((e.clientX-rc.left)*DW/rc.width,(e.clientY-rc.top)*DW/rc.height);if((q&&hover&&q[0]===hover[0]&&q[1]===hover[1])||(!q&&!hover))return;hover=q;draw();});
 cv.addEventListener('mouseleave',()=>{hover=null;draw();});
 $('ovStart').addEventListener('click',()=>{if(scoringMode){confirmScore();return;}newGame();});
 $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;syncSegs();saveAuto();});
@@ -580,6 +587,7 @@ $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;localStorage.setIte
 $('skinBtn').addEventListener('click',()=>{skinIdx=(skinIdx+1)%SKINS.length;localStorage.setItem('go_skin',String(skinIdx));draw();flash('棋盘：'+SKINS[skinIdx].name);});
 $('soundBtn').textContent=(soundOn?'🔊':'🔇')+' 音效';
 window.addEventListener('resize',layoutCanvas);
+if(window.ResizeObserver)new ResizeObserver(layoutCanvas).observe(cv.parentElement);
 document.addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key.toLowerCase();
   if(k==='n')newGame();else if(k==='z')undo();else if(k==='y')redo();else if(k==='h')hint();else if(k==='p')doPass();});
 
