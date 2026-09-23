@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>霓虹贪吃蛇</title>
+<title>腾蛇</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root { --game-w: 600px; }
@@ -610,8 +610,8 @@
   <!-- Login Overlay -->
   <div class="overlay" id="loginOverlay" style="z-index:500;position:fixed;">
     <div class="login-box">
-      <div class="login-logo">NEON SNAKE</div>
-      <div class="login-sub">霓虹贪吃蛇 · 请登录</div>
+      <div class="login-logo">TENG SHE</div>
+      <div class="login-sub">腾蛇 · 请登录</div>
       <div class="login-tabs">
         <button class="login-tab active" data-tab="login" id="tabLogin">登录</button>
         <button class="login-tab" data-tab="register" id="tabRegister">注册</button>
@@ -636,7 +636,7 @@
 
   <div class="top-bar">
     <button class="top-btn" id="homeBtn">← 首页</button>
-    <div class="game-title">NEON SNAKE</div>
+    <div class="game-title">TENG SHE</div>
     <div style="display:flex;gap:6px;align-items:center;">
       <div class="user-info" id="userInfo" style="display:none;">
         <div class="user-avatar" id="userAvatar">U</div>
@@ -689,7 +689,7 @@
 
       <!-- Start Overlay -->
       <div class="overlay show" id="startOverlay">
-        <h2>霓虹贪吃蛇</h2>
+        <h2>腾蛇</h2>
         <p>方向键 / WASD：控制方向　I：AI 自动寻路演示</p>
         <p>空格 / P：暂停　R：重新开始　手动转向即接管 AI</p>
         <p>C / V：顺 / 逆时针切换皮肤　金苹果 +30 分</p>
@@ -701,7 +701,7 @@
           <button class="neon-btn gold" id="startLbBtn">排行榜</button>
         </div>
         <div class="hint">按 空格键 开始</div>
-        <div class="version-tag">V4.1.2</div>
+        <div class="version-tag">V4.1.3</div>
       </div>
 
       <!-- Pause Overlay -->
@@ -729,7 +729,7 @@
 
       <!-- Settings Overlay -->
       <div class="overlay" id="settingsOverlay">
-        <h2 style="font-size:22px;">游戏设置 <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">V4.1.2</span></h2>
+        <h2 style="font-size:22px;">游戏设置 <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">V4.1.3</span></h2>
 
         <div class="settings-group">
           <div class="settings-label">难度（影响初始速度）</div>

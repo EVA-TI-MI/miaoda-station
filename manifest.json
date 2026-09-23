@@ -1,7 +1,7 @@
 {
   "name": "妙搭小站 - 弈境棋院·游戏与阅读",
   "short_name": "妙搭小站",
-  "description": "AI围棋、AI中国象棋、AI国际象棋、AI五子棋、霓虹贪吃蛇与墨渊阁小说阅读",
+  "description": "AI围棋、AI中国象棋、AI国际象棋、AI五子棋、腾蛇与墨渊阁小说阅读",
   "start_url": "index.html",
   "display": "standalone",
   "orientation": "any",

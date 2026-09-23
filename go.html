@@ -372,6 +372,7 @@ function newGame(){
   size=+$('sizeSel').value;handicap=+$('handicapSel').value;komi=parseFloat($('komiSel').value);
   gen++;core=new GoCore(size);cur=1;redoStack=[];gameOver=false;winner=null;scoringMode=false;deadSet=new Set();passCount=0;
   started=true;aiBusy=false;hintPoint=null;
+  layoutCanvas(); // 切换 9/13/19 路后必须重算格子间距与画布，否则网格会缩在旧布局的左上角
   // 让子：黑棋让子摆上，之后白先
   if(handicap){handicapStones(size,handicap).forEach(([r,c])=>{const info=core.place(r,c,1);if(info.ok)core.commit(info,1);});cur=2;}
   lastMove=core.stack.length?core.stack[core.stack.length-1]:null;
