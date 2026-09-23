@@ -74,7 +74,7 @@ public class SnakeGame extends JFrame implements KeyListener {
     private int score;
 
     public SnakeGame() {
-        setTitle("贪吃蛇游戏");
+        setTitle("腾蛇");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 

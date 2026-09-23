@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 妙搭小站 - EXE 启动器
-使用 pywebview 创建原生窗口加载首页（贪吃蛇 + 笔趣阁）
+使用 pywebview 创建原生窗口加载首页（腾蛇 + 墨渊阁）
 """
 import os
 import sys
