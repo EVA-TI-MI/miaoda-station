@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#0c1018">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>数独 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#0c1018; --panel:#141a26; --line:#2a3450; --line-bold:#5b7bb5;
+    --txt:#e7edf7; --sub:#8a97b0; --ac:#5b9bf5; --ac-soft:rgba(91,155,245,.14);
+    --given:#dfe7f4; --user:#5b9bf5; --wrong:#ff5d6c; --note:#7f8ca5;
+    --hl-cell:rgba(91,155,245,.20); --hl-band:rgba(91,155,245,.09); --hl-same:#3a639e;
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(91,155,245,.12) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(91,155,245,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(30,40,62,.85);border:1px solid rgba(91,155,245,.28);color:var(--ac);font-size:13px;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(91,155,245,.3);}
+  .stat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);min-width:70px;justify-content:flex-end;}
+  .stat b{color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums;}
+
+  .bar{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px;flex-wrap:wrap;}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--sub);font-size:13px;padding:9px 12px;
+    font-family:inherit;cursor:pointer;min-height:40px;}
+  .seg button.on{background:var(--ac-soft);color:var(--ac);font-weight:600;}
+  .btn{appearance:none;border:1px solid rgba(91,155,245,.4);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:9px 14px;min-height:40px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .btn.ghost{background:transparent;color:var(--sub);border-color:var(--line);}
+
+  .board-wrap{position:relative;width:100%;max-width:480px;}
+  .board{width:100%;aspect-ratio:1/1;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);
+    background:var(--line-bold);border:2px solid var(--line-bold);border-radius:10px;overflow:hidden;
+    box-shadow:0 10px 34px rgba(0,0,0,.45),0 0 26px rgba(91,155,245,.12);}
+  .cell{appearance:none;border:0;background:var(--panel);position:relative;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:clamp(17px,5.4vw,27px);font-weight:600;color:var(--user);
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    font-family:"Georgia","Times New Roman",serif;padding:0;}
+  .cell:nth-child(9n){border-right:0;}
+  .cell:nth-child(n+73){border-bottom:0;}
+  .cell.br-r{border-right:1.6px solid var(--line-bold);}
+  .cell.br-b{border-bottom:1.6px solid var(--line-bold);}
+  .cell.given{color:var(--given);font-weight:700;}
+  .cell.band{background:rgba(91,155,245,.07);}
+  .cell.same{background:rgba(91,155,245,.12);}
+  .cell.hl{background:var(--hl-cell);}
+  .cell.numsame{background:var(--hl-same);}
+  .cell.wrong{color:var(--wrong);}
+  .cell.wrong::after{content:"";position:absolute;inset:0;background:rgba(255,93,108,.12);}
+  .cell.pop{animation:pop .18s ease;}
+  @keyframes pop{0%{transform:scale(.6);}100%{transform:scale(1);}}
+  .notes{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+    font-size:clamp(8px,2.6vw,12px);color:var(--note);font-weight:500;font-family:inherit;}
+  .notes span{display:flex;align-items:center;justify-content:center;}
+
+  .pad{width:100%;max-width:480px;margin-top:14px;display:grid;grid-template-columns:repeat(9,1fr);gap:6px;}
+  .pad button{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ac);
+    border-radius:10px;aspect-ratio:1/1;font-size:clamp(17px,5.2vw,24px);font-weight:700;font-family:Georgia,serif;
+    cursor:pointer;position:relative;}
+  .pad button .left{position:absolute;top:2px;right:5px;font-size:9px;color:var(--sub);font-weight:400;font-family:inherit;}
+  .pad button:active{background:var(--ac-soft);transform:scale(.94);}
+  .pad button.done{opacity:.28;}
+  .tools{width:100%;max-width:480px;margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .tools .btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;min-height:48px;font-size:13px;}
+  .tools .btn small{font-size:10px;color:var(--sub);letter-spacing:1px;}
+  .tools .btn.on{background:var(--ac);color:#fff;border-color:var(--ac);}
+  .tools .btn.on small{color:rgba(255,255,255,.8);}
+  .chk{width:100%;max-width:480px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;
+    font-size:12.5px;color:var(--sub);}
+  .chk label{display:flex;align-items:center;gap:7px;min-height:40px;cursor:pointer;}
+  .chk input{width:17px;height:17px;accent-color:var(--ac);}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);background:rgba(20,26,38,.96);
+    border:1px solid rgba(91,155,245,.4);color:var(--txt);padding:10px 18px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:86vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .mask{position:absolute;inset:0;background:rgba(8,12,20,.82);border-radius:10px;display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:20;backdrop-filter:blur(2px);}
+  .mask.show{display:flex;}
+  .mask .big{font-size:42px;}
+  .mask p{color:var(--sub);font-size:13px;letter-spacing:1px;}
+  .win{position:fixed;inset:0;background:rgba(8,12,20,.72);display:none;align-items:center;justify-content:center;z-index:70;padding:20px;}
+  .win.show{display:flex;}
+  .win .card{background:linear-gradient(160deg,#1a2236,#121826);border:1px solid rgba(91,155,245,.45);
+    border-radius:18px;padding:30px 26px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);}
+  .win h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:28px;letter-spacing:6px;margin-bottom:14px;}
+  .win .row{display:flex;justify-content:space-between;font-size:14px;color:var(--sub);padding:8px 6px;border-bottom:1px solid var(--line);}
+  .win .row b{color:var(--txt);font-weight:600;}
+  .win .new{margin-top:18px;width:100%;}
+  .foot{margin-top:22px;color:#4a5878;font-size:11px;letter-spacing:2px;text-align:center;}
+  @media (min-width:520px){
+    body{padding-top:30px;}
+    .pad button{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">数 独</div>
+    <div class="stat"><span id="time">00:00</span></div>
+  </div>
+
+  <div class="bar">
+    <div class="seg" id="diff" role="tablist">
+      <button data-d="easy" class="on">简单</button>
+      <button data-d="normal">普通</button>
+      <button data-d="hard">困难</button>
+      <button data-d="expert">专家</button>
+    </div>
+    <button class="btn" id="newBtn">新局</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+    <div class="mask" id="pauseMask">
+      <div class="big">⏸</div>
+      <p>已暂停</p>
+      <button class="btn" id="resumeBtn">继续</button>
+    </div>
+  </div>
+
+  <div class="pad" id="pad"></div>
+  <div class="tools">
+    <button class="btn" id="undoBtn">撤销<small>Z</small></button>
+    <button class="btn" id="noteBtn">笔记<small>已关</small></button>
+    <button class="btn" id="eraseBtn">擦除<small>X</small></button>
+    <button class="btn" id="hintBtn">提示<small id="hintLeft">3</small></button>
+  </div>
+  <div class="chk">
+    <label><input type="checkbox" id="checkCk" checked> 即时检查错误</label>
+    <span>错误 <b id="errN">0</b> · 最快 <b id="best">—</b></span>
+  </div>
+
+  <div class="foot">九宫之中，藏着逻辑之美 · 妙搭小站 V4.2.0</div>
+
+  <div class="win" id="winMask">
+    <div class="card">
+      <h2>完成</h2>
+      <div class="row"><span>难度</span><b id="wDiff">—</b></div>
+      <div class="row"><span>用时</span><b id="wTime">—</b></div>
+      <div class="row"><span>错误</span><b id="wErr">—</b></div>
+      <div class="row"><span>本难度最快</span><b id="wBest">—</b></div>
+      <button class="btn new" id="wNew">再来一局</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var SAVE_KEY='miaodaSudokuV42', BEST_KEY='miaodaSudokuBestV42';
+  var DIFFS={easy:{name:'简单',clues:40},normal:{name:'普通',clues:34},hard:{name:'困难',clues:30},expert:{name:'专家',clues:26}};
+  var N=9, BOX=[[0,1,2],[3,4,5],[6,7,8]];
+  var state=null;
+
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function clone(b){return b.slice();}
+
+  // 完整终盘生成（随机回溯）
+  function fillBoard(b){
+    var next=-1;
+    for(var i=0;i<81;i++){ if(b[i]===0){next=i;break;} }
+    if(next===-1) return true;
+    var nums=shuffle([1,2,3,4,5,6,7,8,9]);
+    var r=Math.floor(next/9), c=next%9;
+    for(var k=0;k<9;k++){
+      var n=nums[k];
+      if(canPlace(b,r,c,n)){
+        b[next]=n;
+        if(fillBoard(b)) return true;
+        b[next]=0;
+      }
+    }
+    return false;
+  }
+  function canPlace(b,r,c,n){
+    for(var i=0;i<9;i++){
+      if(b[r*9+i]===n) return false;
+      if(b[i*9+c]===n) return false;
+    }
+    var br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
+    for(var i=0;i<3;i++) for(var j=0;j<3;j++) if(b[(br+i)*9+bc+j]===n) return false;
+    return true;
+  }
+  // 解数统计（上限2，用于唯一解校验）
+  function countSolutions(b,limit){
+    var next=-1;
+    for(var i=0;i<81;i++){ if(b[i]===0){next=i;break;} }
+    if(next===-1) return 1;
+    var r=Math.floor(next/9), c=next%9, cnt=0;
+    for(var n=1;n<=9;n++){
+      if(canPlace(b,r,c,n)){
+        b[next]=n;
+        cnt+=countSolutions(b,limit);
+        b[next]=0;
+        if(cnt>=limit) return cnt;
+      }
+    }
+    return cnt;
+  }
+  // 对称挖洞，保证唯一解
+  function dig(b,clueTarget){
+    var cells=[];
+    for(var r=0;r<9;r++)for(var c=0;c<9;c++){
+      var idx=r*9+c, mir=(8-r)*9+(8-c);
+      if(idx<mir) cells.push([idx,mir]);
+      else if(idx===mir) cells.push([idx]);
+    }
+    shuffle(cells);
+    var clues=81;
+    for(var i=0;i<cells.length;i++){
+      if(clues<=clueTarget) break;
+      var pair=cells[i], backup=[];
+      for(var k=0;k<pair.length;k++){backup.push(b[pair[k]]);b[pair[k]]=0;}
+      var t=clone(b);
+      if(countSolutions(t,2)!==1){ for(k=0;k<pair.length;k++) b[pair[k]]=backup[k]; }
+      else clues-=pair.length;
+    }
+    return clues;
+  }
+  function newGame(diff){
+    var b=new Array(81).fill(0);
+    fillBoard(b);
+    var solution=clone(b);
+    var clues=dig(b,DIFFS[diff].clues);
+    var givens=new Array(81).fill(false);
+    for(var i=0;i<81;i++) if(b[i]!==0) givens[i]=true;
+    return {diff:diff, puzzle:b, solution:solution, givens:givens,
+      cur:clone(b), notes:new Array(81).fill(null).map(function(){return {};}),
+      sel:-1, noteMode:false, checkOn:true, hints:3, errors:0,
+      elapsed:0, paused:false, done:false, stack:[]};
+  }
+
+  // ---------- 渲染 ----------
+  var boardEl=document.getElementById('board'), padEl=document.getElementById('pad');
+  function buildBoard(){
+    boardEl.innerHTML='';
+    for(var i=0;i<81;i++){
+      var btn=document.createElement('button');
+      btn.className='cell'; btn.type='button'; btn.dataset.i=i;
+      var c=i%9, r=Math.floor(i/9);
+      if(c===2||c===5) btn.classList.add('br-r');
+      if(r===2||r===5) btn.classList.add('br-b');
+      btn.addEventListener('click',function(){ selectCell(+this.dataset.i); });
+      boardEl.appendChild(btn);
+    }
+  }
+  function buildPad(){
+    padEl.innerHTML='';
+    for(var n=1;n<=9;n++){
+      var b=document.createElement('button');
+      b.type='button'; b.dataset.n=n;
+      b.innerHTML=n+'<span class="left" data-left="'+n+'"></span>';
+      b.addEventListener('click',function(){ inputNum(+this.dataset.n); });
+      padEl.appendChild(b);
+    }
+  }
+  function render(){
+    var s=state, sel=s.sel;
+    var sr=sel>=0?Math.floor(sel/9):-1, sc=sel>=0?sel%9:-1;
+    var selVal=sel>=0?s.cur[sel]:0;
+    var used={};
+    for(var i=0;i<81;i++){ if(s.cur[i]) used[s.cur[i]]=(used[s.cur[i]]||0)+1; }
+    for(var i=0;i<81;i++){
+      var el=boardEl.children[i], r=Math.floor(i/9), c=i%9;
+      el.classList.remove('given','band','same','hl','numsame','wrong','pop');
+      var v=s.cur[i];
+      if(sel>=0){
+        if(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3))) el.classList.add('band');
+        if(i===sel) el.classList.add('hl');
+        if(selVal&&v===selVal) el.classList.add('numsame');
+      }
+      if(s.givens[i]) el.classList.add('given');
+      if(v && !s.givens[i] && s.checkOn && v!==s.solution[i]) el.classList.add('wrong');
+      var notesEl=el.querySelector('.notes');
+      if(notesEl) notesEl.remove();
+      if(v){
+        el.textContent=v;
+      }else{
+        el.textContent='';
+        var nt=s.notes[i];
+        var has=false; for(var k in nt){has=true;break;}
+        if(has){
+          var nd=document.createElement('div'); nd.className='notes';
+          for(var n=1;n<=9;n++){ var sp=document.createElement('span'); sp.textContent=nt[n]?n:''; nd.appendChild(sp); }
+          el.appendChild(nd);
+        }
+      }
+    }
+    for(var n=1;n<=9;n++){
+      var pb=padEl.children[n-1];
+      pb.classList.toggle('done',(used[n]||0)>=9);
+      var lab=pb.querySelector('.left'); lab.textContent=9-(used[n]||0);
+    }
+    document.getElementById('errN').textContent=s.errors;
+    document.getElementById('hintLeft').textContent=s.hints;
+    document.getElementById('checkCk').checked=s.checkOn;
+    var nb=document.getElementById('noteBtn');
+    nb.classList.toggle('on',s.noteMode);
+    nb.querySelector('small').textContent=s.noteMode?'已开':'已关';
+    renderTime();
+  }
+  function renderTime(){
+    var t=state.elapsed, m=Math.floor(t/60), ss=t%60;
+    document.getElementById('time').textContent=(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss;
+  }
+
+  // ---------- 交互 ----------
+  function selectCell(i){
+    if(state.paused||state.done) return;
+    state.sel=i; render();
+  }
+  function pushHist(){
+    state.stack.push({i:state.sel, v:state.cur[state.sel], note:state.notes[state.sel]?Object.assign({},state.notes[state.sel]):null});
+    if(state.stack.length>300) state.stack.shift();
+  }
+  function inputNum(n){
+    var s=state;
+    if(s.paused||s.done||s.sel<0) return;
+    var i=s.sel;
+    if(s.givens[i]){ toast('题目给出的数字不能改'); return; }
+    if(s.noteMode){
+      if(!s.cur[i]){
+        s.notes[i]=s.notes[i]||{};
+        if(s.notes[i][n]) delete s.notes[i][n]; else s.notes[i][n]=true;
+        var el=boardEl.children[i]; el.classList.add('pop');
+        render(); save();
+      }
+      return;
+    }
+    pushHist();
+    if(s.cur[i]!==n){
+      s.cur[i]=n;
+      s.notes[i]={};
+      if(s.checkOn && n!==s.solution[i]){ s.errors++; toast('数字有误'); }
+      var el2=boardEl.children[i]; el2.classList.add('pop');
+      // 自动清理同组笔记
+      var r=Math.floor(i/9),c=i%9;
+      for(var k=0;k<81;k++){
+        var rr=Math.floor(k/9),cc=k%9;
+        if(rr===r||cc===c||(Math.floor(rr/3)===Math.floor(r/3)&&Math.floor(cc/3)===Math.floor(c/3))) if(s.notes[k]) delete s.notes[k][n];
+      }
+    } else {
+      s.cur[i]=0;
+    }
+    render(); checkWin(); save();
+  }
+  function erase(){
+    var s=state;
+    if(s.paused||s.done||s.sel<0) return;
+    var i=s.sel; if(s.givens[i]) return;
+    if(s.cur[i]||Object.keys(s.notes[i]).length){ pushHist(); s.cur[i]=0; s.notes[i]={}; render(); save(); }
+  }
+  function undo(){
+    var s=state;
+    if(s.paused||s.done||!s.stack.length) return;
+    var h=s.stack.pop();
+    state.sel=h.i;
+    state.cur[h.i]=h.v;
+    state.notes[h.i]=h.note||{};
+    render(); save();
+  }
+  function hint(){
+    var s=state;
+    if(s.paused||s.done) return;
+    if(s.hints<=0){ toast('提示次数已用完'); return; }
+    var i=s.sel;
+    if(i<0){
+      // 未选中格子时，自动挑选第一个未填对的格子
+      for(var k=0;k<81;k++){ if(!s.givens[k]&&s.cur[k]!==s.solution[k]){ i=k; s.sel=k; break; } }
+      if(i<0) return;
+    }
+    if(s.givens[i]||s.cur[i]===s.solution[i]){ toast('这个格子不需要提示'); return; }
+    pushHist();
+    s.cur[i]=s.solution[i]; s.notes[i]={}; s.givens[i]=true; s.hints--;
+    render(); checkWin(); save(); toast('已填入正确数字');
+  }
+  function checkWin(){
+    var s=state;
+    for(var i=0;i<81;i++){ if(s.cur[i]!==s.solution[i]) return; }
+    s.done=true; timerStop();
+    var best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');
+    var rec=best[s.diff];
+    var isNew=false;
+    if(!rec||s.elapsed<rec){best[s.diff]=s.elapsed;isNew=true;localStorage.setItem(BEST_KEY,JSON.stringify(best));}
+    document.getElementById('wDiff').textContent=DIFFS[s.diff].name;
+    document.getElementById('wTime').textContent=fmtTime(s.elapsed);
+    document.getElementById('wErr').textContent=s.errors;
+    document.getElementById('wBest').textContent=fmtTime(best[s.diff])+(isNew?' 新纪录':'');
+    document.getElementById('best').textContent=best[s.diff]?fmtTime(best[s.diff]):'—';
+    document.getElementById('winMask').classList.add('show');
+    localStorage.removeItem(SAVE_KEY);
+  }
+  function fmtTime(t){var m=Math.floor(t/60),ss=t%60;return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss;}
+
+  // ---------- 计时 / 存档 ----------
+  var timer=null;
+  function timerStart(){
+    if(timer) return;
+    var last=Date.now();
+    timer=setInterval(function(){
+      if(!state.paused&&!state.done){
+        var now=Date.now();
+        if(now-last>=1000){ state.elapsed+=Math.floor((now-last)/1000); last+=Math.floor((now-last)/1000)*1000; renderTime(); save(); }
+      } else { last=Date.now(); }
+    },500);
+  }
+  function timerStop(){ if(timer){clearInterval(timer);timer=null;} }
+  function save(){
+    try{
+      var o={diff:state.diff,givens:state.givens,cur:state.cur,notes:state.notes,
+        solution:state.solution,sel:state.sel,noteMode:state.noteMode,checkOn:state.checkOn,
+        hints:state.hints,errors:state.errors,elapsed:state.elapsed,done:state.done,stack:state.stack};
+      localStorage.setItem(SAVE_KEY,JSON.stringify(o));
+    }catch(e){}
+  }
+  function load(){
+    try{
+      var o=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+      if(!o) return null;
+      o.paused=true; o.puzzle=o.givens.map(function(g,i){return g?o.solution[i]:0;});
+      return o;
+    }catch(e){return null;}
+  }
+  function start(diff){
+    var s=newGame(diff);
+    state=s;
+    document.querySelectorAll('#diff button').forEach(function(b){b.classList.toggle('on',b.dataset.d===diff);});
+    document.getElementById('winMask').classList.remove('show');
+    document.getElementById('pauseMask').classList.add('show');
+    s.paused=true;
+    render(); save();
+    toast('已生成，点击继续开始计时');
+  }
+  function resume(){
+    if(!state) return;
+    state.paused=false;
+    document.getElementById('pauseMask').classList.remove('show');
+    timerStart(); render(); save();
+  }
+
+  var toastT=null;
+  function toast(msg){
+    var el=document.getElementById('toast');
+    el.textContent=msg; el.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){el.classList.remove('show');},1600);
+  }
+
+  // ---------- 事件 ----------
+  document.querySelectorAll('#diff button').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(state&&state.diff===b.dataset.d) return;
+      var has=state && state.cur.some(function(v,i){return v!==state.solution[i];});
+      if(has&&!window.confirm('切换难度将开始新局，当前进度会丢失，确定吗？')) return;
+      start(b.dataset.d);
+    });
+  });
+  document.getElementById('newBtn').addEventListener('click',function(){start(state?state.diff:'easy');});
+  document.getElementById('wNew').addEventListener('click',function(){document.getElementById('winMask').classList.remove('show');start(state.diff);});
+  document.getElementById('resumeBtn').addEventListener('click',resume);
+  document.getElementById('undoBtn').addEventListener('click',undo);
+  document.getElementById('eraseBtn').addEventListener('click',erase);
+  document.getElementById('hintBtn').addEventListener('click',hint);
+  document.getElementById('noteBtn').addEventListener('click',function(){
+    if(state.paused||state.done)return;
+    state.noteMode=!state.noteMode; render(); save();
+  });
+  document.getElementById('checkCk').addEventListener('change',function(){
+    if(state){state.checkOn=this.checked;render();save();}
+  });
+  document.addEventListener('keydown',function(e){
+    if(!state||state.paused) return;
+    var k=e.key;
+    if(k>='1'&&k<='9'){inputNum(+k);}
+    else if(k==='Backspace'||k==='Delete'||k==='0'){erase();}
+    else if(k.toLowerCase()==='z'){undo();}
+    else if(k.toLowerCase()==='n'){state.noteMode=!state.noteMode;render();save();}
+    else if(k.startsWith('Arrow')&&state.sel>=0){
+      var r=Math.floor(state.sel/9),c=state.sel%9;
+      if(k==='ArrowUp')r--; if(k==='ArrowDown')r++; if(k==='ArrowLeft')c--; if(k==='ArrowRight')c++;
+      r=Math.max(0,Math.min(8,r)); c=Math.max(0,Math.min(8,c));
+      selectCell(r*9+c); e.preventDefault();
+    }
+  });
+
+  // ---------- 初始化 ----------
+  buildBoard(); buildPad();
+  var best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');
+  document.getElementById('best').textContent=best.easy?fmtTime(best.easy):'—';
+  var saved=load();
+  if(saved){
+    state=saved;
+    document.querySelectorAll('#diff button').forEach(function(b){b.classList.toggle('on',b.dataset.d===saved.diff);});
+    render();
+    document.getElementById('pauseMask').classList.add('show');
+  } else {
+    start('easy');
+  }
+  timerStart();
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

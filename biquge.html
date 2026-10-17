@@ -1953,6 +1953,7 @@ img { max-width: 100%; display: block; }
 </div>
 
 <script src="novels_data.js"></script>
+<script src="novels/fengzi/fengzi_index.js"></script>
 <script>
 // ==================== Data ====================
 const CATEGORIES = [
@@ -2023,6 +2024,51 @@ try {
 } catch(e) {
   console.warn('[墨渊阁] novels_data.js 加载异常，使用内置数据:', e);
 }
+
+// 风姿物语系列：元数据（章节标题）先行，正文脚本按需注入
+try {
+  if (typeof window.FENGZI_BOOKS !== 'undefined' && Array.isArray(window.FENGZI_BOOKS) && window.FENGZI_BOOKS.length > 0) {
+    var validFengzi = window.FENGZI_BOOKS.filter(function(b) {
+      return b && b.id != null && b.title && b.author && Array.isArray(b.realContent) && b.lazyFile;
+    });
+    if (validFengzi.length > 0) {
+      BOOKS_DATA = validFengzi.concat(BOOKS_DATA);
+      console.log('[墨渊阁] 已挂载风姿物语系列 ' + validFengzi.length + ' 部（正文按需加载）');
+    }
+  }
+} catch(e) {
+  console.warn('[墨渊阁] fengzi_index.js 加载异常:', e);
+}
+
+// 包装 openReader：打开带 lazyFile 的书籍时，先注入对应正文脚本再进入阅读器
+window.FENGZI_LOADING = window.FENGZI_LOADING || {};
+(function() {
+  var _origOpenReader = window.openReader;
+  window.openReader = function(bookId, chapter) {
+    var book = (typeof getBookById === 'function') ? getBookById(bookId) : null;
+    if (book && book.lazyFile && !book._lazyLoaded && !window.FENGZI_LOADING[bookId]) {
+      window.FENGZI_LOADING[bookId] = true;
+      var s = document.createElement('script');
+      s.src = book.lazyFile;
+      s.onload = function() {
+        window.FENGZI_LOADING[bookId] = false;
+        book._lazyLoaded = true;
+        if (window.FENGZI_PAYLOAD && window.FENGZI_PAYLOAD[bookId]) {
+          book.realContent = window.FENGZI_PAYLOAD[bookId];
+        }
+        _origOpenReader(bookId, chapter);
+      };
+      s.onerror = function() {
+        window.FENGZI_LOADING[bookId] = false;
+        console.warn('[墨渊阁] 风姿物语正文加载失败:', book.lazyFile);
+        _origOpenReader(bookId, chapter);
+      };
+      document.head.appendChild(s);
+      return;
+    }
+    return _origOpenReader(bookId, chapter);
+  };
+})();
 
 // 爬虫下载的小说自动加入书架和喜欢
 autoLikeCrawlerBooks();

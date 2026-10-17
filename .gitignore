@@ -51,3 +51,5 @@ tts/test_final.html
 tts/test_aishell.html
 tts/zv_clone_test.wav
 tts/zv_clone_test.b64
+# 页面自检截图（本地产物，不入库）
+_shots/
