@@ -145,7 +145,7 @@
     <span>错误 <b id="errN">0</b> · 最快 <b id="best">—</b></span>
   </div>
 
-  <div class="foot">九宫之中，藏着逻辑之美 · 妙搭小站 V4.2.0</div>
+  <div class="foot">九宫之中，藏着逻辑之美 · 妙搭小站 V4.2.1</div>
 
   <div class="win" id="winMask">
     <div class="card">
@@ -224,11 +224,25 @@
     var clues=81;
     for(var i=0;i<cells.length;i++){
       if(clues<=clueTarget) break;
-      var pair=cells[i], backup=[];
+      var pair=cells[i];
+      // 成对移除会越过目标 1 格时，留到后面单格精修
+      if(pair.length===2 && clues-pair.length<clueTarget) continue;
+      var backup=[];
       for(var k=0;k<pair.length;k++){backup.push(b[pair[k]]);b[pair[k]]=0;}
       var t=clone(b);
       if(countSolutions(t,2)!==1){ for(k=0;k<pair.length;k++) b[pair[k]]=backup[k]; }
       else clues-=pair.length;
+    }
+    // 对称挖洞可能停在目标多 1 格（成对移除），再单格精修到目标
+    var singles=[];
+    for(var idx2=0;idx2<81;idx2++) if(b[idx2]!==0) singles.push(idx2);
+    shuffle(singles);
+    for(var j=0;j<singles.length && clues>clueTarget;j++){
+      var pos=singles[j], bk=b[pos];
+      b[pos]=0;
+      var t2=clone(b);
+      if(countSolutions(t2,2)!==1){ b[pos]=bk; }
+      else clues--;
     }
     return clues;
   }
