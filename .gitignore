@@ -12,6 +12,7 @@ dist/
 
 # 小说本地缓存（用户内容，不纳入版本管理）
 novels/
+build_fengzi.py
 
 # 系统
 .DS_Store
