@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#0a1414">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>乒乓球 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#0a1414; --panel:#12201f; --line:#23403c;
+    --txt:#e4f7f4; --sub:#86aba4;
+    --ac:#4ad6c1; --ac-soft:rgba(74,214,193,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(74,214,193,.16) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(60,180,220,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(24,44,42,.85);border:1px solid rgba(74,214,193,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(74,214,193,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:46px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .wrap{position:relative;width:100%;max-width:480px;}
+  canvas#cv{display:block;width:100%;height:auto;touch-action:none;border-radius:12px;
+    background:linear-gradient(180deg,#12201f 0%,#08100f 100%);
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(74,214,193,.1);}
+  .mask{position:absolute;inset:0;border-radius:12px;background:rgba(6,14,13,.88);display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;text-align:center;padding:20px;}
+  .mask.show{display:flex;}
+  .mask .big{font-size:40px;}
+  .mask h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:24px;letter-spacing:4px;}
+  .mask p{color:var(--sub);font-size:13px;}
+  .btn{appearance:none;border:1px solid rgba(74,214,193,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:11px 26px;min-height:44px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .tip{margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;max-width:480px;}
+  .foot{margin-top:18px;color:#2a4c46;font-size:11px;letter-spacing:2px;text-align:center;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">乒乓球</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">我方</div><div class="val" id="me">0</div></div>
+      <div class="box"><div class="lbl">电脑</div><div class="val" id="ai">0</div></div>
+      <div class="box"><div class="lbl">连赢</div><div class="val" id="streak">0</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <canvas id="cv"></canvas>
+    <div class="mask" id="mask">
+      <div class="big" id="maskBig">🏓</div>
+      <h2 id="maskTitle">比赛结束</h2>
+      <p id="maskP"></p>
+      <button class="btn" id="maskBtn">再来一局</button>
+    </div>
+  </div>
+
+  <p class="tip">移动鼠标 / 手指滑动 / W·S 或 ↑·↓ 键控制左挡板，先得 7 分获胜<br>右挡板为 AI 自动回击，速度随回合提升</p>
+  <div class="foot">左挡右击，先得七分 · 妙搭小站 V4.4.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaPongBestV44';
+  var WIN=7;
+  var best=0; try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0;}catch(e){}
+  document.getElementById('streak').textContent=best;
+
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var W=480,H=320, PW=12, PH=76;
+  var plY=H/2-PH/2, aiY=H/2-PH/2;
+  var ball={x:W/2,y:H/2,vx:0,vy:0,r:9,speed:5};
+  var me=0, ai=0, over=false, serveDir=1;
+
+  function newGame(){ me=0; ai=0; over=false; document.getElementById('me').textContent=0; document.getElementById('ai').textContent=0; document.getElementById('mask').classList.remove('show'); serve(1); }
+  function serve(dir){
+    ball.x=W/2; ball.y=H/2; ball.speed=5+Math.floor((me+ai)/3);
+    var a=(Math.random()*0.8-0.4);
+    ball.vx=dir*Math.cos(a)*ball.speed; ball.vy=Math.sin(a)*ball.speed;
+  }
+
+  function setPlY(n){ plY=Math.max(0,Math.min(H-PH,n)); }
+
+  function update(dt){
+    if(over) return;
+    ball.x+=ball.vx*dt*60; ball.y+=ball.vy*dt*60;
+    // 上下墙
+    if(ball.y-ball.r<0){ ball.y=ball.r; ball.vy=Math.abs(ball.vy); }
+    if(ball.y+ball.r>H){ ball.y=H-ball.r; ball.vy=-Math.abs(ball.vy); }
+    // 左挡板
+    if(ball.vx<0 && ball.x-ball.r<=PW && ball.x+ball.r>=0 && ball.y>=plY && ball.y<=plY+PH){
+      var rel=(ball.y-(plY+PH/2))/(PH/2); rel=Math.max(-1,Math.min(1,rel));
+      ball.vx=Math.abs(Math.cos(rel*1.1)*ball.speed);
+      ball.vy=rel*ball.speed*0.7; ball.x=PW+ball.r;
+      ball.speed=Math.min(11, ball.speed+0.1);
+    }
+    // 右挡板
+    if(ball.vx>0 && ball.x+ball.r>=W-PW && ball.x-ball.r<=W && ball.y>=aiY && ball.y<=aiY+PH){
+      var rel2=(ball.y-(aiY+PH/2))/(PH/2); rel2=Math.max(-1,Math.min(1,rel2));
+      ball.vx=-Math.abs(Math.cos(rel2*1.1)*ball.speed);
+      ball.vy=rel2*ball.speed*0.7; ball.x=W-PW-ball.r;
+      ball.speed=Math.min(11, ball.speed+0.1);
+    }
+    // AI 追踪
+    var aiTarget=ball.y-PH/2;
+    if(aiY+PH/2<aiTarget+8) aiY=Math.min(H-PH,aiY+4.6);
+    else if(aiY+PH/2>aiTarget-8) aiY=Math.max(0,aiY-4.6);
+    // 得分
+    if(ball.x<-20){ ai++; document.getElementById('ai').textContent=ai; serveDir=-1; checkEnd(); }
+    else if(ball.x>W+20){ me++; document.getElementById('me').textContent=me; serveDir=1; checkEnd(); }
+  }
+  function checkEnd(){
+    if(me>=WIN){ over=true; best=best+1; document.getElementById('streak').textContent=best; try{localStorage.setItem(BEST_KEY,String(best));}catch(e){} showEnd(true); }
+    else if(ai>=WIN){ over=true; best=0; document.getElementById('streak').textContent=0; try{localStorage.setItem(BEST_KEY,'0');}catch(e){} showEnd(false); }
+    else { serve(serveDir); }
+  }
+  function showEnd(win){
+    document.getElementById('maskBig').textContent=win?'🏆':'🤖';
+    document.getElementById('maskTitle').textContent=win?'你赢了':'电脑获胜';
+    document.getElementById('maskP').innerHTML='比美 <b style="color:var(--ac)">'+me+' : '+ai+'</b><br>历史最长连赢 '+best;
+    document.getElementById('mask').classList.add('show');
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    // 中线
+    ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.setLineDash([6,8]);
+    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.setLineDash([]);
+    // 挡板
+    ctx.fillStyle='#4ad6c1'; roundRect(0,plY,PW,PH,5); ctx.fill(); roundRect(W-PW,aiY,PW,PH,5); ctx.fill();
+    // 球
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+  }
+  function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  var last=0;
+  function loop(ts){ var dt=Math.min(0.05,(ts-last)/1000||0); last=ts; update(dt); render(); requestAnimationFrame(loop); }
+
+  cv.addEventListener('mousemove',function(e){ var r=cv.getBoundingClientRect(); setPlY((e.clientY-r.top)*H/r.height-PH/2); });
+  cv.addEventListener('touchmove',function(e){ var r=cv.getBoundingClientRect(); var t=e.touches[0]; setPlY((t.clientY-r.top)*H/r.height-PH/2); },{passive:true});
+  var kUp=false,kDn=false;
+  document.addEventListener('keydown',function(e){
+    if(e.key==='w'||e.key==='W'||e.key==='ArrowUp'){kUp=true;e.preventDefault();}
+    else if(e.key==='s'||e.key==='S'||e.key==='ArrowDown'){kDn=true;e.preventDefault();}
+    else if(e.key==='r'||e.key==='R'){newGame();}
+  });
+  document.addEventListener('keyup',function(e){ if(/w|ArrowUp/i.test(e.key))kUp=false; if(/s|ArrowDown/i.test(e.key))kDn=false; });
+  setInterval(function(){ if(kUp)setPlY(plY-8); if(kDn)setPlY(plY+8); },16);
+
+  document.getElementById('maskBtn').addEventListener('click',function(){document.getElementById('mask').classList.remove('show');newGame();});
+
+  cv.width=W; cv.height=H;
+  newGame(); requestAnimationFrame(loop);
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

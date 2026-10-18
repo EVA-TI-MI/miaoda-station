@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#171006">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>打地鼠 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#171006; --panel:#241806; --line:#3a2c0e;
+    --txt:#fbf1dc; --sub:#ac9668;
+    --ac:#ffb547; --ac-soft:rgba(255,181,71,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(255,181,71,.16) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(255,150,60,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(45,34,12,.85);border:1px solid rgba(255,181,71,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(255,181,71,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:52px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+  .box.time .val{color:#ff8a5c;}
+
+  .field-wrap{position:relative;width:100%;max-width:460px;}
+  .field{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:20px;
+    background:var(--panel);border:2px solid var(--line);border-radius:14px;
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(255,181,71,.1);}
+  .hole{position:relative;aspect-ratio:1/1;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#0d0a04 0%,#241a0a 70%);
+    overflow:hidden;cursor:pointer;box-shadow:inset 0 8px 16px rgba(0,0,0,.6);}
+  .hole .mole{position:absolute;left:0;right:0;bottom:0;height:0;display:flex;align-items:center;justify-content:center;
+    font-size:40px;transition:height .12s;user-select:none;}
+  .hole.up .mole{height:88%;}
+  .hole.hit .mole{animation:smack .18s ease;}
+  @keyframes smack{0%{transform:scale(1);}50%{transform:scale(1.35) rotate(12deg);}100%{transform:scale(1);}}
+  .mask{position:absolute;inset:0;border-radius:14px;background:rgba(16,10,4,.88);display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;text-align:center;padding:20px;}
+  .mask.show{display:flex;}
+  .mask .big{font-size:40px;}
+  .mask h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:24px;letter-spacing:4px;}
+  .mask p{color:var(--sub);font-size:13px;}
+  .btn{appearance:none;border:1px solid rgba(255,181,71,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:11px 26px;min-height:44px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .tip{margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;max-width:460px;}
+  .foot{margin-top:18px;color:#5a4520;font-size:11px;letter-spacing:2px;text-align:center;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">打地鼠</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">得分</div><div class="val" id="score">0</div></div>
+      <div class="box"><div class="lbl">最佳</div><div class="val" id="best">0</div></div>
+      <div class="box time"><div class="lbl">时间</div><div class="val" id="time">30</div></div>
+    </div>
+  </div>
+
+  <div class="field-wrap">
+    <div class="field" id="field"></div>
+    <div class="mask" id="mask">
+      <div class="big">🐹</div>
+      <h2>时间到</h2>
+      <p id="maskP"></p>
+      <button class="btn" id="maskBtn">再来一局</button>
+    </div>
+  </div>
+
+  <p class="tip">点击 / 敲打冒出的地鼠，30 秒内越快越准分越高<br>点空不扣分，但要眼疾手快才能连击高分</p>
+  <div class="foot">眼疾手快，敲出好成绩 · 妙搭小站 V4.4.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaMoleBestV44';
+  var DUR=30;
+  var best=0; try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0;}catch(e){}
+  document.getElementById('best').textContent=best;
+
+  var field=document.getElementById('field');
+  var holes=[], score=0, timeLeft=DUR, playing=false, timer=null, hideT=null, nextT=null, active=-1;
+
+  function build(){
+    field.innerHTML='';
+    for(let i=0;i<9;i++){
+      var h=document.createElement('div'); h.className='hole';
+      h.innerHTML='<div class="mole">🐹</div>';
+      h.addEventListener('pointerdown',function(){ whack(i); });
+      field.appendChild(h); holes.push(h);
+    }
+  }
+  function whack(i){
+    if(!playing||active!==i) return;
+    score++; document.getElementById('score').textContent=score;
+    holes[i].classList.remove('up'); holes[i].classList.add('hit');
+    setTimeout(function(){ holes[i].classList.remove('hit'); },180);
+    if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
+    active=-1; clearTimeout(hideT);
+    nextT=setTimeout(showMole, 260);
+  }
+  function showMole(){
+    if(!playing) return;
+    var pick=-1; var cnt=0;
+    do{ pick=Math.floor(Math.random()*9); cnt++; }while(pick===active&&cnt<20);
+    active=pick; holes[pick].classList.add('up');
+    hideT=setTimeout(function(){ holes[pick].classList.remove('up'); active=-1; if(playing) nextT=setTimeout(showMole, 220+Math.random()*320); }, 720+Math.random()*420);
+  }
+  function start(){
+    score=0; timeLeft=DUR; playing=true; active=-1;
+    document.getElementById('score').textContent=0; document.getElementById('time').textContent=DUR;
+    document.getElementById('mask').classList.remove('show');
+    timer=setInterval(function(){
+      timeLeft--; document.getElementById('time').textContent=Math.max(0,timeLeft);
+      if(timeLeft<=0) finish();
+    },1000);
+    showMole();
+  }
+  function finish(){
+    playing=false; clearInterval(timer); clearTimeout(hideT); clearTimeout(nextT);
+    holes.forEach(function(h){h.classList.remove('up');}); active=-1;
+    document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>历史最佳 '+best;
+    document.getElementById('mask').classList.add('show');
+  }
+
+  document.getElementById('maskBtn').addEventListener('click',start);
+  build(); start();
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#0e1207">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>小恐龙快跑 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#0e1207; --panel:#18200c; --line:#2b3a16;
+    --txt:#edf7dd; --sub:#99a97b;
+    --ac:#7ce06b; --ac-soft:rgba(124,224,107,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(124,224,107,.16) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(120,214,90,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(32,42,18,.85);border:1px solid rgba(124,224,107,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(124,224,107,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:52px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .wrap{position:relative;width:100%;max-width:480px;}
+  canvas#cv{display:block;width:100%;height:auto;touch-action:none;border-radius:12px;
+    background:linear-gradient(180deg,#18200c 0%,#0c0f06 100%);
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(124,224,107,.1);}
+  .mask{position:absolute;inset:0;border-radius:12px;background:rgba(8,12,4,.86);display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;text-align:center;padding:20px;}
+  .mask.show{display:flex;}
+  .mask .big{font-size:40px;}
+  .mask h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:24px;letter-spacing:4px;}
+  .mask p{color:var(--sub);font-size:13px;}
+  .btn{appearance:none;border:1px solid rgba(124,224,107,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:11px 26px;min-height:44px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .tip{margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;max-width:480px;}
+  .foot{margin-top:18px;color:#3b4d20;font-size:11px;letter-spacing:2px;text-align:center;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">小恐龙快跑</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">距离</div><div class="val" id="score">0</div></div>
+      <div class="box"><div class="lbl">最佳</div><div class="val" id="best">0</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <canvas id="cv"></canvas>
+    <div class="mask" id="mask">
+      <div class="big">💥</div>
+      <h2>撞上了</h2>
+      <p id="maskP"></p>
+      <button class="btn" id="maskBtn">再跑一次</button>
+    </div>
+  </div>
+
+  <p class="tip">点按屏幕 / 空格键让恐龙跳跃，越过仙人掌<br>奔跑越远速度越快；撞上障碍即结束</p>
+  <div class="foot">一路狂奔，闪避障碍 · 妙搭小站 V4.4.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaDinoBestV44';
+  var W=480,H=230,GY=182;
+  var best=0; try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0;}catch(e){}
+  document.getElementById('best').textContent=best;
+
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var DW=28, DH=44, DX=64;
+  var dinoY=GY-DH, vy=0, onGround=true;
+  var GRAV=2600, JUMP=-660;
+  var obstacles=[], speed=340, dist=0, over=false, sinceSpawn=0, phase=0;
+
+  function newGame(){
+    obstacles=[]; dinoY=GY-DH; vy=0; onGround=true; speed=340; dist=0; over=false; sinceSpawn=0;
+    document.getElementById('score').textContent=0;
+    document.getElementById('mask').classList.remove('show');
+  }
+
+  function jump(){ if(onGround && !over){ vy=JUMP; onGround=false; } }
+
+  function update(dt){
+    if(over) return;
+    dist+=speed*dt*0.06; document.getElementById('score').textContent=Math.floor(dist);
+    speed=Math.min(820, 340 + dist*0.5);
+    if(!onGround){ vy+=GRAV*dt; dinoY+=vy*dt; if(dinoY>=GY-DH){ dinoY=GY-DH; vy=0; onGround=true; } }
+    // 生成障碍
+    sinceSpawn+=speed*dt;
+    var gap=280+Math.random()*260;
+    if(sinceSpawn>gap){
+      var kind=Math.floor(Math.random()*3);
+      if(kind===0) obstacles.push({x:W,w:16,h:40});
+      else if(kind===1) obstacles.push({x:W,w:34,h:40});
+      else obstacles.push({x:W,w:16,h:56});
+      sinceSpawn=0;
+    }
+    // 移动 + 碰撞
+    for(var i=0;i<obstacles.length;i++){
+      var o=obstacles[i]; o.x-=speed*dt;
+      var dl=DX+4, dr=DX+DW-4, dtp=dinoY+6, db=dinoY+DH;
+      var ol=o.x+2, orr=o.x+o.w-2, ot=GY-o.h, ob=GY;
+      if(dr>ol && dl<orr && db>ot && dtp<ob){ gameOver(); return; }
+    }
+    obstacles=obstacles.filter(function(o){return o.x+o.w>0;});
+  }
+  function gameOver(){
+    over=true;
+    if(Math.floor(dist)>best){best=Math.floor(dist);document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
+    document.getElementById('maskP').innerHTML='奔跑距离 <b style="color:var(--ac)">'+Math.floor(dist)+'</b><br>历史最佳 '+best;
+    document.getElementById('mask').classList.add('show');
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    // 地面
+    ctx.fillStyle='#2b3a16'; ctx.fillRect(0,GY,W,H-GY);
+    ctx.fillStyle='rgba(124,224,107,.4)'; ctx.fillRect(0,GY,W,2);
+    // 地面纹理
+    ctx.fillStyle='rgba(255,255,255,.06)';
+    var off=phase%40;
+    for(var gx=-off;gx<W;gx+=40){ ctx.fillRect(gx,GY+8,20,2); }
+    // 恐龙
+    drawDino();
+    // 障碍
+    for(var i=0;i<obstacles.length;i++){ var o=obstacles[i];
+      ctx.fillStyle='#7ce06b'; roundRect(o.x,GY-o.h,o.w,o.h,3); ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,.2)'; ctx.fillRect(o.x+4,GY-o.h+6,4,o.h-10);
+    }
+  }
+  function drawDino(){
+    var leg=onGround?0:(1-Math.min(1,(GY-DH-dinoY)/40))*2;
+    ctx.fillStyle='#7ce06b';
+    // 身体
+    roundRect(DX, dinoY, DW, DH,6); ctx.fill();
+    ctx.fillStyle='#0c0f06';
+    // 眼睛
+    ctx.fillRect(DX+DW-8, dinoY+8, 4, 4);
+    // 腿
+    ctx.fillStyle='#5aa647';
+    ctx.fillRect(DX+3, GY-6, 6, 6); ctx.fillRect(DX+DW-9, GY-6, 6, 6);
+  }
+  function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  var last=0;
+  function loop(ts){
+    var dt=Math.min(0.05,(ts-last)/1000||0); last=ts; phase+=speed*dt;
+    update(dt); render(); requestAnimationFrame(loop);
+  }
+
+  cv.addEventListener('pointerdown',function(e){ e.preventDefault(); jump(); });
+  document.addEventListener('keydown',function(e){
+    if(e.code==='Space'||e.key==='ArrowUp'){ e.preventDefault(); if(over){newGame();} else jump(); }
+    else if(e.key==='r'||e.key==='R'){ newGame(); }
+  });
+  document.getElementById('maskBtn').addEventListener('click',function(){document.getElementById('mask').classList.remove('show');newGame();});
+
+  cv.width=W; cv.height=H;
+  newGame(); requestAnimationFrame(loop);
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

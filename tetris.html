@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#0c1016">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>俄罗斯方块 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#0c1016; --panel:#151c26; --line:#26323f;
+    --txt:#eaf2fb; --sub:#8fa4b8;
+    --ac:#5aa9f0; --ac-soft:rgba(90,169,240,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(90,169,240,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(120,120,255,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(28,38,52,.85);border:1px solid rgba(90,169,240,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(90,169,240,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:62px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .stage{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:12px;
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(90,169,240,.1);overflow:hidden;}
+  canvas#cv{display:block;touch-action:none;user-select:none;width:100%;height:auto;}
+  .side{width:100%;max-width:460px;display:flex;gap:10px;margin-top:12px;align-items:stretch;}
+  .next{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;flex:0 0 auto;text-align:center;}
+  .next .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;margin-bottom:4px;}
+  .info{flex:1;display:flex;flex-direction:column;gap:8px;}
+  .btn{appearance:none;border:1px solid rgba(90,169,240,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:10px 16px;min-height:42px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:460px;margin-top:12px;}
+  .pad button{appearance:none;border:1px solid rgba(90,169,240,.4);background:rgba(28,38,52,.7);color:var(--ac);
+    border-radius:10px;font-size:18px;padding:12px 0;min-height:46px;font-family:inherit;}
+  .pad button:active{background:var(--ac-soft);transform:scale(.96);}
+  .mask{position:absolute;inset:0;background:rgba(10,14,20,.86);display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:12px;z-index:20;text-align:center;padding:20px;}
+  .mask.show{display:flex;}
+  .mask .big{font-size:40px;color:var(--ac);}
+  .mask h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:24px;letter-spacing:4px;}
+  .mask p{color:var(--sub);font-size:13px;}
+  .tip{margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;max-width:460px;}
+  .foot{margin-top:18px;color:#3d5063;font-size:11px;letter-spacing:2px;text-align:center;}
+  @media (min-width:520px){ body{padding-top:26px;} .pad{display:none;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">俄罗斯方块</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">得分</div><div class="val" id="score">0</div></div>
+      <div class="box"><div class="lbl">最佳</div><div class="val" id="best">0</div></div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="mask" id="mask">
+      <div class="big" id="maskBig">💥</div>
+      <h2 id="maskTitle">游戏结束</h2>
+      <p id="maskP"></p>
+      <button class="btn" id="maskBtn">再来一局</button>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="next"><div class="lbl">下一个</div><canvas id="nextCv" width="72" height="72"></canvas></div>
+    <div class="info">
+      <button class="btn" id="pauseBtn">暂停</button>
+    </div>
+  </div>
+
+  <div class="pad">
+    <button data-a="left">◀</button><button data-a="rotate">⟳</button><button data-a="right">▶</button><button data-a="hard">⤓</button>
+    <button data-a="down">▼</button>
+  </div>
+
+  <p class="tip">方向键 / WASD 移动（←→ 移动、↓ 软降、↑ 旋转、空格 硬降）<br>触屏：左右滑动移动、点按旋转、下滑软降、上滑硬降；满行消除，逐级加速</p>
+  <div class="foot">方寸之间，逐行消除 · 妙搭小站 V4.4.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaTetrisBestV44';
+  var COLS=10, ROWS=20, CELL=26;
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var nextCv=document.getElementById('nextCv'), nctx=nextCv.getContext('2d');
+  var best=0; try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0;}catch(e){}
+  document.getElementById('best').textContent=best;
+
+  // 七种方块：颜色 + 4 个旋转态（N×N 格内的格子坐标）
+  function rot(cells){ // 顺时针旋转 90°（基于包围盒 N）
+    var n=Math.max.apply(null,cells.map(function(c){return Math.max(c[0],c[1]);}))+1;
+    return cells.map(function(c){ return [c[1], n-1-c[0]]; });
+  }
+  function allRots(base){ var out=[], cur=base; for(var i=0;i<4;i++){ out.push(cur); cur=rot(cur); } return out; }
+  var SHAPES=[
+    {color:'#5aa9f0', rots: allRots([[0,0],[1,0],[2,0],[3,0]])},          // I
+    {color:'#f0c24a', rots: allRots([[0,0],[1,0],[0,1],[1,1]])},          // O
+    {color:'#b98cff', rots: allRots([[1,0],[0,1],[1,1],[2,1]])},          // T
+    {color:'#7ce06b', rots: allRots([[0,0],[1,0],[1,1],[2,1]])},          // S
+    {color:'#ff7a59', rots: allRots([[1,0],[2,0],[0,1],[1,1]])},          // Z
+    {color:'#f07ac0', rots: allRots([[0,0],[0,1],[1,1],[2,1]])},          // J
+    {color:'#f09a4a', rots: allRots([[2,0],[0,1],[1,1],[2,1]])}           // L
+  ];
+  function normalize(sh){ // 归一化到 bounding box 左上角
+    var minX=99,minY=99;
+    sh.rots.forEach(function(rc){ rc.forEach(function(c){ if(c[0]<minX)minX=c[0]; if(c[1]<minY)minY=c[1]; }); });
+    sh.rots=sh.rots.map(function(rc){ return rc.map(function(c){ return [c[0]-minX,c[1]-minY]; }); });
+    return sh;
+  }
+  SHAPES.forEach(normalize);
+
+  var board=[], cur=null, next=null, score=0, level=1, lines=0, over=false, paused=false;
+  var bag=[]; function take(){ if(!bag.length) bag=[0,1,2,3,4,5,6]; var i=Math.floor(Math.random()*bag.length); return bag.splice(i,1)[0]; }
+  function pieces(si){ return SHAPES[si].rots; }
+  function cells(p){ return pieces(p.si)[p.rot].map(function(c){ return [p.r+c[0], p.c+c[1]]; }); }
+
+  function canPlace(p){
+    var cc=cells(p);
+    for(var i=0;i<cc.length;i++){ var r=cc[i][0], c=cc[i][1];
+      if(c<0||c>=COLS||r>=ROWS) return false; if(r<0) continue; if(board[r][c]) return false; }
+    return true;
+  }
+  function lock(){
+    var cc=cells(cur);
+    cc.forEach(function(x){ if(x[0]>=0) board[x[0]][x[1]]=cur.color; });
+    clearLines();
+    spawnNext();
+  }
+  function spawnNext(){
+    cur={si:next, rot:0, r:0, c:Math.floor((COLS-3)/2), color:SHAPES[next].color}; next=take();
+    if(!canPlace(cur)){ gameOver(); return; }
+    drawNext(); draw();
+  }
+  function clearLines(){
+    var cleared=0;
+    for(var r=ROWS-1;r>=0;r--){ if(board[r].every(function(v){return !!v;})){ board.splice(r,1); board.unshift(new Array(COLS).fill(null)); cleared++; r++; } }
+    if(cleared){ lines+=cleared; var gain=[0,100,300,500,800][cleared]; score+=gain*level;
+      level=Math.floor(lines/10)+1; if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
+      updateHud(); }
+  }
+  function updateHud(){ document.getElementById('score').textContent=score; }
+
+  function move(dr,dc){
+    if(over||paused||!cur) return false;
+    var p={si:cur.si,rot:cur.rot,r:cur.r+dr,c:cur.c+dc,color:cur.color};
+    if(canPlace(p)){ cur=p; draw(); return true; } return false;
+  }
+  function rotate(){
+    if(over||paused||!cur) return;
+    var r0=cur.rot, r1=(cur.rot+1)%4, p={si:cur.si,rot:r1,r:cur.r,c:cur.c,color:cur.color};
+    var kicks=[0,-1,1,-2,2];
+    for(var i=0;i<kicks.length;i++){ var q={si:cur.si,rot:r1,r:cur.r,c:cur.c+kicks[i],color:cur.color};
+      if(canPlace(q)){ cur=q; draw(); return; } }
+  }
+  function softDrop(){ if(move(1,0)){ score+=1; updateHud(); return true; } return false; }
+  function hardDrop(){
+    if(over||paused||!cur) return;
+    while(move(1,0)){ score+=2; }
+    updateHud(); lock();
+  }
+  function gravity(){ if(over||paused||!cur) return; if(!softDrop()){ lock(); } }
+
+  function gameOver(){
+    over=true;
+    document.getElementById('maskBig').textContent='💥';
+    document.getElementById('maskTitle').textContent='游戏结束';
+    document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>消除行数 '+lines+' · 等级 '+level;
+    document.getElementById('mask').classList.add('show');
+  }
+  function newGame(){
+    board=[]; for(var r=0;r<ROWS;r++) board.push(new Array(COLS).fill(null));
+    score=0; level=1; lines=0; over=false; paused=false;
+    bag=[]; next=take(); spawnNext();
+    document.getElementById('mask').classList.remove('show');
+    document.getElementById('pauseBtn').textContent='暂停';
+    updateHud(); startLoop();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#151c26'; ctx.fillRect(0,0,cv.width,cv.height);
+    // 网格
+    ctx.strokeStyle='rgba(255,255,255,.03)';
+    ctx.beginPath();
+    for(var c=0;c<=COLS;c++){ ctx.moveTo(c*CELL,0); ctx.lineTo(c*CELL,ROWS*CELL); }
+    for(var r=0;r<=ROWS;r++){ ctx.moveTo(0,r*CELL); ctx.lineTo(COLS*CELL,r*CELL); }
+    ctx.stroke();
+    // 已固定
+    for(var rr=0;rr<ROWS;rr++)for(var cc=0;cc<COLS;cc++) if(board[rr][cc]) cell(ctx,cc,rr,board[rr][cc]);
+    // 当前
+    if(cur && !over){ var cc=cells(cur); cc.forEach(function(x){ if(x[0]>=0) cell(ctx,x[1],x[0],cur.color); }); }
+  }
+  function cell(c,x,y,color){
+    c.fillStyle=color;
+    c.fillRect(x*CELL+1,y*CELL+1,CELL-2,CELL-2);
+    c.fillStyle='rgba(255,255,255,.22)';
+    c.fillRect(x*CELL+1,y*CELL+1,CELL-2,3);
+  }
+  function drawNext(){
+    nctx.clearRect(0,0,72,72);
+    var sh=SHAPES[next], rc=sh.rots[0];
+    var minX=99,minY=99,maxX=0,maxY=0;
+    rc.forEach(function(c){ if(c[0]<minX)minX=c[0]; if(c[1]<minY)minY=c[1]; if(c[0]>maxX)maxX=c[0]; if(c[1]>maxY)maxY=c[1]; });
+    var w=(maxX-minX+1), h=(maxY-minY+1), s=14, ox=(72-w*s)/2, oy=(72-h*s)/2;
+    rc.forEach(function(c){ nctx.fillStyle=sh.color; var x=ox+(c[0]-minX)*s, y=oy+(c[1]-minY)*s;
+      nctx.fillRect(x+1,y+1,s-2,s-2); nctx.fillStyle='rgba(255,255,255,.22)'; nctx.fillRect(x+1,y+1,s-2,2); });
+  }
+
+  var loopId=null, lastDrop=0;
+  function startLoop(){
+    if(loopId) cancelAnimationFrame(loopId);
+    lastDrop=performance.now();
+    loopId=requestAnimationFrame(loop);
+  }
+  function loop(ts){
+    var interval=Math.max(120, 820-(level-1)*70);
+    if(ts-lastDrop>interval){ gravity(); lastDrop=ts; }
+    draw();
+    if(!over) loopId=requestAnimationFrame(loop);
+  }
+
+  function togglePause(){
+    if(over) return;
+    paused=!paused;
+    document.getElementById('pauseBtn').textContent=paused?'继续':'暂停';
+  }
+
+  // 键盘
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='ArrowLeft'||k==='a'){e.preventDefault();move(0,-1);}
+    else if(k==='ArrowRight'||k==='d'){e.preventDefault();move(0,1);}
+    else if(k==='ArrowDown'||k==='s'){e.preventDefault();softDrop();}
+    else if(k==='ArrowUp'||k==='w'){e.preventDefault();rotate();}
+    else if(k===' '){e.preventDefault();hardDrop();}
+    else if(k==='p'||k==='P'){togglePause();}
+    else if((k==='r'||k==='R')){newGame();}
+  });
+
+  // 触屏：滑动 + 点按
+  var sx=0,sy=0,st=0,tapDist=12;
+  cv.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();},{passive:true});
+  cv.addEventListener('touchend',function(e){
+    var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy, dt=Date.now()-st;
+    if(Math.abs(dx)<tapDist&&Math.abs(dy)<tapDist){ if(dt<350) rotate(); return; }
+    if(Math.abs(dx)>Math.abs(dy)){ move(0,dx>0?1:-1); }
+    else if(Math.abs(dy)>Math.abs(dx)){ if(dy>0) softDrop(); else hardDrop(); }
+  },{passive:true});
+
+  // 手机按钮
+  Array.prototype.forEach.call(document.querySelectorAll('.pad button'),function(b){
+    b.addEventListener('click',function(){ var a=b.dataset.a;
+      if(a==='left')move(0,-1); else if(a==='right')move(0,1); else if(a==='down')softDrop();
+      else if(a==='rotate')rotate(); else if(a==='hard')hardDrop(); });
+  });
+
+  document.getElementById('pauseBtn').addEventListener('click',togglePause);
+  document.getElementById('maskBtn').addEventListener('click',function(){document.getElementById('mask').classList.remove('show');newGame();});
+
+  cv.width=COLS*CELL; cv.height=ROWS*CELL;
+  document.getElementById('stage').style.width=(COLS*CELL)+'px';
+  document.getElementById('stage').style.maxWidth='100%';
+  newGame();
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

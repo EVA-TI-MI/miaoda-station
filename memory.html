@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#120d1a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>记忆翻牌 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#120d1a; --panel:#1c1424; --line:#322440;
+    --txt:#f0e9fb; --sub:#a294b8;
+    --ac:#b98cff; --ac-soft:rgba(185,140,255,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(185,140,255,.16) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(120,100,255,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(38,28,50,.85);border:1px solid rgba(185,140,255,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(185,140,255,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:52px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .bar{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .diff{display:flex;gap:8px;}
+  .diff button{appearance:none;border:1px solid rgba(185,140,255,.4);background:rgba(38,28,50,.7);color:var(--sub);
+    border-radius:8px;font-size:12px;padding:8px 12px;min-height:34px;font-family:inherit;cursor:pointer;}
+  .diff button.on{color:var(--ac);border-color:var(--ac);background:var(--ac-soft);}
+  .btn{appearance:none;border:1px solid rgba(185,140,255,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:8px;font-size:12px;padding:8px 14px;min-height:34px;font-family:inherit;cursor:pointer;}
+
+  .board{width:100%;max-width:460px;display:grid;gap:10px;perspective:800px;}
+  .card{position:relative;aspect-ratio:1/1;cursor:pointer;transform-style:preserve-3d;transition:transform .35s;}
+  .card .face{position:absolute;inset:0;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;font-size:30px;}
+  .card .back{background:linear-gradient(160deg,#2a2040,#1c1424);border:1px solid var(--line);transform:rotateY(0deg);}
+  .card .front{background:var(--panel);border:1px solid var(--ac);transform:rotateY(180deg);}
+  .card.flip{transform:rotateY(180deg);}
+  .card.done .front{border-color:rgba(185,140,255,.5);background:var(--ac-soft);}
+  .tip{margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;max-width:460px;}
+  .foot{margin-top:18px;color:#443a58;font-size:11px;letter-spacing:2px;text-align:center;}
+  @media (min-width:520px){ body{padding-top:26px;} .card .face{font-size:40px;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">记忆翻牌</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">步数</div><div class="val" id="moves">0</div></div>
+      <div class="box"><div class="lbl">最佳</div><div class="val" id="best">-</div></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="diff">
+      <button data-sz="4" class="on">4×4</button>
+      <button data-sz="6">6×4</button>
+    </div>
+    <button class="btn" id="newBtn">新一局</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <p class="tip">点击翻开卡片，找到两张相同即可配对；翻错会自动盖回<br>步数越少、用时越短越好，最佳记录按牌数分别保存</p>
+  <div class="foot">翻开记忆，一一配对 · 妙搭小站 V4.4.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var EMOJI=['🍎','🍌','🍇','🍓','🍍','🥝','🍉','🍊','🍒','🫐','🍑','🥭','🍋','🍈','🫒','🧁','🍩','🍪','🍭','🌽','🥕','🍄','🐼','🦊'];
+  var size=4, cols=4, rows=4;
+  var bestMap={}; try{bestMap=JSON.parse(localStorage.getItem('miaodaMemoryBestV44')||'{}');}catch(e){bestMap={};}
+  var first=null, second=null, moves=0, matched=0, lock=false, cards=[];
+
+  function key(){ return cols+'x'+rows; }
+  function renderBest(){ document.getElementById('best').textContent=(bestMap[key()]!=null)?bestMap[key()]:'-'; }
+
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+  function newGame(){
+    var pairs=cols*rows/2;
+    var faces=shuffle(EMOJI.slice(0,pairs)); faces=faces.concat(faces); shuffle(faces);
+    var board=document.getElementById('board');
+    board.style.gridTemplateColumns='repeat('+cols+',1fr)';
+    board.innerHTML=''; cards=[]; first=second=null; moves=0; matched=0; lock=false;
+    document.getElementById('moves').textContent=0;
+    renderBest();
+    faces.forEach(function(f,i){
+      var el=document.createElement('div');
+      el.className='card';
+      el.innerHTML='<div class="face back"></div><div class="face front">'+f+'</div>';
+      el.addEventListener('click',function(){ flip(i); });
+      board.appendChild(el); cards.push({el:el,face:f,open:false,done:false});
+    });
+  }
+  function flip(i){
+    if(lock) return; var c=cards[i]; if(c.open||c.done) return;
+    c.open=true; c.el.classList.add('flip');
+    if(first===null){ first=i; return; }
+    second=i; moves++; document.getElementById('moves').textContent=moves;
+    if(cards[first].face===cards[second].face){
+      cards[first].done=cards[second].done=true;
+      cards[first].el.classList.add('done'); cards[second].el.classList.add('done');
+      matched++; first=second=null;
+      if(matched===cols*rows/2){ finish(); }
+    } else {
+      lock=true;
+      setTimeout(function(){ cards[first].open=cards[second].open=false;
+        cards[first].el.classList.remove('flip'); cards[second].el.classList.remove('flip');
+        first=second=null; lock=false; }, 700);
+    }
+  }
+  function finish(){
+    var k=key();
+    if(bestMap[k]==null || moves<bestMap[k]){ bestMap[k]=moves; try{localStorage.setItem('miaodaMemoryBestV44',JSON.stringify(bestMap));}catch(e){} renderBest(); }
+    setTimeout(function(){ alert('🎉 配对完成！共 '+moves+' 步'); }, 300);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.diff button'),function(b){
+    b.addEventListener('click',function(){
+      cols=b.dataset.sz==='4'?4:6; rows=4; size=b.dataset.sz;
+      Array.prototype.forEach.call(document.querySelectorAll('.diff button'),function(x){x.classList.remove('on');});
+      b.classList.add('on'); newGame();
+    });
+  });
+  document.getElementById('newBtn').addEventListener('click',newGame);
+  newGame();
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>
