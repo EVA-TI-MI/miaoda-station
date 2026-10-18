@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#0c1512">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>跳一跳 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#0c1512; --panel:#14241f; --line:#28453c;
+    --txt:#e6f4ee; --sub:#8fa99e;
+    --ac:#46d39a; --ac-soft:rgba(70,211,154,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(70,211,154,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(86,200,255,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(24,44,38,.85);border:1px solid rgba(70,211,154,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(70,211,154,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:62px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .cv-wrap{width:100%;max-width:480px;position:relative;}
+  canvas{width:100%;max-width:480px;height:440px;display:block;border-radius:14px;touch-action:none;cursor:pointer;
+    background:linear-gradient(180deg,#163026 0%,#0d1a18 60%,#0a1412 100%);
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(70,211,154,.1);}
+  .ov{position:absolute;inset:0;border-radius:14px;background:rgba(8,16,13,.82);display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;text-align:center;padding:20px;backdrop-filter:blur(2px);}
+  .ov.show{display:flex;}
+  .ov .big{font-size:40px;}
+  .ov h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:26px;letter-spacing:4px;}
+  .ov p{color:var(--sub);font-size:13px;line-height:1.8;}
+  .ov .btn{margin-top:6px;}
+  .btn{appearance:none;border:1px solid rgba(70,211,154,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:14px;padding:11px 26px;min-height:44px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .tip{margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;max-width:480px;}
+  .foot{margin-top:18px;color:#44615a;font-size:11px;letter-spacing:2px;text-align:center;}
+  @media (min-width:520px){ body{padding-top:26px;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">跳一跳</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">得分</div><div class="val" id="score">0</div></div>
+      <div class="box"><div class="lbl">最佳</div><div class="val" id="best">0</div></div>
+    </div>
+  </div>
+
+  <div class="cv-wrap">
+    <canvas id="cv"></canvas>
+    <div class="ov" id="ov">
+      <div class="big" id="ovBig">💫</div>
+      <h2 id="ovTitle">游戏结束</h2>
+      <p id="ovP"></p>
+      <button class="btn" id="ovBtn">再来一跳</button>
+    </div>
+  </div>
+
+  <p class="tip" id="tip">按住屏幕（或空格）蓄力，松手跳出；落在方块中心可 +2 分并连击<br>蓄力越久跳得越远，落入空隙即结束</p>
+  <div class="foot">蓄力一跃，落点于心 · 妙搭小站 V4.3.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaJumpBestV43';
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var best=0; try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0;}catch(e){}
+  document.getElementById('best').textContent=best;
+
+  var HALF_W=52, HALF_H=28, HZ=3.0;
+  var PLAT_H=5, CHAR_H=0.72;
+  var MIN_D=0.9, MAX_D=4.8, CHARGE_TIME=1.15, DUR_PER=0.16, JUMP_H=3.4;
+  var plats=[], cur=0, score=0, streak=0;
+  var state='ready', charge=0;
+  var jump=null; // {from,dist,t,dur}
+  var charX=0;
+  var ftexts=[];
+  var DPR=1, W=0, H=0;
+
+  function hsl(h,s,l,a){return 'hsla('+h+','+s+'%,'+l+'%,'+(a==null?1:a)+')';}
+
+  function resize(){
+    DPR=window.devicePixelRatio||1;
+    W=cv.clientWidth||480; H=cv.clientHeight||440;
+    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize',resize);
+
+  function reset(){
+    plats=[{x:0,r:1.8,h:PLAT_H,hue:150},{x:2.6,r:1.7,h:PLAT_H,hue:158}];
+    cur=0; charX=0; score=0; streak=0;
+    state='ready'; charge=0; jump=null; ftexts=[];
+    genAhead();
+    document.getElementById('score').textContent=0;
+    document.getElementById('ov').classList.remove('show');
+    document.getElementById('tip').style.display='';
+  }
+  function genAhead(){
+    while(plats.length<cur+5){
+      var prev=plats[plats.length-1];
+      var gap=2.2+Math.random()*1.0;
+      plats.push({x:prev.x+gap, r:Math.random()<0.5?1.0:1.7, h:PLAT_H, hue:150+Math.random()*26});
+    }
+  }
+
+  // 世界坐标 -> 屏幕坐标（固定 y=0，相随当前+下一方块中心）
+  function camW(){ return (plats[cur].x + (plats[cur+1]?plats[cur+1].x:plats[cur].x))/2; }
+  function s(wx,wy,wz){
+    var c=camW();
+    return { x:(wx-wy)*HALF_W - c*HALF_W + W/2,
+             y:(wx+wy)*HALF_H - wz*HZ  - c*HALF_H + H*0.52 };
+  }
+  function prism(wx,r,zb,hgt,colTop,colRight,colFront){
+    function P(px,py,pz){ var p=s(px,py,pz); return [p.x,p.y]; }
+    var tA=P(wx-r,-r,zb+hgt), tB=P(wx+r,-r,zb+hgt), tC=P(wx+r,+r,zb+hgt), tD=P(wx-r,+r,zb+hgt);
+    var bA=P(wx-r,-r,zb), bB=P(wx+r,-r,zb), bC=P(wx+r,+r,zb), bD=P(wx-r,+r,zb);
+    // 前面（靠近观察者，y=+r）
+    poly([bD,tD,tC,bC],colFront);
+    // 右面（x=+r）
+    poly([bB,tB,tC,bC],colRight);
+    // 顶面
+    poly([tA,tB,tC,tD],colTop);
+  }
+  function poly(pts,fill){
+    ctx.fillStyle=fill;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0],pts[0][1]);
+    for(var i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+    ctx.closePath(); ctx.fill();
+  }
+
+  function drawPlatform(p){
+    prism(p.x,p.r,0,p.h, hsl(p.hue,40,56), hsl(p.hue,40,44), hsl(p.hue,40,34));
+    // 中心标识（落点提示）
+    var c=s(p.x,0,p.h);
+    ctx.fillStyle='rgba(255,255,255,.16)';
+    ctx.beginPath(); ctx.arc(c.x,c.y,5,0,Math.PI*2); ctx.fill();
+  }
+  function drawChar(){
+    var zbase = jump? plats[cur].h + 4*JUMP_H*jump.t*(1-jump.t) : plats[cur].h;
+    // 蓄力时压扁
+    var zh=CHAR_H;
+    if(state==='charging'){ zh=CHAR_H*(1-0.45*charge); zbase=plats[cur].h; }
+    var chxh=46;
+    prism(charX,0.52,zbase,zh, hsl(chxh,75,62), hsl(chxh,72,48), hsl(chxh,72,38));
+    // 眼睛
+    var e=s(charX,0,zbase+zh);
+    var ec=s(charX,0,zbase+zh);
+    ctx.fillStyle='#1c1c1c';
+    ctx.beginPath(); ctx.arc(e.x-5,e.y-3,2.6,0,Math.PI*2); ctx.arc(e.x+5,e.y-3,2.6,0,Math.PI*2); ctx.fill();
+  }
+  function drawShadow(){
+    var c=s(charX,0,plats[cur].h);
+    var a=0.28;
+    ctx.fillStyle='rgba(0,0,0,'+a+')';
+    ctx.beginPath(); ctx.ellipse(c.x,c.y,16,6,0,0,Math.PI*2); ctx.fill();
+  }
+  function drawCharge(){
+    if(state!=='charging') return;
+    var c=s(charX,0,plats[cur].h);
+    var bw=88, bh=9, x=c.x-bw/2, y=c.y-54-CHAR_H*HZ;
+    ctx.fillStyle='rgba(8,16,13,.7)';
+    roundRect(x-3,y-3,bw+6,bh+6,8); ctx.fill();
+    var col = charge<0.5? 'hsl('+(150-160*charge*2)+',80%,55%)' : 'hsl('+(70-140*(charge-0.5)*2)+',90%,55%)';
+    ctx.fillStyle='rgba(255,255,255,.12)';
+    roundRect(x,y,bw,bh,6); ctx.fill();
+    ctx.fillStyle=col;
+    roundRect(x,y,bw*charge,bh,6); ctx.fill();
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function drawFloatTexts(dt){
+    for(var i=ftexts.length-1;i>=0;i--){
+      var f=ftexts[i]; f.age+=dt; f.y-=dt*26;
+      ctx.globalAlpha=Math.max(0,1-f.age/0.9);
+      ctx.fillStyle=f.color;
+      ctx.font='bold 22px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha=1;
+      if(f.age>0.9) ftexts.splice(i,1);
+    }
+  }
+
+  var last=0;
+  function loop(ts){
+    var dt=Math.min(0.05,(ts-last)/1000||0); last=ts;
+    update(dt);
+    render(dt);
+    requestAnimationFrame(loop);
+  }
+  function update(dt){
+    if(state==='charging'){
+      charge=Math.min(1,charge+dt/CHARGE_TIME);
+    } else if(state==='jumping' && jump){
+      jump.t+=dt/jump.dur;
+      charX=jump.from+jump.dist*jump.t;
+      if(jump.t>=1){ land(); }
+    }
+  }
+  function render(dt){
+    ctx.clearRect(0,0,W,H);
+    // 平台
+    for(var i=0;i<plats.length;i++){ if(i<cur-3) continue; drawPlatform(plats[i]); }
+    // 阴影 + 角色
+    drawShadow();
+    drawChar();
+    drawCharge();
+    drawFloatTexts(dt);
+  }
+
+  function startCharge(){
+    if(state==='ready'){ state='charging'; charge=0; }
+  }
+  function release(){
+    if(state!=='charging') return;
+    var dist=MIN_D+charge*(MAX_D-MIN_D);
+    jump={from:charX, dist:dist, t:0, dur:0.12+dist*DUR_PER};
+    state='jumping';
+    charge=0;
+  }
+  function land(){
+    var x=charX;
+    var landed=-1;
+    for(var i=plats.length-1;i>=0;i--){
+      var p=plats[i];
+      if(Math.abs(x-p.x)<=p.r){ landed=i; break; }
+    }
+    if(landed<0){
+      gameOver(); return;
+    }
+    if(landed===cur){
+      // 原地小跳，无得分
+      charX=plats[cur].x; state='ready'; jump=null; return;
+    }
+    // 成功
+    var perfect=Math.abs(x-plats[landed].x) < plats[landed].r*0.3;
+    var gain=perfect?2:1;
+    score+=gain;
+    var c=s(plats[landed].x,0,plats[landed].h);
+    ftexts.push({x:c.x, y:c.y-36, text:'+'+(perfect?2:1), age:0, color:perfect?hsl(46,90,60):hsl(70,70,75)});
+    if(perfect){ streak++; } else { streak=0; }
+    document.getElementById('score').textContent=score;
+    if(score>best){ best=score; document.getElementById('best').textContent=best; try{localStorage.setItem(BEST_KEY,String(best));}catch(e){} }
+    cur=landed; charX=plats[landed].x;
+    jump=null; state='ready';
+    genAhead();
+    if(streak>=3){
+      var c2=s(charX,0,plats[cur].h);
+      ftexts.push({x:c2.x,y:c2.y-64,text:'连击 ×'+streak,age:0,color:hsl(46,95,62)});
+    }
+  }
+  function gameOver(){
+    state='over'; jump=null;
+    document.getElementById('ovBig').textContent='💫';
+    document.getElementById('ovTitle').textContent='落入空隙';
+    document.getElementById('ovP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>历史最佳 '+best;
+    document.getElementById('ov').classList.add('show');
+  }
+
+  // 交互
+  cv.addEventListener('pointerdown',function(e){ e.preventDefault(); if(state==='over')return; startCharge(); });
+  cv.addEventListener('pointerup',function(){ release(); });
+  cv.addEventListener('pointerleave',function(){ release(); });
+  cv.addEventListener('pointercancel',function(){ release(); });
+
+  document.addEventListener('keydown',function(e){
+    if(e.code==='Space'){ if(state==='over'){reset();} else { e.preventDefault(); if(!e.repeat) startCharge(); } }
+    else if(e.key==='r'||e.key==='R'){ reset(); }
+  });
+  document.addEventListener('keyup',function(e){ if(e.code==='Space') release(); });
+
+  document.getElementById('ovBtn').addEventListener('click',reset);
+
+  resize();
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

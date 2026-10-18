@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#16120a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>2048 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#161208; --panel:#241c10; --line:#3a2e18;
+    --txt:#f2e8d2; --sub:#a6946c;
+    --ac:#f0b72a; --ac-soft:rgba(240,183,42,.14);
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(240,183,42,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(240,145,42,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(45,36,20,.85);border:1px solid rgba(240,183,42,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(240,183,42,.28);}
+  .scores{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:62px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .bar{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .bar p{font-size:12.5px;color:var(--sub);line-height:1.6;}
+  .btn{appearance:none;border:1px solid rgba(240,183,42,.45);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:10px 16px;min-height:42px;font-family:inherit;cursor:pointer;white-space:nowrap;}
+  .btn:active{transform:scale(.95);}
+
+  .board-wrap{width:100%;max-width:460px;position:relative;}
+  .board{position:relative;width:100%;aspect-ratio:1/1;background:var(--panel);border:2px solid var(--line);
+    border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(240,183,42,.1);
+    touch-action:none;user-select:none;}
+  .board .bg{position:absolute;inset:0;padding:12px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:12px;}
+  .board .bg i{background:rgba(255,255,255,.035);border-radius:9px;}
+  .tiles{position:absolute;inset:0;pointer-events:none;}
+  .tile{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:9px;
+    font-weight:800;font-family:"Arial","Helvetica",sans-serif;font-variant-numeric:tabular-nums;
+    box-shadow:inset 0 2px 0 rgba(0,0,0,.12);transform:scale(1);}
+  .tile.new{animation:pop .18s ease;}
+  .tile.merged{animation:bump .2s ease;}
+  @keyframes pop{0%{transform:scale(0);}100%{transform:scale(1);}}
+  @keyframes bump{0%{transform:scale(1);}50%{transform:scale(1.18);}100%{transform:scale(1);}}
+
+  .mask{position:absolute;inset:0;background:rgba(24,18,8,.84);border-radius:12px;display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:20;text-align:center;padding:20px;backdrop-filter:blur(2px);}
+  .mask.show{display:flex;}
+  .mask .big{font-size:42px;font-weight:800;color:var(--ac);letter-spacing:4px;font-family:Arial,sans-serif;}
+  .mask p{color:var(--sub);font-size:13px;}
+
+  .foot{margin-top:18px;color:#6b5a34;font-size:11px;letter-spacing:2px;text-align:center;}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);background:rgba(30,24,12,.97);
+    border:1px solid rgba(240,183,42,.45);color:var(--txt);padding:10px 18px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:86vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  @media (min-width:520px){ body{padding-top:30px;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">2048</div>
+    <div class="scores">
+      <div class="box"><div class="lbl">得分</div><div class="val" id="score">0</div></div>
+      <div class="box"><div class="lbl">最佳</div><div class="val" id="best">0</div></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <p>方向键 / WASD 滑动方块，或手指滑动<br>相同数字合并，向 2048 进发</p>
+    <button class="btn" id="newBtn">新游戏</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board">
+      <div class="bg" id="bg"></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="mask" id="mask">
+        <div class="big" id="maskBig">2048</div>
+        <p id="maskP"></p>
+        <button class="btn" id="maskBtn">再来一局</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">方寸之间，移数成八 · 妙搭小站 V4.3.0</div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaoda2048BestV43';
+  var SIZE=4, PAD=12, GAP=12;
+  var tilesEl=document.getElementById('tiles');
+  var grid=[], tiles={}, score=0, best=0, over=false, won=false, nextId=0;
+
+  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0;}catch(e){}
+  document.getElementById('best').textContent=best;
+
+  function geometry(){
+    var areaW=tilesEl.clientWidth||460;
+    var content=areaW-PAD*2;
+    var cell=(content-GAP*(SIZE-1))/SIZE;
+    return {pad:PAD,gap:GAP,cell:cell};
+  }
+  function empty(){
+    var arr=[];
+    for(var r=0;r<SIZE;r++)for(var c=0;c<SIZE;c++) if(grid[r][c]===0) arr.push({r:r,c:c});
+    return arr;
+  }
+  function addRandom(){
+    var e=empty();
+    if(!e.length) return false;
+    var p=e[Math.floor(Math.random()*e.length)];
+    grid[p.r][p.c]=Math.random()<0.9?2:4;
+    spawnTile(p.r,p.c,grid[p.r][p.c],true);
+    return true;
+  }
+  function spawnTile(r,c,v,isNew){
+    var id=nextId++;
+    var el=document.createElement('div');
+    el.className='tile'+(isNew?' new':'');
+    el.dataset.id=id;
+    tilesEl.appendChild(el);
+    tiles[id]={el:el,r:r,c:c,v:v};
+    layoutTile(el,r,c,v);
+  }
+  function getColor(v){
+    var map={
+      2:{bg:'#33301f',fg:'#e6d9b8'},4:{bg:'#3d3822',fg:'#e6d9b8'},
+      8:{bg:'#8a5a1f',fg:'#fff'},16:{bg:'#b06a1c',fg:'#fff'},
+      32:{bg:'#d27a23',fg:'#fff'},64:{bg:'#e08b28',fg:'#fff'},
+      128:{bg:'#f0a236',fg:'#fff'},256:{bg:'#f0b72a',fg:'#fff'},
+      512:{bg:'#f0c43a',fg:'#fff'},1024:{bg:'#f0d14a',fg:'#5a3c00'},
+      2048:{bg:'#ffe066',fg:'#5a3c00'}
+    };
+    return map[v]||(v>2048?{bg:'#3a2f10',fg:'#fff'}:{bg:'#3a361f',fg:'#e6d9b8'});
+  }
+  function fontSize(v){
+    var len=(v+'').length;
+    if(len<=2) return 'clamp(22px,8vw,40px)';
+    if(len===3) return 'clamp(18px,6.8vw,34px)';
+    if(len===4) return 'clamp(14px,5.6vw,28px)';
+    return 'clamp(12px,4.6vw,22px)';
+  }
+  function layoutTile(el,r,c,v){
+    var g=geometry();
+    el.style.width=g.cell+'px';
+    el.style.height=g.cell+'px';
+    el.style.left=(g.pad+c*(g.cell+g.gap))+'px';
+    el.style.top=(g.pad+r*(g.cell+g.gap))+'px';
+    var col=getColor(v);
+    el.style.background=col.bg; el.style.color=col.fg;
+    el.style.fontSize=fontSize(v);
+    el.textContent=v;
+  }
+
+  function newGame(){
+    grid=[];
+    for(var r=0;r<SIZE;r++)grid.push([0,0,0,0]);
+    tilesEl.innerHTML=''; tiles={}; nextId=0;
+    score=0; over=false; won=false;
+    document.getElementById('score').textContent=0;
+    document.getElementById('mask').classList.remove('show');
+    addRandom(); addRandom();
+  }
+
+  function mergeLine(line){
+    var nums=line.filter(function(v){return v!==0;});
+    var res=[], gain=0;
+    for(var i=0;i<nums.length;i++){
+      if(i+1<nums.length && nums[i]===nums[i+1]){ var m=nums[i]*2; res.push(m); gain+=m; i++; }
+      else res.push(nums[i]);
+    }
+    while(res.length<SIZE) res.push(0);
+    return {line:res,gain:gain};
+  }
+  function slide(dir){
+    if(over) return;
+    var moved=false, gain=0;
+    function dirA(src){ return (dir==='right'||dir==='down')?src.slice().reverse():src; }
+    function dirB(out){ return (dir==='right'||dir==='down')?out.slice().reverse():out; }
+    if(dir==='left'||dir==='right'){
+      for(var r=0;r<SIZE;r++){
+        var src=[]; for(var c=0;c<SIZE;c++) src.push(grid[r][c]);
+        var out=dirB(mergeLine(dirA(src)).line);
+        for(c=0;c<SIZE;c++){ if(grid[r][c]!==out[c]) moved=true; grid[r][c]=out[c]; }
+        gain+=mergeLine(dirA(src)).gain;
+      }
+    } else {
+      for(var cc=0;cc<SIZE;cc++){
+        var src2=[]; for(var rr=0;rr<SIZE;rr++) src2.push(grid[rr][cc]);
+        var out2=dirB(mergeLine(dirA(src2)).line);
+        for(rr=0;rr<SIZE;rr++){ if(grid[rr][cc]!==out2[rr]) moved=true; grid[rr][cc]=out2[rr]; }
+        gain+=mergeLine(dirA(src2)).gain;
+      }
+    }
+    if(!moved) return;
+    score+=gain;
+    document.getElementById('score').textContent=score;
+    if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
+    rebuildTiles();
+    addRandom();
+    checkEnd();
+  }
+
+  function rebuildTiles(){
+    tiles={};
+    tilesEl.innerHTML='';
+    nextId=0;
+    for(var r=0;r<SIZE;r++)for(var c=0;c<SIZE;c++) if(grid[r][c]) spawnTile(r,c,grid[r][c],false);
+  }
+  function relayout(){
+    for(var id in tiles){ var t=tiles[id]; layoutTile(t.el,t.r,t.c,t.v); }
+  }
+
+  function canMove(){
+    for(var r=0;r<SIZE;r++)for(var c=0;c<SIZE;c++){
+      if(grid[r][c]===0) return true;
+      if(c+1<SIZE && grid[r][c]===grid[r][c+1]) return true;
+      if(r+1<SIZE && grid[r][c]===grid[r+1][c]) return true;
+    }
+    return false;
+  }
+  function hasWin(){
+    for(var r=0;r<SIZE;r++)for(var c=0;c<SIZE;c++) if(grid[r][c]===2048) return true;
+    return false;
+  }
+  var toastT=null;
+  function toast(msg){
+    var el=document.getElementById('toast');
+    el.textContent=msg;el.classList.add('show');
+    clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('show');},2600);
+  }
+  function checkEnd(){
+    if(!won && hasWin()){
+      won=true;
+      toast('达成 2048！继续冲击更高分');
+      return;
+    }
+    if(!canMove()){
+      over=true;
+      document.getElementById('maskBig').textContent='失败';
+      document.getElementById('maskP').textContent='没有可移动的方块了';
+      document.getElementById('mask').classList.add('show');
+    }
+  }
+
+  var KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
+  document.addEventListener('keydown',function(e){
+    var d=KEYMAP[e.key];
+    if(d){e.preventDefault();slide(d);}
+  });
+
+  var sx=0,sy=0,drag=false;
+  document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;drag=true;},{passive:true});
+  document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+  document.addEventListener('touchend',function(e){
+    if(!drag) return; drag=false;
+    var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx)<20&&Math.abs(dy)<20) return;
+    if(Math.abs(dx)>Math.abs(dy)) slide(dx>0?'right':'left'); else slide(dy>0?'down':'up');
+  });
+
+  document.getElementById('newBtn').addEventListener('click',newGame);
+  document.getElementById('maskBtn').addEventListener('click',function(){
+    document.getElementById('mask').classList.remove('show'); newGame();
+  });
+  window.addEventListener('resize',relayout);
+  window.addEventListener('load',relayout);
+
+  (function(){var bg=document.getElementById('bg'); for(var i=0;i<16;i++){var s=document.createElement('i');bg.appendChild(s);}})();
+
+  newGame();
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

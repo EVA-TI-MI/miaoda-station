@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#14100b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>推箱子 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#13100b; --panel:#221b12; --line:#3a2e1e; --line-bold:#6b5738;
+    --txt:#f1e6d4; --sub:#a9927a;
+    --ac:#e0a44b; --ac-soft:rgba(224,164,75,.14);
+    --wall:#3a2f20; --floor:#1d1710; --goal:#7a6a4a; --box:#cf9040; --box-on:#5fae6a; --player:#f0cf7a;
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(224,164,75,.13) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(95,174,106,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(45,34,22,.85);border:1px solid rgba(224,164,75,.3);color:var(--ac);font-size:13px;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(224,164,75,.28);}
+  .stat{font-size:13px;color:var(--sub);min-width:52px;text-align:right;font-variant-numeric:tabular-nums;}
+  .stat b{color:var(--txt);font-weight:600;}
+
+  .bar{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  select{appearance:none;background:var(--panel);border:1px solid rgba(224,164,75,.4);color:var(--txt);
+    border-radius:10px;font-size:14px;padding:10px 30px 10px 12px;font-family:inherit;flex:1;min-height:44px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e0a44b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;}
+  .bar .nums{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--sub);white-space:nowrap;}
+  .bar .nums b{color:var(--txt);font-variant-numeric:tabular-nums;}
+
+  .board-wrap{width:100%;max-width:460px;}
+  .board{width:100%;display:grid;background:var(--line-bold);border:2px solid var(--line-bold);border-radius:12px;
+    overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(224,164,75,.12);
+    touch-action:none;user-select:none;}
+  .cell{position:relative;aspect-ratio:1/1;background:var(--floor);}
+  .cell.wall{background:linear-gradient(150deg,#4a3d2b,#33281a);box-shadow:inset 0 2px 0 rgba(255,255,255,.06),inset 0 -3px 5px rgba(0,0,0,.35);}
+  .cell .goal{position:absolute;left:50%;top:50%;width:34%;height:34%;transform:translate(-50%,-50%);
+    border-radius:50%;border:2px dashed var(--goal);opacity:.85;}
+  .cell.wall .goal{display:none;}
+  .cell.goal{background:
+      radial-gradient(circle,rgba(224,164,75,.10) 0%,transparent 70%),var(--floor);}
+  .cell .box{position:absolute;inset:7%;border-radius:7px;background:linear-gradient(150deg,#e2a44c,#a76a24);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 5px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.4);
+    display:flex;align-items:center;justify-content:center;font-size:clamp(13px,4.6vw,22px);
+    color:rgba(0,0,0,.4);transition:transform .12s ease;}
+  .cell .box.on{background:linear-gradient(150deg,#6fc27d,#3f8c54);box-shadow:0 0 14px rgba(95,174,106,.55);}
+  .cell .player{position:absolute;inset:12%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3cd,#e8c06a 55%,#c99a3e);
+    box-shadow:0 3px 8px rgba(0,0,0,.45),0 0 12px rgba(240,207,122,.4);transition:transform .12s ease;}
+  .cell .player::after{content:"";position:absolute;left:24%;top:18%;width:24%;height:20%;border-radius:50%;
+    background:rgba(255,255,255,.55);}
+
+  .dpad{width:100%;max-width:460px;margin-top:14px;display:grid;grid-template-columns:repeat(3,58px);
+    grid-template-rows:repeat(2,52px);gap:9px;justify-content:center;}
+  .dpad button{border:1px solid rgba(224,164,75,.4);background:var(--panel);color:var(--ac);
+    border-radius:10px;font-size:20px;font-family:inherit;cursor:pointer;min-height:52px;}
+  .dpad button:active{background:rgba(224,164,75,.22);transform:scale(.93);}
+  .dpad .up{grid-column:2;grid-row:1;} .dpad .left{grid-column:1;grid-row:2;}
+  .dpad .down{grid-column:2;grid-row:2;} .dpad .right{grid-column:3;grid-row:2;}
+
+  .tools{width:100%;max-width:460px;margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .btn{appearance:none;border:1px solid rgba(224,164,75,.4);background:rgba(224,164,75,.12);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:11px 6px;min-height:46px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+  .btn.ghost{background:transparent;color:var(--sub);border-color:var(--line);}
+  .btn[disabled]{opacity:.4;pointer-events:none;}
+  .tip{width:100%;max-width:460px;margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8;text-align:center;}
+  .foot{margin-top:18px;color:#6b5638;font-size:11px;letter-spacing:2px;text-align:center;}
+
+  .win{position:fixed;inset:0;background:rgba(12,9,5,.75);display:none;align-items:center;justify-content:center;z-index:70;padding:20px;}
+  .win.show{display:flex;}
+  .win .card{background:linear-gradient(160deg,#2a2014,#1a140d);border:1px solid rgba(224,164,75,.5);
+    border-radius:18px;padding:28px 24px;max-width:330px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6);}
+  .win h2{font-family:"STKaiti","KaiTi",serif;color:var(--ac);font-size:26px;letter-spacing:6px;margin-bottom:14px;}
+  .win .row{display:flex;justify-content:space-between;font-size:14px;color:var(--sub);padding:8px 6px;border-bottom:1px solid var(--line);}
+  .win .row b{color:var(--txt);font-weight:600;}
+  .win .btns{display:flex;gap:10px;margin-top:18px;}
+  .win .btns .btn{flex:1;}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);background:rgba(28,21,13,.97);
+    border:1px solid rgba(224,164,75,.45);color:var(--txt);padding:10px 18px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:86vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  @media (min-width:520px){ body{padding-top:30px;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">推箱子</div>
+    <div class="stat"><span id="time">00:00</span></div>
+  </div>
+
+  <div class="bar">
+    <select id="lvSel" aria-label="选择关卡"></select>
+    <div class="nums">步 <b id="stepN">0</b> · 本关最佳 <b id="bestN">—</b></div>
+  </div>
+
+  <div class="board-wrap"><div class="board" id="board"></div></div>
+
+  <div class="dpad">
+    <button class="up" data-d="up" aria-label="上移">▲</button>
+    <button class="left" data-d="left" aria-label="左移">◀</button>
+    <button class="down" data-d="down" aria-label="下移">▼</button>
+    <button class="right" data-d="right" aria-label="右移">▶</button>
+  </div>
+
+  <div class="tools">
+    <button class="btn ghost" id="undoBtn">撤销 <small>Z</small></button>
+    <button class="btn ghost" id="resetBtn">重置</button>
+    <button class="btn" id="prevBtn">上一关</button>
+    <button class="btn" id="nextBtn">下一关</button>
+  </div>
+  <p class="tip">用方向键 / WASD 控制小人，或点方向按钮；把木箱全部推到圆点目标上即过关。<br>也可在棋盘上滑动来移动。</p>
+  <div class="foot">推箱入位，步步为营 · 妙搭小站 V4.3.0</div>
+
+  <div class="win" id="winMask">
+    <div class="card">
+      <h2>过关</h2>
+      <div class="row"><span>关卡</span><b id="wLv">—</b></div>
+      <div class="row"><span>步数</span><b id="wStep">—</b></div>
+      <div class="row"><span>用时</span><b id="wTime">—</b></div>
+      <div class="row"><span>本关最佳</span><b id="wBest">—</b></div>
+      <div class="btns">
+        <button class="btn ghost" id="wReplay">重玩</button>
+        <button class="btn" id="wNext">下一关</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaSokobanBestV43';
+  // 关卡：#墙  .目标  $箱  @人  *箱在目标  +人在目标
+  var LEVELS=[
+    ['#####','#@$.#','#####'],
+    ['######','#    #','# .  #','#  $ #','# @  #','######'],
+    ['########','#      #','# .  . #','# $  $ #','#  @   #','########'],
+    ['#########','#       #','# . . . #','#  $$$  #','#   @   #','#########'],
+    ['########','#      #','# $.   #','#  $ . #','#   @  #','########'],
+    ['#########','#       #','# . . . #','# $ $ $ #','#       #','#   @   #','#########'],
+    ['#########','#       #','# . . . #','# $   $ #','#   $   #','#       #','#   @   #','#########']
+  ];
+  var best={};
+  try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+
+  var boardEl=document.getElementById('board'), lvSel=document.getElementById('lvSel');
+  for(var i=0;i<LEVELS.length;i++){var o=document.createElement('option');o.value=i;o.textContent='第 '+(i+1)+' 关';lvSel.appendChild(o);}
+
+  var state=null, lvIdx=0, stack=[], steps=0, elapsed=0, timer=null, started=false, ended=false;
+  var DIRS={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+
+  function key(r,c){return r+','+c;}
+  function parseLevel(rows){
+    var H=rows.length, W=0;
+    for(var i=0;i<H;i++) W=Math.max(W,rows[i].length);
+    var wall={}, goal={}, boxes={}, player={r:0,c:0};
+    for(var r=0;r<H;r++){
+      for(var c=0;c<rows[r].length;c++){
+        var ch=rows[r][c];
+        if(ch==='#') wall[key(r,c)]=true;
+        else if(ch==='.') goal[key(r,c)]=true;
+        else if(ch==='$') boxes[key(r,c)]=true;
+        else if(ch==='@') player={r:r,c:c};
+        else if(ch==='*'){ goal[key(r,c)]=true; boxes[key(r,c)]=true; }
+        else if(ch==='+'){ goal[key(r,c)]=true; player={r:r,c:c}; }
+      }
+    }
+    return {H:H,W:W,wall:wall,goal:goal,boxes:boxes,player:player};
+  }
+  function cloneBoxes(b){var o={};for(var k in b)o[k]=true;return o;}
+
+  function loadLevel(idx){
+    lvIdx=idx;
+    state=parseLevel(LEVELS[idx]);
+    stack=[]; steps=0; elapsed=0; ended=false; started=false; timerStop();
+    lvSel.value=idx;
+    buildBoard();
+    render();
+    updateStats();
+    document.getElementById('bestN').textContent=best[idx]?best[idx]+' 步':'—';
+    document.getElementById('winMask').classList.remove('show');
+    document.getElementById('prevBtn').disabled=(idx===0);
+    document.getElementById('nextBtn').disabled=(idx===LEVELS.length-1);
+  }
+
+  function buildBoard(){
+    boardEl.innerHTML='';
+    boardEl.style.gridTemplateColumns='repeat('+state.W+',1fr)';
+    for(var r=0;r<state.H;r++){
+      for(var c=0;c<state.W;c++){
+        var cell=document.createElement('div');
+        cell.className='cell'; cell.dataset.r=r; cell.dataset.c=c;
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+  function render(){
+    for(var r=0;r<state.H;r++){
+      for(var c=0;c<state.W;c++){
+        var cell=boardEl.children[r*state.W+c];
+        cell.innerHTML='';
+        cell.className='cell';
+        var k=key(r,c);
+        if(state.wall[k]){ cell.classList.add('wall'); continue; }
+        if(state.goal[k]){ cell.classList.add('goal'); var g=document.createElement('span'); g.className='goal'; cell.appendChild(g); }
+        if(state.boxes[k]){
+          var b=document.createElement('div'); b.className='box'+(state.goal[k]?' on':''); b.textContent='●';
+          cell.appendChild(b);
+        }
+        if(state.player.r===r&&state.player.c===c){
+          var p=document.createElement('div'); p.className='player'; cell.appendChild(p);
+        }
+      }
+    }
+  }
+  function updateStats(){
+    document.getElementById('stepN').textContent=steps;
+    var m=Math.floor(elapsed/60),s=elapsed%60;
+    document.getElementById('time').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  }
+  function startTimer(){
+    if(started) return;
+    started=true;
+    var last=Date.now();
+    timer=setInterval(function(){
+      var now=Date.now();
+      if(now-last>=1000){elapsed+=Math.floor((now-last)/1000);last+=Math.floor((now-last)/1000)*1000;updateStats();}
+    },500);
+  }
+  function timerStop(){if(timer){clearInterval(timer);timer=null;}started=false;}
+
+  function move(d){
+    if(ended||!state) return;
+    var dir=DIRS[d]; if(!dir) return;
+    var p=state.player, nr=p.r+dir[0], nc=p.c+dir[1];
+    var nk=key(nr,nc);
+    if(state.wall[nk]) return;
+    var pushed=false, boxFrom=null, boxTo=null;
+    if(state.boxes[nk]){
+      var br=nr+dir[0], bc=nc+dir[1], bk=key(br,bc);
+      if(state.wall[bk]||state.boxes[bk]) return;
+      boxFrom=nk; boxTo=bk; pushed=true;
+    }
+    stack.push({player:{r:p.r,c:p.c}, boxFrom:boxFrom, boxTo:boxTo, steps:steps});
+    startTimer();
+    if(pushed){ delete state.boxes[boxFrom]; state.boxes[boxTo]=true; }
+    state.player={r:nr,c:nc};
+    steps++;
+    render(); updateStats();
+    if(pushed&&checkWin()) return;
+  }
+  function checkWin(){
+    for(var k in state.goal){ if(!state.boxes[k]) return false; }
+    ended=true; timerStop();
+    var name='第 '+(lvIdx+1)+' 关', isNew=false;
+    if(!best[lvIdx]||steps<best[lvIdx]){ best[lvIdx]=steps; isNew=true; try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){} }
+    document.getElementById('bestN').textContent=best[lvIdx]+' 步';
+    document.getElementById('wLv').textContent=name;
+    document.getElementById('wStep').textContent=steps+' 步';
+    var m=Math.floor(elapsed/60),s=elapsed%60;
+    document.getElementById('wTime').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+    document.getElementById('wBest').textContent=best[lvIdx]+' 步'+(isNew?' 新纪录':'');
+    document.getElementById('winMask').classList.add('show');
+    return true;
+  }
+  function undo(){
+    if(ended||!stack.length) return;
+    var h=stack.pop();
+    if(h.boxFrom){ delete state.boxes[h.boxTo]; state.boxes[h.boxFrom]=true; }
+    state.player={r:h.player.r,c:h.player.c};
+    steps=h.steps;
+    render(); updateStats();
+  }
+  var toastT=null;
+  function toast(msg){
+    var el=document.getElementById('toast');
+    el.textContent=msg;el.classList.add('show');
+    clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('show');},1700);
+  }
+
+  // 事件
+  document.querySelectorAll('.dpad button').forEach(function(b){
+    b.addEventListener('click',function(){move(b.dataset.d);});
+  });
+  document.getElementById('undoBtn').addEventListener('click',undo);
+  document.getElementById('resetBtn').addEventListener('click',function(){loadLevel(lvIdx);});
+  document.getElementById('prevBtn').addEventListener('click',function(){if(lvIdx>0)loadLevel(lvIdx-1);});
+  document.getElementById('nextBtn').addEventListener('click',function(){if(lvIdx<LEVELS.length-1)loadLevel(lvIdx+1);});
+  lvSel.addEventListener('change',function(){loadLevel(+this.value);});
+  document.getElementById('wReplay').addEventListener('click',function(){loadLevel(lvIdx);});
+  document.getElementById('wNext').addEventListener('click',function(){loadLevel((lvIdx+1)%LEVELS.length);});
+
+  document.addEventListener('keydown',function(e){
+    if(ended) return;
+    var m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
+      w:'up',s:'down',a:'left',d:'right'}[e.key];
+    if(m){move(m);e.preventDefault();}
+    else if(e.key==='z'||e.key==='Z'||e.key==='Backspace'){undo();}
+  });
+
+  // 触屏滑动
+  var sx=0,sy=0,swing=false;
+  boardEl.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;swing=true;},{passive:true});
+  boardEl.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+  boardEl.addEventListener('touchend',function(e){
+    if(!swing) return; swing=false;
+    var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx)<24&&Math.abs(dy)<24) return;
+    if(Math.abs(dx)>Math.abs(dy)) move(dx>0?'right':'left'); else move(dy>0?'down':'up');
+  });
+
+  loadLevel(0);
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

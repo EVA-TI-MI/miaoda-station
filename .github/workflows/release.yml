@@ -30,10 +30,14 @@ jobs:
       - name: Build EXE
         run: |
           pyinstaller --onefile --windowed --noconfirm --name "MiaodaStation" `
-            --add-data "snake.html;." --add-data "biquge.html;." `
-            --add-data "index.html;." --add-data "sw.js;." `
-            --add-data "manifest.json;." --add-data "icon-192.png;." `
-            --add-data "icon-512.png;." snake_launcher.py
+            --add-data "index.html;." --add-data "go.html;." --add-data "chess.html;." `
+            --add-data "xiangqi.html;." --add-data "intchess.html;." --add-data "gomoku.html;." `
+            --add-data "snake.html;." --add-data "biquge.html;." --add-data "fun.html;." `
+            --add-data "airplane.html;." --add-data "hrd.html;." --add-data "sudoku.html;." `
+            --add-data "sokoban.html;." --add-data "2048.html;." --add-data "minesweeper.html;." `
+            --add-data "jump.html;." --add-data "novels_data.js;." `
+            --add-data "sw.js;." --add-data "manifest.json;." `
+            --add-data "icon-192.png;." --add-data "icon-512.png;." snake_launcher.py
 
       - name: Delete old release assets
         shell: bash

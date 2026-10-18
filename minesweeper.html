@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#0c1018">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>扫雷 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --bg:#0c1018; --panel:#141a26; --line:#2a3450;
+    --txt:#e7edf7; --sub:#8a97b0;
+    --ac:#63a1e0; --ac-soft:rgba(99,161,224,.14);
+    --cell:#1a2333; --cell-open:#0e1420; --mine:#ff5d6c;
+  }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 28px;
+    background:
+      radial-gradient(ellipse at 15% 0%,rgba(99,161,224,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 8%,rgba(99,161,224,.08) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;padding:8px 13px;border-radius:8px;text-decoration:none;
+    background:rgba(28,36,56,.85);border:1px solid rgba(99,161,224,.3);color:var(--ac);font-size:13px;white-space:nowrap;}
+  .back:active{transform:scale(.96);}
+  .title{font-family:"STKaiti","KaiTi","楷体",serif;font-size:24px;letter-spacing:6px;color:var(--ac);
+    text-shadow:0 0 18px rgba(99,161,224,.28);}
+  .counts{display:flex;gap:8px;}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;text-align:center;min-width:60px;}
+  .box .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;white-space:nowrap;}
+  .box .val{font-size:19px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;line-height:1.25;}
+
+  .bar{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--sub);font-size:13px;padding:9px 13px;
+    font-family:inherit;cursor:pointer;min-height:42px;}
+  .seg button.on{background:var(--ac-soft);color:var(--ac);font-weight:600;}
+  .btn{appearance:none;border:1px solid rgba(99,161,224,.4);background:var(--ac-soft);color:var(--ac);
+    border-radius:10px;font-size:13px;padding:9px 14px;min-height:42px;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(.95);}
+
+  .board-wrap{width:100%;max-width:480px;position:relative;}
+  .board{position:relative;width:100%;display:grid;background:var(--line);border:2px solid var(--line);border-radius:10px;
+    overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 26px rgba(99,161,224,.1);user-select:none;}
+  .cell{appearance:none;border:0;background:var(--cell);aspect-ratio:1/1;cursor:pointer;position:relative;
+    font-family:"Arial",sans-serif;font-weight:700;line-height:1;padding:0;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--txt);}
+  .cell.open{background:var(--cell-open);}
+  .cell .flag{font-size:70%;}
+  .cell.mine{background:var(--mine);}
+  .cell.blown{background:var(--mine);box-shadow:inset 0 0 0 2px #fff6;}
+  .cell.wrong{background:#4a5468;position:relative;}
+  .cell:active{filter:brightness(1.3);}
+  .n1{color:#5db2ff;} .n2{color:#5fd08a;} .n3{color:#ff6b6b;}
+  .n4{color:#7f8cff;} .n5{color:#ff9f43;} .n6{color:#4ddbd4;} .n7{color:#e8c77a;} .n8{color:#c48aff;}
+
+  .modebar{width:100%;max-width:480px;margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:center;}
+  .modebar .hint{font-size:12px;color:var(--sub);line-height:1.6;}
+  .foot{margin-top:18px;color:#4a5878;font-size:11px;letter-spacing:2px;text-align:center;}
+
+  .mask{position:absolute;inset:0;background:rgba(8,12,20,.84);border-radius:10px;display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:20;text-align:center;padding:20px;backdrop-filter:blur(2px);}
+  .mask.show{display:flex;}
+  .mask .big{font-size:44px;}
+  .mask p{color:var(--sub);font-size:13px;}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);background:rgba(20,26,38,.97);
+    border:1px solid rgba(99,161,224,.45);color:var(--txt);padding:10px 18px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:86vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  @media (min-width:520px){ body{padding-top:28px;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回</a>
+    <div class="title">扫雷</div>
+    <div class="counts">
+      <div class="box"><div class="lbl">剩余旗数</div><div class="val" id="flags">0</div></div>
+      <div class="box"><div class="lbl">时间</div><div class="val" id="time">000</div></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="seg" id="diff">
+      <button data-d="easy" class="on">初级</button>
+      <button data-d="mid">中级</button>
+      <button data-d="hard">高级</button>
+    </div>
+    <button class="btn" id="newBtn">新局</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+    <div class="mask" id="mask">
+      <div class="big" id="maskBig">💥</div>
+      <p id="maskP"></p>
+      <button class="btn" id="maskBtn">再来一局</button>
+    </div>
+  </div>
+
+  <div class="modebar">
+    <button class="btn" id="modeBtn">模式：挖开</button>
+    <span class="hint">右键 / 长按可插旗<br>点到数字上可快速翻开四周（双击）</span>
+  </div>
+  <div class="foot">于雷区之中，辨识真伪 · 妙搭小站 V4.3.0</div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaMineBestV43';
+  var DIFFS={
+    easy:{name:'初级',rows:9,cols:9,mines:10},
+    mid:{name:'中级',rows:16,cols:16,mines:40},
+    hard:{name:'高级',rows:16,cols:30,mines:99}
+  };
+  var best={}; try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+
+  var boardEl=document.getElementById('board');
+  var diff='easy', state=null, flagMode=false, flagCount=0, revealed=0;
+  var started=false, ended=false, elapsed=0, timer=null;
+
+  function idx(r,c){return r*state.cols+c;}
+
+  function build(){
+    var d=DIFFS[diff];
+    state={rows:d.rows,cols:d.cols,mines:d.mines,
+      cells:new Array(d.rows*d.cols), first:true, revealed:0, flags:0};
+    for(var i=0;i<state.cells.length;i++){ state.cells[i]={mine:false,adj:0,rev:false,flag:false}; }
+    flagCount=d.mines; revealed=0; started=false; ended=false; elapsed=0; timerStop();
+    boardEl.style.gridTemplateColumns='repeat('+d.cols+',1fr)';
+    boardEl.innerHTML='';
+    for(var r=0;r<d.rows;r++){
+      for(var c=0;c<d.cols;c++){
+        var b=document.createElement('button');
+        b.className='cell'; b.type='button'; b.dataset.r=r; b.dataset.c=c;
+        bindCell(b,r,c);
+        boardEl.appendChild(b);
+      }
+    }
+    setFont(d.cols);
+    document.getElementById('mask').classList.remove('show');
+    document.getElementById('flags').textContent=flagCount;
+    document.getElementById('time').textContent='000';
+  }
+  function setFont(cols){
+    var f=cols<=9?'clamp(16px,5vw,26px)':(cols<=16?'clamp(12px,3.6vw,20px)':'clamp(9px,2.6vw,14px)');
+    var els=boardEl.children;
+    for(var i=0;i<els.length;i++){ els[i].style.fontSize=f; }
+  }
+
+  function placeMines(safeR,safeC){
+    var d=DIFFS[diff], n=d.rows*d.cols;
+    var banned={};
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+      var rr=safeR+dr,cc=safeC+dc;
+      if(rr>=0&&rr<d.rows&&cc>=0&&cc<d.cols) banned[idx(rr,cc)]=true;
+    }
+    var placed=0;
+    while(placed<d.mines){
+      var p=Math.floor(Math.random()*n);
+      if(state.cells[p].mine||banned[p]) continue;
+      state.cells[p].mine=true; placed++;
+    }
+    for(var r=0;r<d.rows;r++)for(var c=0;c<d.cols;c++){
+      state.cells[idx(r,c)].adj=countAdj(r,c);
+    }
+  }
+  function countAdj(r,c){
+    var d=DIFFS[diff], n=0;
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+      if(!dr&&!dc) continue;
+      var rr=r+dr,cc=c+dc;
+      if(rr>=0&&rr<d.rows&&cc>=0&&cc<d.cols&&state.cells[idx(rr,cc)].mine) n++;
+    }
+    return n;
+  }
+
+  function elAt(r,c){return boardEl.children[idx(r,c)];}
+  function renderCell(r,c){
+    var cell=state.cells[idx(r,c)], el=elAt(r,c);
+    el.classList.remove('open','mine','blown','wrong','flag');
+    el.textContent='';
+    el.className='cell';
+    if(cell.flag){
+      el.classList.add('flag');
+      el.textContent='🚩';
+    } else if(cell.rev){
+      el.classList.add('open');
+      if(cell.mine){ el.classList.add('mine'); el.textContent='💣'; }
+      else if(cell.adj>0){ el.classList.add('n'+cell.adj); el.textContent=cell.adj; }
+    }
+  }
+  function renderAll(){ for(var r=0;r<state.rows;r++)for(var c=0;c<state.cols;c++) renderCell(r,c); }
+
+  function reveal(r,c){
+    if(ended||!state) return;
+    var cell=state.cells[idx(r,c)];
+    if(cell.flag||cell.rev) return;
+    if(state.first){ placeMines(r,c); state.first=false; startTimer(); }
+    if(cell.mine){
+      blowUp(r,c); return;
+    }
+    flood(r,c);
+    checkWin();
+  }
+  function flood(r,c){
+    var st=[[r,c]];
+    while(st.length){
+      var p=st.pop(), rr=p[0], cc=p[1], cell=state.cells[idx(rr,cc)];
+      if(cell.rev||cell.flag||cell.mine) continue;
+      cell.rev=true; state.revealed++;
+      renderCell(rr,cc);
+      if(cell.adj===0){
+        for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+          if(!dr&&!dc) continue;
+          var nr=rr+dr,nc=cc+dc;
+          if(nr>=0&&nr<state.rows&&nc>=0&&nc<state.cols){
+            var nc2=state.cells[idx(nr,nc)];
+            if(!nc2.rev&&!nc2.flag&&!nc2.mine) st.push([nr,nc]);
+          }
+        }
+      }
+    }
+  }
+  function chord(r,c){
+    if(ended||!state) return;
+    var cell=state.cells[idx(r,c)];
+    if(!cell.rev||cell.mine||cell.adj===0) return;
+    var flags=0;
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+      if(!dr&&!dc) continue;
+      var nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<state.rows&&nc>=0&&nc<state.cols&&state.cells[idx(nr,nc)].flag) flags++;
+    }
+    if(flags!==cell.adj) return;
+    for(dr=-1;dr<=1;dr++)for(dc=-1;dc<=1;dc++){
+      if(!dr&&!dc) continue;
+      var nr2=r+dr,nc2=c+dc;
+      if(nr2>=0&&nr2<state.rows&&nc2>=0&&nc2<state.cols){
+        var ncell=state.cells[idx(nr2,nc2)];
+        if(!ncell.rev&&!ncell.flag){
+          if(ncell.mine){ blowUp(nr2,nc2); return; }
+          flood(nr2,nc2);
+        }
+      }
+    }
+    checkWin();
+  }
+  function toggleFlag(r,c){
+    if(ended||!state) return;
+    var cell=state.cells[idx(r,c)];
+    if(cell.rev) return;
+    cell.flag=!cell.flag;
+    if(cell.flag){ state.flags++; flagCount--; } else { state.flags--; flagCount++; }
+    document.getElementById('flags').textContent=Math.max(flagCount,0);
+    renderCell(r,c);
+  }
+
+  function blowUp(r,c){
+    ended=true; timerStop();
+    for(var i=0;i<state.cells.length;i++){
+      var cell=state.cells[i];
+      if(cell.mine && !cell.flag){ cell.rev=true; var el=boardEl.children[i]; el.classList.add('mine'); el.textContent='💣'; }
+      if(cell.flag && !cell.mine){ boardEl.children[i].classList.add('wrong'); boardEl.children[i].textContent='❌'; }
+    }
+    elAt(r,c).classList.add('blown');
+    document.getElementById('maskBig').textContent='💥';
+    document.getElementById('maskP').textContent='踩雷了！剩余 '+(DIFFS[diff].mines-state.flags)+' 颗雷未标记';
+    document.getElementById('mask').classList.add('show');
+  }
+  function checkWin(){
+    if(state.revealed===state.rows*state.cols-state.mines && !ended){
+      ended=true; timerStop();
+      var d=DIFFS[diff];
+      var isNew=false;
+      if(!best[diff]||elapsed<best[diff]){ best[diff]=elapsed; isNew=true; try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){} }
+      document.getElementById('maskBig').textContent='🎉';
+      document.getElementById('maskP').textContent='排雷成功！用时 '+fmt(elapsed)+' 秒'+(isNew?' · 新纪录':'');
+      document.getElementById('mask').classList.add('show');
+    }
+  }
+
+  function startTimer(){
+    if(started) return; started=true;
+    var last=Date.now();
+    timer=setInterval(function(){
+      if(ended) return;
+      var now=Date.now();
+      if(now-last>=1000){ elapsed+=Math.floor((now-last)/1000); last+=Math.floor((now-last)/1000)*1000;
+        document.getElementById('time').textContent=fmt3(elapsed); }
+    },300);
+  }
+  function timerStop(){ if(timer){clearInterval(timer);timer=null;} started=false; }
+  function fmt(t){var m=Math.floor(t/60),s=t%60;return (m>0?m+'分':'')+s;}
+  function fmt3(t){ t=Math.min(t,999); return (t<10?'00':(t<100?'0':''))+t; }
+
+  // 交互绑定
+  function bindCell(btn,r,c){
+    var pressTime=0, longFired=false;
+    btn.addEventListener('pointerdown',function(e){
+      pressTime=Date.now(); longFired=false;
+      var timer2=setTimeout(function(){
+        if(!flagMode && !longFired){ longFired=true; toggleFlag(r,c); }
+      },420);
+      btn._lt=function(){ clearTimeout(timer2); };
+      btn._lt2=timer2;
+    });
+    btn.addEventListener('pointerup',function(){ if(btn._lt)btn._lt(); });
+    btn.addEventListener('pointerleave',function(){ if(btn._lt)btn._lt(); });
+    btn.addEventListener('click',function(e){
+      if(longFired) return;
+      if(flagMode){ toggleFlag(r,c); }
+      else if(state.cells[idx(r,c)].rev){ chord(r,c); }
+      else reveal(r,c);
+    });
+    btn.addEventListener('contextmenu',function(e){ e.preventDefault(); toggleFlag(r,c); });
+  }
+  document.getElementById('modeBtn').addEventListener('click',function(){
+    flagMode=!flagMode;
+    this.textContent=flagMode?'模式：插旗':'模式：挖开';
+    this.style.background=flagMode?'var(--ac)':'';
+    this.style.color=flagMode?'#0c1018':'';
+  });
+  document.getElementById('newBtn').addEventListener('click',function(){build();});
+  document.getElementById('maskBtn').addEventListener('click',function(){build();});
+  document.querySelectorAll('#diff button').forEach(function(b){
+    b.addEventListener('click',function(){
+      diff=b.dataset.d;
+      document.querySelectorAll('#diff button').forEach(function(x){x.classList.toggle('on',x===b);});
+      build();
+    });
+  });
+
+  build();
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('keydown',function(e){
+    var key=e.key.toLowerCase();
+    if(key==='f12'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

@@ -28,6 +28,8 @@
   .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:40px;letter-spacing:8px;margin-bottom:12px;
     background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
   .head p{color:var(--sub);font-size:14px;letter-spacing:2px;line-height:1.9;}
+  .head.sub{margin-top:34px;margin-bottom:24px;}
+  .head.sub h1{font-size:26px;letter-spacing:4px;margin-bottom:10px;}
   .pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;width:100%;max-width:1180px;}
   .game-card{--c:#e8453c;position:relative;overflow:hidden;border-radius:16px;text-decoration:none;min-height:380px;
     border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
@@ -57,7 +59,7 @@
 
   <div class="head">
     <h1>更多玩法</h1>
-    <p>飞行棋 · 华容道 · 数独<br>亲朋同屏、经典滑块与逻辑数独，全部离线可玩</p>
+    <p>飞行棋 · 华容道 · 数独 · 推箱子 · 2048 · 扫雷 · 跳一跳<br>同屏对弈、经典滑块、逻辑数独与休闲益智，全部离线可玩</p>
   </div>
 
   <div class="pick">
@@ -89,7 +91,50 @@
     </a>
   </div>
 
-  <div class="foot">动则飞，静则思<br>妙搭小站 V4.2.1</div>
+  <div class="head sub">
+    <h1>经典休闲</h1>
+    <p>推箱子 · 2048 · 扫雷 · 跳一跳</p>
+  </div>
+
+  <div class="pick">
+    <a class="game-card" style="--c:#e0a44b" href="sokoban.html">
+      <div class="ico">箱</div>
+      <div class="gt">推箱子</div>
+      <div class="gen">SOKOBAN · PUZZLE</div>
+      <p class="gd">经典仓库搬运谜题，7 道精选关卡由易到难。方向键 / WASD 或屏幕滑动推动木箱，把箱子全部归位到目标点即过关，支持撤销、重置与每关最佳步数记录。</p>
+      <div class="tags"><span class="tag">7 道关卡</span><span class="tag">滑动操作</span><span class="tag">撤销/重置</span><span class="tag">最佳记录</span></div>
+      <span class="go">推箱入位 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#f0b72a" href="2048.html">
+      <div class="ico">2</div>
+      <div class="gt">2048</div>
+      <div class="gen">2048 · MERGE PUZZLE</div>
+      <p class="gd">滑动方块让相同数字合二为一，2 与 2 成 4、4 与 4 成 8……一路合成 2048。方向键 / WASD 或手指滑动，实时得分与本地最佳，合成后仍可继续冲击更高分。</p>
+      <div class="tags"><span class="tag">合并数字</span><span class="tag">触屏滑动</span><span class="tag">本地最佳</span><span class="tag">无限挑战</span></div>
+      <span class="go">合并数字 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#63a1e0" href="minesweeper.html">
+      <div class="ico">雷</div>
+      <div class="gt">扫雷</div>
+      <div class="gen">MINESWEEPER · LOGIC</div>
+      <p class="gd">经典排雷三档难度（9×9 / 16×16 / 30×16）。左键挖开、右键或长按插旗、双击数字快速翻开四周，首步必安全，计时与剩余旗数一目了然，本地记录各难度最佳用时。</p>
+      <div class="tags"><span class="tag">三档难度</span><span class="tag">插旗/双击</span><span class="tag">首步安全</span><span class="tag">最佳用时</span></div>
+      <span class="go">进入雷区 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#46d39a" href="jump.html">
+      <div class="ico">跳</div>
+      <div class="gt">跳一跳</div>
+      <div class="gen">JUMP MASTER · SKILL</div>
+      <p class="gd">按住蓄力、松手起跳，力度决定远近。落在下一方块的落点即可得分，命中中心 +2 并累计连击，落入空隙则结束。可点按亦可长按空格，随时刷新本地最佳。</p>
+      <div class="tags"><span class="tag">蓄力跳跃</span><span class="tag">落点计分</span><span class="tag">连击加成</span><span class="tag">本地最佳</span></div>
+      <span class="go">蓄力一跳 →</span>
+    </a>
+  </div>
+
+  <div class="foot">动则飞，静则思<br>妙搭小站 V4.3.0</div>
 
 <script>
 (function(){
