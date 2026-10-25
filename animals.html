@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#111520">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>斗兽棋 · 动物棋 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#111520; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:20px 14px 30px;
+    background:
+      radial-gradient(ellipse at 12% 0%,rgba(74,132,160,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 100%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:12.5px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:14px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:32px;letter-spacing:6px;margin-bottom:8px;
+    background:linear-gradient(135deg,#4a8aa0,#5fc3e0 55%,#e8c77a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:2px;line-height:1.8;}
+  .board-wrap{position:relative;width:100%;max-width:520px;aspect-ratio:7/9;}
+  #board{width:100%;height:100%;display:block;border-radius:12px;background:#0e1420;
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 0 1px #232c40;}
+  .hud{width:100%;max-width:520px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 6px;}
+  .turn{font-size:13px;color:var(--sub);background:rgba(33,41,62,.75);border:1px solid #2c3650;
+    padding:9px 14px;border-radius:10px;}
+  .cnt{font-size:12px;color:#566079;background:rgba(33,41,62,.75);border:1px solid #2c3650;padding:9px 14px;border-radius:10px;}
+  .btn-row{width:100%;max-width:520px;display:flex;gap:10px;margin-top:8px;}
+  .btn{flex:1;padding:11px 0;border-radius:10px;font-size:14px;letter-spacing:2px;cursor:pointer;transition:.2s;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--txt);}
+  .btn:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .legend{width:100%;max-width:520px;margin-top:12px;display:flex;flex-wrap:wrap;gap:5px 12px;justify-content:center;color:#566079;font-size:11.5px;line-height:1.7;}
+  .legend b{color:#8b97b0;font-weight:600;}
+  .tip{width:100%;max-width:520px;margin-top:10px;color:#566079;font-size:12px;line-height:1.9;text-align:center;}
+  .winmask{position:fixed;inset:0;background:rgba(6,9,15,.82);display:none;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(3px);}
+  .winmask.show{display:flex;}
+  .winbox{background:#151b29;border:1px solid #2c3650;border-radius:16px;padding:30px 34px;text-align:center;max-width:320px;width:90%;}
+  .winbox h2{font-family:"STKaiti","KaiTi",serif;font-size:26px;letter-spacing:4px;margin-bottom:10px;color:var(--gold);}
+  .winbox p{color:var(--sub);font-size:13px;line-height:1.9;margin-bottom:18px;}
+  .winbox .btns{display:flex;gap:10px;}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;line-height:1.9;}
+  @media (max-width:480px){ .head h1{font-size:26px;letter-spacing:4px;} .legend{font-size:10.5px;} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="fun.html">← 返回玩法</a>
+  </div>
+  <div class="head">
+    <h1>斗兽棋</h1>
+    <p>JUNGLE · 动物棋</p>
+  </div>
+  <div class="board-wrap"><canvas id="board"></canvas></div>
+  <div class="hud">
+    <div class="turn" id="turn">红方行棋</div>
+    <div class="cnt" id="cnt">红 8 · 蓝 8</div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" id="newBtn">重新开局</button>
+    <button class="btn" id="undoBtn">悔棋</button>
+  </div>
+  <div class="legend">
+    <span>吃子：<b>象 &gt; 狮 &gt; 虎 &gt; 豹 &gt; 狼 &gt; 狗 &gt; 猫 &gt; 鼠</b></span>
+    <span>鼠可吃象</span><span>狮虎可跳河</span><span>进陷阱任吃</span><span>入兽穴即胜</span>
+  </div>
+  <p class="tip">点选己方棋子，再点相邻格走棋或吃子。鼠可下水，水中鼠只有鼠能捉；象不能吃鼠。把任意一子送进对方兽穴，或吃光对方棋子即胜。</p>
+  <div class="winmask" id="winMask">
+    <div class="winbox">
+      <h2 id="winTitle">胜负已分</h2>
+      <p id="winText"></p>
+      <div class="btns">
+        <button class="btn" id="againBtn">再来一局</button>
+        <button class="btn" id="closeBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+  <div class="foot">八兽争渡，一穴定乾坤 · 妙搭小站 V4.5.0</div>
+
+<script>
+(function(){
+  "use strict";
+  var BEST_KEY='miaodaAnimalsBestV45', bestWins=0;
+  try{ bestWins=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0; }catch(e){}
+
+  var ROWS=9, COLS=7;
+  // 动物：v 值越大越强；鼠(1) 特例可吃象(8)
+  var ANIMALS={象:8,狮:7,虎:6,豹:5,狼:4,狗:3,猫:2,鼠:1};
+  // 兽穴（己方不能进，进对方即胜）
+  var DEN={0:[0,3],1:[8,3]};
+  // 陷阱（对方陷阱内等级归零）
+  var TRAPS={0:[[0,2],[0,4],[1,3]],1:[[8,2],[8,4],[7,3]]};
+  // 河：左河 cols1-2、右河 cols4-5 × rows 3-5（0-based）
+  function inRiver(r,c){ return (r>=3&&r<=5)&&((c>=1&&c<=2)||(c>=4&&c<=5)); }
+  function riverColsOf(r,c){
+    if(r<3||r>5)return null;
+    if(c>=1&&c<=2)return [1,2];
+    if(c>=4&&c<=5)return [4,5];
+    return null;
+  }
+  function inTrap(r,c,side){ var t=TRAPS[side]; for(var i=0;i<3;i++){if(t[i][0]===r&&t[i][1]===c)return true;} return false; }
+  function inDen(r,c,side){ return r===DEN[side][0]&&c===DEN[side][1]; }
+
+  var board={}; // key 'r,c' -> {side:0红/1蓝, kind:'象'...}
+  var cur=0, sel=null, over=false, winner=null;
+  var history=[], winStreak=0;
+
+  function setup(){
+    board={};
+    // 红方（下，row7-8）先行；蓝方（上，row0-1）
+    var blueTop=['狮','豹','象','虎'], blue2nd=['狼','狗','猫','鼠'];
+    var red2nd=['狼','狗','猫','鼠'], redBottom=['狮','豹','象','虎'];
+    blueTop.forEach(function(k,i){board['0,'+(i*2)]={side:1,kind:k};});
+    blue2nd.forEach(function(k,i){board['1,'+(i*2)]={side:1,kind:k};});
+    red2nd.forEach(function(k,i){board['7,'+(i*2)]={side:0,kind:k};});
+    redBottom.forEach(function(k,i){board['8,'+(i*2)]={side:0,kind:k};});
+    cur=0;sel=null;over=false;winner=null;history=[];winStreak=0;
+    document.getElementById('winMask').classList.remove('show');
+    updateHUD();draw();
+  }
+
+  function sideName(s){return s===0?'红':'蓝';}
+
+  // ---------- 走法与吃子 ----------
+  // 返回从 (r,c) 出发（side 的棋子）可达的目标列表
+  function destsOf(r,c){
+    var pc=board[r+','+c], side=pc.side, res=[];
+    var mv=[[-1,0],[1,0],[0,-1],[0,1]];
+    for(var i=0;i<4;i++){
+      var nr=r+mv[i][0], nc=c+mv[i][1];
+      if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;
+      // 不能进己方兽穴
+      if(inDen(nr,nc,side))continue;
+      // 鼠下水限制
+      if(pc.kind==='鼠'&&inRiver(nr,nc)){ res.push([nr,nc]); continue; }
+      // 非鼠不能下水
+      if(inRiver(nr,nc))continue;
+      var key=nr+','+nc;
+      if(!board[key]){res.push([nr,nc]);continue;}
+      if(board[key].side!==side&&canEat(pc,board[key],nr,nc))res.push([nr,nc]);
+    }
+    // 狮虎跳河
+    if(pc.kind==='狮'||pc.kind==='虎'){
+      var leaps=leapDests(r,c,side);
+      for(var j=0;j<leaps.length;j++)res.push(leaps[j]);
+    }
+    return res;
+  }
+  function canEat(att,def,dr,dc){
+    // 陷阱中守方等级归零（任何子可吃，含鼠吃象）
+    var dv=inTrap(dr,dc,att.side===0?1:0)?0:ANIMALS[def.kind];
+    var av=ANIMALS[att.kind];
+    // 象不能吃鼠（无论何处，鼠在陆地时）
+    if(att.kind==='象'&&def.kind==='鼠')return false;
+    // 鼠吃象特例
+    if(att.kind==='鼠'&&def.kind==='象')return true;
+    // 水中鼠：只有鼠能捉（同级鼠可互吃）
+    if(inRiver(dr,dc)&&def.kind==='鼠')return att.kind==='鼠';
+    // 陆地鼠吃鼠：同级允许
+    if(att.kind==='鼠'&&def.kind==='鼠')return true;
+    return av>dv;
+  }
+  function leapDests(r,c,side){
+    var pc=board[r+','+c], res=[];
+    // 纵向跳河：col 在河内、r=2 或 6
+    var rc=riverColsOf(r,c);
+    if(rc&&(r===2||r===6)){
+      var nr=r===2?6:2;
+      var blocked=false;
+      for(var rr2=3;rr2<=5;rr2++){
+        for(var i2=0;i2<2;i2++){
+          var k2=rr2+','+rc[i2];
+          if(board[k2]&&board[k2].kind==='鼠')blocked=true;
+        }
+      }
+      if(!blocked){
+        var key=nr+','+c;
+        if(!board[key])res.push([nr,c]);
+        else if(board[key].side!==side&&canEat(pc,board[key],nr,c))res.push([nr,c]);
+      }
+    }
+    // 横向跳河：row 在 3-5，col 0/3/6
+    if(r>=3&&r<=5&&(c===0||c===3||c===6)){
+      var pairs=[[0,3],[3,0],[3,6],[6,3]];
+      for(var p=0;p<pairs.length;p++){
+        if(pairs[p][0]!==c)continue;
+        var nc2=pairs[p][1];
+        var midCols=nc2<c?[c-2,c-1]:[c+1,c+2];
+        var blocked2=false;
+        for(var m=0;m<2;m++){
+          if(midCols[m]<0||midCols[m]>6)continue;
+          var k3=r+','+midCols[m];
+          if(board[k3]&&board[k3].kind==='鼠')blocked2=true;
+        }
+        if(blocked2)continue;
+        var key2=r+','+nc2;
+        if(!board[key2])res.push([r,nc2]);
+        else if(board[key2].side!==side&&canEat(pc,board[key2],r,nc2))res.push([r,nc2]);
+      }
+    }
+    return res;
+  }
+  function doMove(fromR,fromC,toR,toC){
+    var key=fromR+','+fromC, nk=toR+','+toC;
+    var mv={f:key,t:nk,b:{}};
+    for(var k in board)mv.b[k]=board[k];
+    history.push(mv);
+    var pc=board[key];
+    delete board[key];
+    // 走进对方兽穴即胜
+    if(inDen(toR,toC,pc.side===0?1:0)){
+      board[nk]=pc;
+      winner=pc.side;over=true;
+      return 'den';
+    }
+    board[nk]=pc;
+    return 'ok';
+  }
+
+  // ---------- AI：极小化极大 ----------
+  var PV={象:8,狮:7,虎:6,豹:5,狼:4,狗:3,猫:2,鼠:1};
+  function evalPos(side){
+    var s=0;
+    for(var k in board){
+      var pc=board[k];
+      var val=PV[pc.kind];
+      var r=+k.split(',')[0],c=+k.split(',')[1];
+      if(pc.side===side){
+        s+=val*10;
+        if(inDen(r,c,pc.side===0?1:0))s+=500;      // 在对方兽穴（不会发生，已胜）
+        if(inTrap(r,c,side))s+=80;                  // 已方子占对方陷阱？陷阱是对方的，归零——是威胁
+        if(pc.kind==='鼠'&&inRiver(r,c))s+=2;
+      }else{
+        s-=val*10;
+        if(inTrap(r,c,pc.side===0?1:0))s+=15;       // 对方子在陷阱中可被吃
+      }
+    }
+    return s;
+  }
+  function allPieces(side){
+    var list=[];
+    for(var k in board){if(board[k].side===side)list.push([+k.split(',')[0],+k.split(',')[1]]);}
+    return list;
+  }
+  function negamax(side,depth,alpha,beta){
+    var moves=[];
+    allPieces(side).forEach(function(p){
+      destsOf(p[0],p[1]).forEach(function(d){moves.push({f:p,t:d});});
+    });
+    if(depth===0||moves.length===0){
+      var e=evalPos(side);
+      return side===0?e:-e;
+    }
+    var best=-1e9;
+    for(var i=0;i<moves.length;i++){
+      var m=moves[i];
+      var fk=m.f[0]+','+m.f[1], tk=m.t[0]+','+m.t[1];
+      var saved={};for(var k in board)saved[k]=board[k];
+      var pc=board[fk];
+      delete board[fk];
+      board[tk]=pc;
+      var v=-negamax(side===0?1:0,depth-1,-beta,-alpha);
+      board={};for(var k2 in saved)board[k2]=saved[k2];
+      if(v>best)best=v;
+      if(best>alpha)alpha=best;
+      if(alpha>=beta)break;
+    }
+    return best;
+  }
+  function aiMove(){
+    var side=cur, moves=[];
+    allPieces(side).forEach(function(p){
+      destsOf(p[0],p[1]).forEach(function(d){moves.push({f:p,t:d});});
+    });
+    if(!moves.length)return false;
+    var best=-1e9, pick=moves[0];
+    for(var i=0;i<moves.length;i++){
+      var m=moves[i];
+      var fk=m.f[0]+','+m.f[1], tk=m.t[0]+','+m.t[1];
+      var saved={};for(var k in board)saved[k]=board[k];
+      var pc=board[fk];
+      delete board[fk];
+      board[tk]=pc;
+      var v=-negamax(side===0?1:0,3,-1e9,1e9);
+      board={};for(var k2 in saved)board[k2]=saved[k2];
+      if(v>best){best=v;pick=m;}
+    }
+    doMove(pick.f[0],pick.f[1],pick.t[0],pick.t[1]);
+    return true;
+  }
+
+  // ---------- 流程 ----------
+  function updateHUD(){
+    var c0=0,c1=0;
+    for(var k in board){if(board[k].side===0)c0++;else c1++;}
+    document.getElementById('cnt').textContent='红 '+c0+' · 蓝 '+c1;
+    document.getElementById('turn').textContent=over?(sideName(winner)+'方获胜'):(sideName(cur)+'方行棋');
+  }
+  function checkEnd(){
+    if(over)return true;
+    if(!allPieces(0).length){winner=1;over=true;}
+    else if(!allPieces(1).length){winner=0;over=true;}
+    if(over){
+      var title=sideName(winner)+'方获胜';
+      var text=sideName(winner)+'方夺取兽穴';
+      if(!allPieces(winner===0?1:0).length)text=sideName(winner)+'方吃光对方八兽';
+      if(winner===0){
+        winStreak++;
+        if(winStreak>bestWins){bestWins=winStreak;try{localStorage.setItem(BEST_KEY,String(bestWins));}catch(e){}
+          text+='\n连胜 '+winStreak+' 局，新纪录！';}
+      }else winStreak=0;
+      document.getElementById('winTitle').textContent=title;
+      document.getElementById('winText').textContent=text.replace('\n',' ');
+      document.getElementById('winMask').classList.add('show');
+      updateHUD();draw();return true;
+    }
+    return false;
+  }
+  function afterMove(){
+    if(checkEnd())return;
+    cur=cur===0?1:0;
+    sel=null;
+    updateHUD();draw();
+    if(cur===1){
+      setTimeout(function(){
+        if(over)return;
+        aiMove();
+        afterMove();
+      },450);
+    }
+  }
+
+  // ---------- 渲染 ----------
+  var cv=document.getElementById('board'), ctx=cv.getContext('2d');
+  var S=0,PAD=0;
+  function sizeCanvas(){
+    var w=cv.clientWidth, dpr=window.devicePixelRatio||1;
+    cv.width=w*dpr; cv.height=(w*9/7)*dpr;
+    S=w/7; PAD=S*0.06;
+  }
+  window.addEventListener('resize',function(){sizeCanvas();draw();});
+  function cellXY(r,c){
+    var dpr=window.devicePixelRatio||1;
+    return [(c+0.5)*S*dpr,(r+0.5)*S*dpr];
+  }
+  function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#0e1420';ctx.fillRect(0,0,cv.width,cv.height);
+    var dpr=window.devicePixelRatio||1;
+    // 网格
+    ctx.strokeStyle='rgba(138,151,176,.14)';ctx.lineWidth=1;
+    for(var r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(PAD*dpr,r*S*dpr);ctx.lineTo((cv.width/dpr-PAD)*dpr,r*S*dpr);ctx.stroke();}
+    for(var c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*S*dpr,PAD*dpr);ctx.lineTo(c*S*dpr,cv.height-PAD*dpr);ctx.stroke();}
+    // 河流
+    ctx.fillStyle='rgba(74,132,160,.35)';
+    ctx.fillRect(1*S*dpr,3*S*dpr,2*S*dpr,3*S*dpr);
+    ctx.fillRect(4*S*dpr,3*S*dpr,2*S*dpr,3*S*dpr);
+    ctx.fillStyle='rgba(140,190,215,.25)';
+    ctx.font=(13*dpr)+'px "STKaiti","KaiTi"';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('河',2*S*dpr,4.5*S*dpr);
+    ctx.fillText('河',5*S*dpr,4.5*S*dpr);
+    // 兽穴与陷阱
+    ctx.fillStyle='rgba(232,199,122,.30)';
+    ctx.fillRect(DEN[0][1]*S*dpr,DEN[0][0]*S*dpr,S*dpr,S*dpr);
+    ctx.fillRect(DEN[1][1]*S*dpr,DEN[1][0]*S*dpr,S*dpr,S*dpr);
+    ctx.fillStyle='rgba(232,80,70,.22)';
+    TRAPS[0].forEach(function(t){ctx.fillRect(t[1]*S*dpr,t[0]*S*dpr,S*dpr,S*dpr);});
+    TRAPS[1].forEach(function(t){ctx.fillRect(t[1]*S*dpr,t[0]*S*dpr,S*dpr,S*dpr);});
+    ctx.fillStyle='rgba(232,199,122,.6)';
+    ctx.font='bold '+(12*dpr)+'px "Microsoft YaHei"';
+    ctx.fillText('穴',DEN[0][1]*S*dpr+S*dpr/2,DEN[0][0]*S*dpr+S*dpr/2);
+    ctx.fillText('穴',DEN[1][1]*S*dpr+S*dpr/2,DEN[1][0]*S*dpr+S*dpr/2);
+    // 可移动提示
+    if(sel&&board[sel]){
+      destsOf(+sel.split(',')[0],+sel.split(',')[1]).forEach(function(d){
+        var p=cellXY(d[0],d[1]);
+        ctx.fillStyle='rgba(232,199,122,.28)';
+        ctx.beginPath();ctx.arc(p[0],p[1],S*dpr*0.40,0,7);ctx.fill();
+      });
+    }
+    // 棋子
+    for(var k in board){
+      var q=k.split(','),r=+q[0],c=+q[1];
+      var pc=board[k];
+      var p=cellXY(r,c), rad=S*dpr*0.42;
+      var g=ctx.createRadialGradient(p[0]-rad*0.3,p[1]-rad*0.3,rad*0.2,p[0],p[1],rad);
+      if(pc.side===0){g.addColorStop(0,'#ff7a6a');g.addColorStop(1,'#c0392b');}
+      else{g.addColorStop(0,'#6ab8e8');g.addColorStop(1,'#2e6da4');}
+      ctx.beginPath();ctx.arc(p[0],p[1],rad,0,7);
+      ctx.fillStyle=g;ctx.fill();
+      ctx.lineWidth=Math.max(1,dpr);ctx.strokeStyle='rgba(0,0,0,.45)';ctx.stroke();
+      ctx.fillStyle='#f7f8fa';
+      ctx.font='bold '+(17*dpr)+'px "STKaiti","KaiTi","Microsoft YaHei"';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(pc.kind,p[0],p[1]+1*dpr);
+      if(k===sel){ctx.lineWidth=2.5*dpr;ctx.strokeStyle='#e8c77a';ctx.beginPath();ctx.arc(p[0],p[1],rad+3*dpr,0,7);ctx.stroke();}
+    }
+  }
+
+  // ---------- 交互 ----------
+  cv.addEventListener('click',function(e){
+    if(over)return;
+    if(cur===1)return;
+    var rect=cv.getBoundingClientRect();
+    var x=(e.clientX-rect.left)*cv.width/rect.width, y=(e.clientY-rect.top)*cv.height/rect.height;
+    var c=Math.floor(x/(cv.width/COLS)), r=Math.floor(y/(cv.height/ROWS));
+    if(r<0||r>=ROWS||c<0||c>=COLS)return;
+    var key=r+','+c;
+    if(sel&&board[sel]){
+      var q=sel.split(','),sr=+q[0],sc=+q[1];
+      var ds=destsOf(sr,sc);
+      var hit=false;
+      for(var i=0;i<ds.length;i++){
+        if(ds[i][0]===r&&ds[i][1]===c){hit=true;break;}
+      }
+      if(hit){
+        doMove(sr,sc,r,c);
+        afterMove();
+        draw();return;
+      }
+      sel=null;draw();return;
+    }
+    if(board[key]&&board[key].side===0){sel=key;draw();return;}
+    sel=null;draw();
+  });
+  document.getElementById('newBtn').addEventListener('click',setup);
+  document.getElementById('againBtn').addEventListener('click',setup);
+  document.getElementById('closeBtn').addEventListener('click',function(){document.getElementById('winMask').classList.remove('show');});
+  document.getElementById('undoBtn').addEventListener('click',function(){
+    if(!history.length)return;
+    var mv=history.pop();
+    board={};for(var k in mv.b)board[k]=mv.b[k];
+    cur=cur===0?1:0;
+    sel=null;over=false;winner=null;
+    document.getElementById('winMask').classList.remove('show');
+    updateHUD();draw();
+  });
+
+  sizeCanvas();setup();
+})();
+</script>
+<script>
+document.addEventListener('contextmenu',function(e){e.preventDefault();});
+document.addEventListener('dragstart',function(e){e.preventDefault();});
+document.addEventListener('keydown',function(e){
+  var key=e.key.toLowerCase();
+  if(key==='f12'){e.preventDefault();return;}
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(key==='i'||key==='j'||key==='c')){e.preventDefault();return;}
+  if((e.ctrlKey||e.metaKey)&&key==='u'){e.preventDefault();return;}
+  if((e.ctrlKey||e.metaKey)&&key==='s'){e.preventDefault();return;}
+});
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

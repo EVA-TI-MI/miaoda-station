@@ -32,6 +32,8 @@ jobs:
           pyinstaller --onefile --windowed --noconfirm --name "MiaodaStation" `
             --add-data "index.html;." --add-data "go.html;." --add-data "chess.html;." `
             --add-data "xiangqi.html;." --add-data "intchess.html;." --add-data "gomoku.html;." `
+            --add-data "reversi.html;." --add-data "checkers.html;." --add-data "junqi.html;." `
+            --add-data "animals.html;." `
             --add-data "snake.html;." --add-data "biquge.html;." --add-data "fun.html;." `
             --add-data "airplane.html;." --add-data "hrd.html;." --add-data "sudoku.html;." `
             --add-data "sokoban.html;." --add-data "2048.html;." --add-data "minesweeper.html;." `

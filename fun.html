@@ -52,6 +52,8 @@
   .game-card:hover .go{background:var(--c);color:#111520;}
   .foot{margin-top:40px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;line-height:1.9;}
   @media (max-width:680px){.head h1{font-size:30px;letter-spacing:4px;}.game-card{min-height:0;}}
+  @media (max-width:980px){.pick.qiyuan{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:480px){.pick.qiyuan{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -59,7 +61,7 @@
 
   <div class="head">
     <h1>更多玩法</h1>
-    <p>飞行棋 · 华容道 · 数独 · 推箱子 · 2048 · 扫雷 · 跳一跳 · 俄罗斯方块 · 打砖块 · 记忆翻牌 · 打地鼠 · 小恐龙快跑 · 乒乓球<br>同屏对弈、经典滑块、逻辑数独与各类休闲街机，全部离线可玩</p>
+    <p>黑白棋 · 跳棋 · 军棋 · 斗兽棋 · 飞行棋 · 华容道 · 数独 · 推箱子 · 2048 · 扫雷 · 跳一跳 · 俄罗斯方块 · 打砖块 · 记忆翻牌 · 打地鼠 · 小恐龙快跑 · 乒乓球<br>棋院对弈、经典滑块、逻辑数独与各类休闲街机，全部离线可玩</p>
   </div>
 
   <div class="pick">
@@ -88,6 +90,49 @@
       <p class="gd">随机回溯生成保证唯一解的标准 9×9 盘面，简单/中等/困难/专家四档挖洞。数字键盘、候选笔记、即时检查、同数与行列宫高亮、剩余计数、撤销、擦除与三次提示，计时暂停、自动续玩与最佳成绩一应俱全。</p>
       <div class="tags"><span class="tag">唯一解保证</span><span class="tag">四档难度</span><span class="tag">候选笔记</span><span class="tag">自动续玩</span></div>
       <span class="go">推数字 →</span>
+    </a>
+  </div>
+
+  <div class="head sub">
+    <h1>棋院</h1>
+    <p>黑白棋 · 跳棋 · 军棋 · 斗兽棋</p>
+  </div>
+
+  <div class="pick qiyuan">
+    <a class="game-card" style="--c:#f2f2f2" href="reversi.html">
+      <div class="ico">弈</div>
+      <div class="gt">黑白棋</div>
+      <div class="gen">OTHELLO REVERSI · AI BATTLE</div>
+      <p class="gd">八向夹子翻转黑白子的经典棋类。点选高亮格落子，夹住对方棋子即翻为已色；人机对弈内置六层极小化极大与位置权重，无子可落自动跳过，终局子多者胜，支持双人同屏与悔棋。</p>
+      <div class="tags"><span class="tag">人机AI</span><span class="tag">双人同屏</span><span class="tag">悔棋</span><span class="tag">最佳纪录</span></div>
+      <span class="go">执黑落子 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#e8453c" href="checkers.html">
+      <div class="ico">珠</div>
+      <div class="gt">跳棋</div>
+      <div class="gen">CHINESE CHECKERS · STAR</div>
+      <p class="gd">六角星棋盘波子棋，隔子连跳直入对家星角。支持 2/3 人同屏与人机对战，一步一格、隔子可跳、连跳不限，先把十枚棋子全部归位者胜，AI 懂得已入角者不再乱动。</p>
+      <div class="tags"><span class="tag">2/3 人同屏</span><span class="tag">人机对战</span><span class="tag">隔子连跳</span><span class="tag">步数纪录</span></div>
+      <span class="go">星移连跳 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#4a8458" href="junqi.html">
+      <div class="ico">军</div>
+      <div class="gt">军棋 · 翻棋</div>
+      <div class="gen">JUNQI · HIDDEN CHESS</div>
+      <p class="gd">暗棋翻棋简化版，五列十行布阵五十子。先翻一子定阵营，司令至工兵九级相克、同级同归；工兵可挖地雷、炸弹同归于尽，夺对方军旗即胜，走棋吃子皆可请 AI 出谋划策。</p>
+      <div class="tags"><span class="tag">暗棋翻棋</span><span class="tag">大小相克</span><span class="tag">工兵挖雷</span><span class="tag">AI建议</span></div>
+      <span class="go">翻子定营 →</span>
+    </a>
+
+    <a class="game-card" style="--c:#4a8aa0" href="animals.html">
+      <div class="ico">兽</div>
+      <div class="gt">斗兽棋</div>
+      <div class="gen">JUNGLE · ANIMAL CHESS</div>
+      <p class="gd">七列九行八兽相争，象狮虎豹狼狗猫鼠按级吃子。鼠可吃象、可下水，水中鼠唯鼠可捉；狮虎能跳河，入陷阱任敌宰割，抢先占住对方兽穴者胜。</p>
+      <div class="tags"><span class="tag">八兽对弈</span><span class="tag">鼠吃象</span><span class="tag">狮虎跳河</span><span class="tag">陷阱兽穴</span></div>
+      <span class="go">八兽争渡 →</span>
     </a>
   </div>
 
@@ -195,7 +240,7 @@
     </a>
   </div>
 
-  <div class="foot">动则飞，静则思<br>妙搭小站 V4.4.0</div>
+  <div class="foot">动则飞，静则思<br>妙搭小站 V4.5.0</div>
 
 <script>
 (function(){

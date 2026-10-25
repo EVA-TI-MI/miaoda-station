@@ -1,5 +1,5 @@
 // 妙搭小站 - Service Worker
-const CACHE_NAME = 'miaoda-station-v27';
+const CACHE_NAME = 'miaoda-station-v28';
 // 离线语音引擎/模型独立缓存（体积约 45MB，跨 SW 版本长期保留，不随主缓存清理）
 const TTS_CACHE = 'biquge-tts-v1';
 const ASSETS = [
@@ -9,6 +9,10 @@ const ASSETS = [
   'xiangqi.html',
   'intchess.html',
   'gomoku.html',
+  'reversi.html',
+  'checkers.html',
+  'junqi.html',
+  'animals.html',
   'snake.html',
   'biquge.html',
   'fun.html',
