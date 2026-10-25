@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>番茄钟 · 倒计时 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#e8453c; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:640px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#f0795e,#e8453c 50%,#ffb4a6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .tabs{width:100%;max-width:640px;display:flex;gap:8px;justify-content:center;margin:16px 0 6px;}
+  .tab{flex:1;max-width:200px;padding:11px 10px;border-radius:10px;font-size:14.5px;letter-spacing:1px;cursor:pointer;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);transition:.2s;text-align:center;min-height:44px;}
+  .tab.on{color:#12141c;background:var(--gold);border-color:var(--gold);font-weight:600;}
+  .clock{position:relative;width:280px;height:280px;margin:18px auto 6px;}
+  svg{transform:rotate(-90deg);}
+  .ring-bg{stroke:rgba(255,255,255,.08);}
+  .ring{stroke:#e8453c;stroke-linecap:round;transition:stroke-dashoffset .5s linear;}
+  .clock.work .ring{stroke:#e8453c;}
+  .clock.break .ring{stroke:#4ad6c1;}
+  .clock.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .clock .tt{font-size:52px;font-weight:bold;letter-spacing:2px;font-variant-numeric:tabular-nums;}
+  .clock .lt{font-size:14px;color:var(--sub);margin-top:6px;letter-spacing:3px;}
+  .controls{width:100%;max-width:640px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
+  .btn{padding:12px 24px;border-radius:10px;font-size:15px;letter-spacing:2px;color:var(--txt);
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;cursor:pointer;transition:.2s;min-height:48px;}
+  .btn.primary{background:var(--gold);color:#12141c;border-color:var(--gold);font-weight:600;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .settings{width:100%;max-width:640px;margin-top:16px;padding:18px;border-radius:14px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(232,199,122,.16);display:flex;flex-direction:column;gap:12px;}
+  .set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .set-row label{color:var(--sub);font-size:14px;letter-spacing:1px;}
+  .set-row input{width:90px;padding:9px 10px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;
+    color:var(--txt);font-size:15px;text-align:center;outline:none;min-height:42px;}
+  .set-row input:focus{border-color:var(--gold);}
+  .set-row .unit{color:var(--sub);font-size:12px;}
+  .stats{width:100%;max-width:640px;margin-top:14px;padding:16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(232,69,60,.16);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;color:var(--sub);font-size:13px;}
+  .stats b{color:var(--gold);}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:29px;letter-spacing:5px;}.clock{width:230px;height:230px;}.clock .tt{font-size:44px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+  <div class="head">
+    <h1>番茄钟</h1>
+    <p>专注 25 分钟，休息 5 分钟 —— 语音播报提醒，让时间为你工作</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" id="tabPomo">🍅 番茄钟</div>
+    <div class="tab" id="tabTimer">⏳ 倒计时</div>
+  </div>
+
+  <div class="clock" id="clock">
+    <svg width="280" height="280" viewBox="0 0 280 280">
+      <circle class="ring-bg" cx="140" cy="140" r="124" fill="none" stroke-width="10"/>
+      <circle class="ring" id="ring" cx="140" cy="140" r="124" fill="none" stroke-width="10" stroke-dasharray="779" stroke-dashoffset="0"/>
+    </svg>
+    <div class="center">
+      <div class="tt" id="tt">25:00</div>
+      <div class="lt" id="lt">准备开始</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="startBtn">开始</button>
+    <button class="btn" id="resetBtn">重置</button>
+    <button class="btn" id="skipBtn">跳过</button>
+  </div>
+
+  <div class="settings">
+    <div class="set-row"><label>工作时长（分钟）</label><span><input id="workLen" type="number" min="1" max="120" value="25"><span class="unit"> 分</span></span></div>
+    <div class="set-row"><label>短休息（分钟）</label><span><input id="breakLen" type="number" min="1" max="60" value="5"><span class="unit"> 分</span></span></div>
+    <div class="set-row"><label>长休息（每 4 轮后，分钟）</label><span><input id="longLen" type="number" min="1" max="60" value="15"><span class="unit"> 分</span></span></div>
+    <div class="set-row"><label>语音播报</label><span><select id="voiceSel" class="btn" style="cursor:pointer;min-height:42px;"><option value="1">开启</option><option value="0">关闭</option></select></span></div>
+  </div>
+
+  <div class="stats">
+    <span>今日番茄 <b id="today">0</b></span>
+    <span>本轮 <b id="cycle">0/4</b></span>
+    <span>累计番茄 <b id="total">0</b></span>
+  </div>
+
+  <div class="foot">妙搭小站 · 番茄钟 · 语音播报走系统 TTS，纯本地</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var STAT_KEY='miaodaPomodoroStatsV46';
+  var R=124,CIRC=2*Math.PI*R;
+  var cur={mode:'pomo',state:'idle',phase:'work',left:0,total:0,cycle:0,timer:null,rounds:0};
+
+  function speak(text){
+    if($('voiceSel').value!=='1')return;
+    try{
+      if(!('speechSynthesis' in window))return;
+      window.speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text);
+      u.lang='zh-CN';u.rate=1;
+      var voices=window.speechSynthesis.getVoices();
+      var zh=voices.filter(function(v){return /zh|Chinese/i.test(v.lang);});
+      if(zh.length)u.voice=zh[0];
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function getStats(){var s={};try{s=JSON.parse(localStorage.getItem(STAT_KEY)||'{}');}catch(e){}
+    if(typeof s!=='object'||!s) s={};
+    var today=new Date().toISOString().slice(0,10);
+    if(!s.days||!s.days[today]){s.days=s.days||{};s.days[today]=0;}
+    s.total=s.total||0;
+    return {days:s.days,total:s.total,todayKey:today};
+  }
+
+  function loadDurations(){
+    return {
+      work:Math.max(1,parseInt($('workLen').value,10)||25)*60,
+      brk:Math.max(1,parseInt($('breakLen').value,10)||5)*60,
+      lng:Math.max(1,parseInt($('longLen').value,10)||15)*60
+    };
+  }
+
+  function setPhase(phase){
+    cur.phase=phase;
+    var d=loadDurations();
+    cur.total=phase==='work'?d.work:(phase==='brk'?(cur.rounds>0&&cur.rounds%4===0?d.lng:d.brk):d.brk);
+    cur.left=cur.total;
+    if(cur.rounds>0&&phase==='brk'&&cur.rounds%4===0)cur.total=d.lng,cur.left=d.lng;
+    $('clock').className='clock '+(phase==='work'?'work':'break');
+    render();
+  }
+
+  function start(){
+    if(cur.state==='running'){pause();return;}
+    if(cur.state==='idle')setPhase('work');
+    cur.state='running';
+    $('startBtn').textContent='暂停';
+    tick();
+    if(cur.timer)clearInterval(cur.timer);
+    cur.timer=setInterval(tick,1000);
+  }
+  function pause(){cur.state='paused';$('startBtn').textContent='继续';if(cur.timer){clearInterval(cur.timer);cur.timer=null;}}
+  function tick(){
+    if(cur.state!=='running')return;
+    cur.left--;
+    render();
+    if(cur.left<=0){finishPhase();}
+  }
+  function finishPhase(){
+    if(cur.timer){clearInterval(cur.timer);cur.timer=null;}
+    if(cur.phase==='work'){
+      cur.rounds++;
+      var st=getStats();
+      st.days[st.todayKey]++;st.total++;
+      try{localStorage.setItem(STAT_KEY,JSON.stringify({days:st.days,total:st.total}));}catch(e){}
+      speak('工作结束，休息一下');
+      setPhase('brk');
+      $('lt').textContent='短休息';
+      renderStats();
+      // 自动开始休息
+      cur.state='running';$('startBtn').textContent='暂停';cur.timer=setInterval(tick,1000);
+    }else{
+      speak('休息结束，开始新的专注');
+      setPhase('work');
+      $('lt').textContent='专注工作';
+      cur.state='running';$('startBtn').textContent='暂停';cur.timer=setInterval(tick,1000);
+    }
+  }
+
+  function skip(){
+    if(cur.state==='idle'){setPhase('work');}
+    else{finishPhase();}
+  }
+  function reset(){
+    if(cur.timer){clearInterval(cur.timer);cur.timer=null;}
+    cur.state='idle';cur.phase='work';cur.left=0;cur.total=0;cur.rounds=0;
+    $('startBtn').textContent='开始';
+    $('lt').textContent='准备开始';
+    setPhase('work');cur.left=cur.total;
+    render();renderStats();
+    cur.state='idle';$('startBtn').textContent='开始';
+  }
+
+  function render(){
+    var tt=$('tt');
+    var m=Math.floor(cur.left/60),s=cur.left%60;
+    tt.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+    var frac=cur.total>0?cur.left/cur.total:1;
+    $('ring').style.strokeDashoffset=String(CIRC*(1-frac));
+    var label=cur.phase==='work'?'专注':'休息';
+    $('lt').textContent=cur.state==='running'||cur.state==='paused'?label:cur.state==='idle'?'准备开始':label;
+    $('cycle').textContent=cur.rounds+'/4';
+  }
+  function renderStats(){
+    var st=getStats();
+    $('today').textContent=st.days[st.todayKey];
+    $('total').textContent=st.total;
+  }
+
+  // 倒计时模式
+  function switchTab(tab){
+    var isPomo=tab==='pomo';
+    $('tabPomo').classList.toggle('on',isPomo);
+    $('tabTimer').classList.toggle('on',!isPomo);
+    $('settings').style.display=isPomo?'flex':'none';
+    if(!isPomo){// 进入倒计时：用工作时长作默认
+      cur.mode='timer';
+      if(cur.state!=='running'){cur.total=Math.max(1,parseInt($('workLen').value,10)||25)*60;cur.left=cur.total;cur.phase='timer';render();$('lt').textContent='倒计时';}
+    }else{
+      cur.mode='pomo';
+      if(cur.state!=='running'){setPhase('work');}
+    }
+  }
+  $('tabPomo').addEventListener('click',function(){switchTab('pomo');});
+  $('tabTimer').addEventListener('click',function(){switchTab('timer');});
+
+  $('startBtn').addEventListener('click',function(){
+    if(cur.mode==='timer'){
+      if(cur.state!=='running'){cur.total=Math.max(1,parseInt($('workLen').value,10)||25)*60;cur.left=cur.total;cur.phase='timer';$('lt').textContent='倒计时';render();}
+      start();
+      return;
+    }
+    start();
+  });
+  $('resetBtn').addEventListener('click',reset);
+  $('skipBtn').addEventListener('click',skip);
+  ['workLen','breakLen','longLen'].forEach(function(id){
+    $(id).addEventListener('change',function(){if(cur.state==='idle')setPhase('work');});
+  });
+
+  // 初始化
+  $('ring').style.strokeDasharray=String(CIRC);
+  setPhase('work');
+  cur.state='idle';$('startBtn').textContent='开始';
+  renderStats();
+  render();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

@@ -386,6 +386,16 @@
   document.getElementById('wNext').addEventListener('click',function(){
     loadLevel((lvIdx+1)%LAYOUTS.length);
   });
+  // 每日挑战模式：锁定「横刀立马」，禁用切关
+  var dailyMode=/[?&]daily=1($|&)/.test(location.search);
+  if(dailyMode){
+    lvSel.disabled=true;
+    var dTip=document.createElement('div');
+    dTip.style.cssText='width:100%;margin:10px 0 4px;padding:9px 14px;border-radius:9px;background:rgba(232,199,122,.12);border:1px solid rgba(232,199,122,.35);color:var(--gold);font-size:13.5px;letter-spacing:1px;text-align:center;';
+    dTip.textContent='每日挑战 · 今日布局「横刀立马」，完成后再回每日挑战页';
+    var selRow=document.getElementById('lvSel');
+    if(selRow&&selRow.parentNode)selRow.parentNode.insertBefore(dTip,selRow);
+  }
 
   function undo(){
     if(ended||autoMode||!history.length) return;

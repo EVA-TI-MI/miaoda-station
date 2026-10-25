@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>数织 · Nonogram — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#5b9bf5; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(91,155,245,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:760px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .toolbar{width:100%;max-width:760px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin:14px 0 12px;}
+  .btn{padding:9px 16px;border-radius:8px;font-size:14px;color:var(--txt);background:rgba(33,41,62,.85);
+    border:1px solid #2c3650;cursor:pointer;transition:.2s;min-height:42px;}
+  .btn:hover{border-color:var(--gold);color:var(--gold);}
+  .btn.on{background:color-mix(in srgb,var(--c) 22%,transparent);border-color:var(--c);color:#fff;}
+  .info{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;color:var(--sub);font-size:13px;margin-bottom:10px;}
+  .info b{color:var(--gold);font-weight:600;}
+  .board-wrap{width:100%;max-width:760px;display:flex;justify-content:center;overflow-x:auto;padding:6px 0;}
+  #board{display:grid;gap:2px;touch-action:manipulation;}
+  .cell{width:28px;height:28px;border-radius:4px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;user-select:none;transition:background .12s;}
+  .cell.filled{background:var(--c);border-color:var(--c);}
+  .cell.x{background:transparent;}
+  .cell.x::after{content:"×";color:rgba(255,255,255,.45);font-size:14px;}
+  .cell.wrong{background:#e8453c;border-color:#e8453c;animation:shake .3s;}
+  .hint{position:sticky;top:0;background:#1b1f2c;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;border-radius:4px;padding:3px 2px;}
+  .hint.row{flex-direction:row;align-items:flex-end;justify-content:flex-end;}
+  .hint span{font-size:11px;color:var(--sub);white-space:nowrap;line-height:1.25;}
+  .hint .sat{color:var(--gold);font-weight:600;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .msg{min-height:28px;font-size:14px;color:var(--gold);margin-top:10px;letter-spacing:1px;}
+  .stats{width:100%;max-width:760px;margin-top:8px;padding:16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(232,199,122,.16);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;color:var(--sub);font-size:13px;}
+  .stats b{color:var(--gold);}
+  .modal{position:fixed;inset:0;background:rgba(8,9,13,.82);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal.show{display:flex;}
+  .modal-card{background:#1b1f2c;border:1px solid rgba(232,199,122,.3);border-radius:16px;padding:30px 26px;max-width:340px;width:100%;text-align:center;}
+  .modal-card h2{font-family:"STKaiti","KaiTi",serif;color:var(--gold);font-size:24px;letter-spacing:3px;margin-bottom:12px;}
+  .modal-card p{color:var(--sub);font-size:14px;line-height:1.9;margin-bottom:18px;}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){
+    .cell{width:24px;height:24px;}
+    .hint span{font-size:10px;}
+    .head h1{font-size:29px;letter-spacing:5px;}
+  }
+  @media (max-width:360px){
+    .cell{width:21px;height:21px;}
+  }
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="fun.html">← 返回</a></div>
+  <div class="head">
+    <h1>数织</h1>
+    <p>Nonogram · 数字推理绘图 —— 行列提示指向的唯一图案，逐格填出</p>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" id="paintBtn">■ 涂色</button>
+    <button class="btn" id="markBtn">× 标记</button>
+    <button class="btn" id="checkBtn">检查</button>
+    <button class="btn" id="newBtn">换一题</button>
+    <select class="btn" id="sizeSel" style="cursor:pointer">
+      <option value="5">5×5 · 入门</option>
+      <option value="8">8×8 · 进阶</option>
+      <option value="10" selected>10×10 · 高手</option>
+      <option value="15">15×15 · 大师</option>
+    </select>
+  </div>
+  <div class="info"><span>用时 <b id="time">00:00</b></span><span>填格 <b id="count">0</b></span><span>最佳 <b id="best">—</b></span></div>
+  <div class="board-wrap"><div id="board"></div></div>
+  <div class="msg" id="msg"></div>
+  <div class="stats">
+    <span>模式：<b>涂色</b> 点格填色，再点变回空白；<b>标记</b> 点格打 ×（仅为辅助）</span>
+    <span>完成判定：<b>涂色与提示一致</b>，× 不影响结算</span>
+  </div>
+
+  <div class="modal" id="winModal">
+    <div class="modal-card">
+      <h2 id="winTitle">完成！</h2>
+      <p id="winText"></p>
+      <button class="btn" id="winBtn">再玩一题 →</button>
+    </div>
+  </div>
+
+  <div class="foot">妙搭小站 · 数织 NONOGRAM · 纯本地</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var BEST_KEY='miaodaNonogramBestV46';
+  var cur={grid:null,rowHint:[],colHint:[],cells:[],mode:'paint',time:0,timer:null,solved:false};
+  var modeBtn={paint:$('paintBtn'),mark:$('markBtn')};
+
+  // ===== 图案库 =====（# 填色 . 空白）
+  var PATTERNS={
+    '5':[
+      ['.....','.###.','#...#','.###.','.....'],           // 笑脸-心
+      ['..#..','.###.','#####','.###.','..#..'],           // 菱形
+      ['##.##','..##.','.####','..##.','#.##.'],           // 十字星
+      ['.###.','#...#','#...#','#...#','.###.']            // 圆环
+    ],
+    '8':[
+      ['...##...','..####..','.######.','##....##','##....##','.######.','..####..','...##...'], // 蝴蝶
+      ['#......#','##....##','.###.##.','..####..','..####..','.###.##.','##....##','#......#'], // 星
+      ['...##...','..#..#..','.#....#.','#......#','#......#','.#....#.','..#..#..','...##...'], // 小菱形
+      ['##....##','.##..##.','..####..','...##...','...##...','..####..','.##..##.','##....##'], // 沙漏
+      ['#......#','#.#..##.','###..###','.#.##.#.','.#.##.#.','###..###','#.#..##.','#......#']  // 雪花
+    ],
+    '10':[
+      ['....####....','...######...','..#......#..','.#........#.','#..........#','#..........#','.#........#.','..#......#..','...######...','....####....'], // 圆
+      ['#..........#','##........##','.###....###.','..#######...','...#####....','...#####....','..#######...','.###....###.','##........##','#..........#'], // 宝石
+      ['.....##.....','....####....','...######...','..########..','.##.....##..','..#...##..#.','...#.##.#...','....####....','.....##.....','.....##.....'], // 树
+      ['##........##','.###....###.','..########..','...######...','....####....','.....##.....','.....##.....','...######...','..########..','##........##'], // 菱形
+      ['#..........#','#....##....#','#...####...#','#..######..#','#.########.#','#.########.#','#..######..#','#...####...#','#....##....#','#..........#'], // 靶心
+      ['.....####...','....######..','...########.','..##....##..','.##......##.','.##......##.','..##....##..','...########.','....######..','.....####...']  // 扇贝
+    ],
+    '15':[
+      ['.......##.......','......####......','.....######.....','....##....##....','...##......##...','..##........##..','..##........##..','..##........##..','..##........##..','...##......##...','....##....##....','.....######.....','......####......','.......##.......','.......##.......'], // 锚
+      ['####........####','.####......####.','..####....####..','...####..####...','....########....','.....######.....','......####......','.......##.......','......####......','.....######.....','....########....','...####..####...','..####....####..','.####......####.','####........####'], // 星
+      ['.....#.....#.....','....##.....##....','...#.#...#.#...#..','..#..#..#..#..#.','.#...#...#...#..#','.#...#...#...#..#','..#..#..#..#..#.','...#.#...#.#...#.','....##.....##....','.....#.....#.....','.....#.....#.....','....##.....##....','...#.#...#.#...#.','..#..#..#..#..#.','.#...#...#...#..#']  // 网格
+    ]
+  };
+
+  // ===== 行/列提示计算 =====
+  function lineHint(strs){
+    return strs.map(function(s){
+      var h=[],n=0;
+      for(var i=0;i<s.length;i++){
+        if(s[i]==='#'){n++;}else if(n>0){h.push(n);n=0;}
+      }
+      if(n>0)h.push(n);
+      return h.length?h:[0];
+    });
+  }
+
+  // ===== 生成题目 =====
+  function newPuzzle(){
+    var size=parseInt($('sizeSel').value,10);
+    var lib=PATTERNS[size]||PATTERNS['10'];
+    var pat=lib[Math.floor(Math.random()*lib.length)];
+    cur.size=size;
+    cur.grid=pat.map(function(s){return s.split('');});
+    cur.rowHint=lineHint(pat);
+    cur.colHint=lineHint(pat.map(function(s){return s.split('');}).reduce(function(cols,row){
+      row.forEach(function(v,i){ (cols[i]=cols[i]||[]).push(v); });
+      return cols;
+    },[]));
+    cur.cells=[];
+    for(var r=0;r<size;r++){cur.cells[r]=[];for(var c=0;c<size;c++){cur.cells[r][c]='';}}
+    cur.solved=false;cur.time=0;stopTimer();startTimer();
+    $('msg').textContent='';
+    render();
+  }
+
+  // ===== 渲染 =====
+  function render(){
+    var b=$('board'),size=cur.size;
+    b.style.gridTemplateColumns='repeat('+(size+1)+',auto)';
+    b.style.gridTemplateRows='auto repeat('+size+',auto)';
+    b.innerHTML='';
+    // 角
+    var corner=document.createElement('div');corner.style.width='1px';corner.style.height='1px';b.appendChild(corner);
+    // 列提示（顶部一行）
+    for(var c=0;c<size;c++){
+      var h=document.createElement('div');h.className='hint col';
+      var hint=cur.colHint[c],total=hint.reduce(function(a,x){return a+x;},0)+hint.length-1;
+      for(var i=hint.length-1;i>=0;i--){h.appendChild(document.createElement('span')).textContent=hint[i];}
+      var cnt=0; // 当前列填格数
+      for(var r=0;r<size;r++){if(cur.cells[r][c]==='filled')cnt++;}
+      if(cnt===total&&hint[0]!==0){h.classList.add('sat');}
+      b.appendChild(h);
+    }
+    for(var r=0;r<size;r++){
+      var rh=document.createElement('div');rh.className='hint row';
+      var hh=cur.rowHint[r],tt=hh.reduce(function(a,x){return a+x;},0)+hh.length-1;
+      for(var j=0;j<hh.length;j++){rh.appendChild(document.createElement('span')).textContent=hh[j];}
+      var cc=0;for(var k=0;k<size;k++){if(cur.cells[r][k]==='filled')cc++;}
+      if(cc===tt&&hh[0]!==0){rh.classList.add('sat');}
+      b.appendChild(rh);
+      for(var cc2=0;cc2<size;cc2++){
+        var cell=document.createElement('div');
+        cell.className='cell '+(cur.cells[r][cc2]||'');
+        cell.dataset.r=r;cell.dataset.c=cc2;
+        cell.addEventListener('click',function(){tap(parseInt(this.dataset.r,10),parseInt(this.dataset.c,10));});
+        b.appendChild(cell);
+      }
+    }
+    var filled=0;cur.cells.forEach(function(row){row.forEach(function(v){if(v==='filled')filled++;});});
+    $('count').textContent=filled;
+  }
+
+  function tap(r,c){
+    if(cur.solved)return;
+    var cell=cur.cells[r][c];
+    if(cur.mode==='paint'){
+      cell=(cell==='filled'?'': 'filled');
+    }else{
+      cell=(cell==='x'?'': 'x');
+    }
+    cur.cells[r][c]=cell;
+    render();
+  }
+
+  // ===== 校验 =====
+  function check(){
+    var size=cur.size;
+    for(var r=0;r<size;r++){
+      for(var c=0;c<size;c++){
+        var want=cur.grid[r][c]==='#';
+        var got=cur.cells[r][c]==='filled';
+        if(want!==got){
+          var el=document.querySelector('.cell[data-r="'+r+'"][data-c="'+c+'"]');
+          if(el){el.classList.add('wrong');setTimeout(function(){el.classList.remove('wrong');},300);}
+          $('msg').textContent='还有涂错的地方，对照行列提示再想想';
+          return false;
+        }
+      }
+    }
+    // 完成
+    cur.solved=true;stopTimer();
+    var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+    var isNew=false;
+    if(!best[cur.size]||cur.time<best[cur.size]){best[cur.size]=cur.time;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+    var mm=Math.floor(cur.time/60),ss=cur.time%60;
+    $('winTitle').textContent='完成！';
+    $('winText').innerHTML='用时 <b>'+(mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss+'</b>'+'<br>'+(isNew?'<b style="color:var(--gold)">新纪录！</b>':'已保存成绩');
+    $('winModal').classList.add('show');
+    renderBest();
+    return true;
+  }
+
+  function renderBest(){
+    var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+    var v=best[cur.size];
+    $('best').textContent=v!=null?(Math.floor(v/60)+':'+(v%60<10?'0':'')+(v%60)):'—';
+  }
+
+  function startTimer(){
+    stopTimer();
+    cur.timer=setInterval(function(){
+      if(!cur.solved){cur.time++;var m=Math.floor(cur.time/60),s=cur.time%60;$('time').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+    },1000);
+  }
+  function stopTimer(){if(cur.timer){clearInterval(cur.timer);cur.timer=null;}}
+
+  // 事件
+  modeBtn.paint.addEventListener('click',function(){cur.mode='paint';modeBtn.paint.classList.add('on');modeBtn.mark.classList.remove('on');});
+  modeBtn.mark.addEventListener('click',function(){cur.mode='mark';modeBtn.mark.classList.add('on');modeBtn.paint.classList.remove('on');});
+  $('checkBtn').addEventListener('click',check);
+  $('newBtn').addEventListener('click',newPuzzle);
+  $('winBtn').addEventListener('click',function(){$('winModal').classList.remove('show');newPuzzle();});
+  $('sizeSel').addEventListener('change',newPuzzle);
+  modeBtn.paint.classList.add('on');
+  newPuzzle();
+  renderBest();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

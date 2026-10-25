@@ -36,6 +36,10 @@ jobs:
             --add-data "animals.html;." `
             --add-data "snake.html;." --add-data "biquge.html;." --add-data "fun.html;." `
             --add-data "airplane.html;." --add-data "hrd.html;." --add-data "sudoku.html;." `
+            --add-data "nonogram.html;." --add-data "slitherlink.html;." --add-data "calc24.html;." `
+            --add-data "guessnum.html;." --add-data "pomodoro.html;." --add-data "tool-random.html;." `
+            --add-data "tool-convert.html;." --add-data "tool-password.html;." --add-data "wordcard.html;." `
+            --add-data "stats.html;." --add-data "daily.html;." `
             --add-data "sokoban.html;." --add-data "2048.html;." --add-data "minesweeper.html;." `
             --add-data "jump.html;." --add-data "tetris.html;." --add-data "breakout.html;." `
             --add-data "memory.html;." --add-data "mole.html;." --add-data "dino.html;." `

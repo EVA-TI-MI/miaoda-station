@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>单词卡 · 背诵 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#ff7a59; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(255,122,89,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:680px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#ff9c80,#ff7a59 50%,#ffc8b5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .stats{width:100%;max-width:680px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    margin:14px 0 10px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);color:var(--sub);font-size:13px;}
+  .stats b{color:var(--gold);}
+  .card-zone{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;perspective:1000px;}
+  .card{width:100%;min-height:280px;border-radius:20px;cursor:pointer;position:relative;transform-style:preserve-3d;
+    transition:transform .45s;touch-action:manipulation;}
+  .card.flip{transform:rotateY(180deg);}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;text-align:center;}
+  .front{background:linear-gradient(160deg,#232a3c,#1b202e);border:1px solid rgba(255,122,89,.35);}
+  .front .word{font-size:44px;font-weight:bold;letter-spacing:2px;color:var(--txt);}
+  .front .phon{color:var(--sub);font-size:15px;margin-top:10px;}
+  .front .tip{color:#566079;font-size:12px;margin-top:26px;}
+  .back{transform:rotateY(180deg);background:linear-gradient(160deg,rgba(255,122,89,.12),#1b202e 70%);
+    border:1px solid rgba(255,122,89,.45);}
+  .back .mean{font-size:24px;line-height:1.9;color:var(--txt);}
+  .back .pos{color:var(--sub);font-size:13px;margin-bottom:8px;letter-spacing:1px;}
+  .ctrl{width:100%;max-width:680px;display:flex;gap:10px;justify-content:center;margin:18px 0 8px;flex-wrap:wrap;}
+  .btn{padding:12px 24px;border-radius:10px;font-size:14.5px;letter-spacing:2px;cursor:pointer;transition:.2s;min-height:48px;}
+  .btn.know{background:#46c39a;color:#12141c;border:none;font-weight:600;}
+  .btn.dont{background:#e8453c;color:#fff;border:none;font-weight:600;}
+  .btn.ghost{background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--txt);}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+  .extra{width:100%;max-width:680px;margin-top:18px;padding:18px;border-radius:14px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);}
+  .extra h3{font-size:15px;color:var(--gold);letter-spacing:2px;margin-bottom:12px;font-family:"STKaiti","KaiTi",serif;}
+  .add-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .add-row input{flex:1;min-width:150px;padding:11px 12px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;
+    color:var(--txt);font-size:14px;outline:none;min-height:44px;}
+  .add-row input:focus{border-color:var(--gold);}
+  .add-row .btn{padding:11px 16px;font-size:13.5px;min-height:44px;}
+  .rev{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--sub);font-size:13px;}
+  .rev select{padding:10px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;color:var(--txt);cursor:pointer;min-height:44px;}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:29px;letter-spacing:5px;}.card{min-height:240px;}.front .word{font-size:34px;}.back .mean{font-size:20px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+  <div class="head">
+    <h1>单词卡</h1>
+    <p>卡片翻转背单词 —— 认识进词库，不认识进错词本，进度本地保存</p>
+  </div>
+
+  <div class="stats">
+    <span>总词 <b id="sTotal">0</b></span>
+    <span>已认识 <b id="sKnown">0</b></span>
+    <span>待复习 <b id="sReview">0</b></span>
+    <span>本轮进度 <b id="sProg">0/0</b></span>
+  </div>
+
+  <div class="card-zone">
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="word" id="cWord">—</div>
+        <div class="phon" id="cPhon"></div>
+        <div class="tip">点卡片查看释义，或按空格</div>
+      </div>
+      <div class="face back">
+        <div class="pos" id="cPos"></div>
+        <div class="mean" id="cMean"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ctrl">
+    <button class="btn know" id="knowBtn">认识 ✓</button>
+    <button class="btn dont" id="dontBtn">不认识 ✗</button>
+    <button class="btn ghost" id="againBtn">再来一轮</button>
+  </div>
+  <div class="msg" style="min-height:26px;text-align:center;color:var(--gold);font-size:13.5px;" id="msg"></div>
+
+  <div class="extra">
+    <h3>添加单词 / 复习设置</h3>
+    <div class="add-row">
+      <input id="newWord" placeholder="英文单词">
+      <input id="newMean" placeholder="释义，如 vt. 完成；实现">
+      <button class="btn ghost" id="addBtn">添加</button>
+    </div>
+    <div class="rev">
+      <span>复习范围：</span>
+      <select id="modeSel">
+        <option value="all">全部单词</option>
+        <option value="unknown" selected>仅错词本（不认识的）</option>
+        <option value="known">仅已认识的</option>
+      </select>
+      <button class="btn ghost" id="resetBtn">清空进度</button>
+      <span id="tip">不认识会自动加入错词本</span>
+    </div>
+  </div>
+
+  <div class="foot">妙搭小站 · 单词卡 · 纯本地记忆进度</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var STORE_KEY='miaodaWordCardV46';
+
+  // ===== 内置四级核心词库 =====
+  var BUILTIN=[
+    ['abandon','vt. 放弃；抛弃'],['ability','n. 能力；才能'],['absence','n. 缺席；缺乏'],
+    ['absorb','vt. 吸收；使专心'],['abstract','adj. 抽象的'],['abundant','adj. 丰富的；充裕的'],
+    ['academic','adj. 学术的'],['accent','n. 口音'],['access','n./vt. 进入；获取'],
+    ['accident','n. 事故；意外'],['accompany','vt. 陪伴；伴随'],['accomplish','vt. 完成；实现'],
+    ['accurate','adj. 准确的'],['achieve','vt. 达到；完成'],['acquire','vt. 获得；学到'],
+    ['adapt','v. 适应；改编'],['adequate','adj. 足够的'],['adjust','v. 调整；适应'],
+    ['admire','vt. 钦佩；欣赏'],['admit','v. 承认；准许进入'],['adopt','vt. 采用；收养'],
+    ['advance','v./n. 前进；进展'],['advantage','n. 优势；有利条件'],['adventure','n. 冒险'],
+    ['advertise','v. 做广告'],['advocate','vt. 提倡；拥护'],['affect','vt. 影响；感动'],
+    ['afford','vt. 负担得起'],['agency','n. 机构；代理处'],['agenda','n. 议程'],
+    ['aggressive','adj. 好斗的；进取的'],['allocate','vt. 分配；拨给'],['alter','v. 改变；更改'],
+    ['alternative','n./adj. 替代方案；另类的'],['ambition','n. 雄心；抱负'],['analyze','vt. 分析'],
+    ['announce','vt. 宣布；声明'],['annual','adj. 每年的'],['anticipate','vt. 预期；预料'],
+    ['apparent','adj. 明显的'],['appeal','v./n. 呼吁；吸引力'],['appreciate','vt. 感激；欣赏'],
+    ['approach','v./n. 接近；方法'],['appropriate','adj. 恰当的'],['approve','v. 赞成；批准'],
+    ['arbitrary','adj. 任意的；专断的'],['argue','v. 争论；主张'],['arise','vi. 出现；产生'],
+    ['arrange','v. 安排；整理'],['artificial','adj. 人工的；人造的'],['aspect','n. 方面'],
+    ['assess','vt. 评估'],['assign','vt. 分配；指定'],['assist','v. 帮助；协助'],
+    ['associate','v./n. 联想；同事'],['assume','vt. 假定；承担'],['assure','vt. 确保；使确信'],
+    ['attach','v. 附上；系上'],['attain','vt. 达到；获得'],['attempt','v./n. 尝试；企图'],
+    ['attitude','n. 态度'],['attribute','vt./n. 归因；属性'],['authority','n. 权威；当局'],
+    ['available','adj. 可获得的；有空的'],['average','n./adj. 平均；普通的'],['aware','adj. 意识到的'],
+    ['barrier','n. 障碍；屏障'],['benefit','n./v. 益处；受益'],['budget','n. 预算'],
+    ['campaign','n. 运动；战役'],['capacity','n. 容量；能力'],['category','n. 类别'],
+    ['challenge','n./vt. 挑战'],['circumstance','n. 环境；情况'],['claim','vt./n. 声称；索取'],
+    ['combine','v. 结合；联合'],['commit','vt. 犯（错误）；承诺'],['community','n. 社区；共同体'],
+    ['compare','v. 比较'],['compete','vi. 竞争'],['complex','adj. 复杂的'],
+    ['comprehensive','adj. 全面的；综合的'],['concentrate','v. 集中；专心'],['conclude','v. 得出结论；结束'],
+    ['conduct','vt./n. 进行；行为'],['confident','adj. 自信的'],['confirm','vt. 确认；证实'],
+    ['conflict','n./v. 冲突'],['confuse','vt. 使困惑'],['consequence','n. 后果'],
+    ['conservative','adj. 保守的'],['consider','v. 考虑；认为'],['consistent','adj. 一致的；始终如一的'],
+    ['constant','adj. 持续的；不变的'],['construct','vt. 建造；构建'],['consume','vt. 消耗；消费'],
+    ['contain','vt. 包含；容纳'],['contribute','v. 贡献；促成'],['controversial','adj. 有争议的'],
+    ['convenient','adj. 方便的'],['convey','vt. 传达；运送'],['cooperate','vi. 合作'],
+    ['cope','vi. 应对；处理'],['create','vt. 创造；创建'],['critical','adj. 关键的；批评的'],
+    ['cultivate','vt. 培养；耕作'],['current','adj./n. 当前的；水流'],['decline','v./n. 下降；婉拒'],
+    ['dedicate','vt. 奉献；致力于'],['define','vt. 定义；界定'],['demand','v./n. 要求；需求'],
+    ['demonstrate','vt. 证明；演示'],['depend','vi. 依赖；取决于'],['describe','vt. 描述'],
+    ['deserve','vt. 应得；值得'],['despite','prep. 尽管'],['determine','v. 决定；确定'],
+    ['develop','v. 发展；开发'],['device','n. 装置；设备'],['distinguish','v. 区分；辨别'],
+    ['distribute','vt. 分发；分布'],['diverse','adj. 多样的'],['dominate','v. 支配；主导'],
+    ['efficient','adj. 高效的'],['eliminate','vt. 消除；淘汰'],['emerge','vi. 出现；浮现'],
+    ['emphasis','n. 强调；重点'],['enable','vt. 使能够'],['encounter','vt./n. 遭遇'],
+    ['enhance','vt. 增强；提高'],['enormous','adj. 巨大的'],['ensure','vt. 确保；保证'],
+    ['environment','n. 环境'],['establish','vt. 建立；确立'],['estimate','vt./n. 估计'],
+    ['evaluate','vt. 评价；评估'],['evident','adj. 明显的'],['evolve','v. 演变；进化'],
+    ['exceed','vt. 超过'],['exclude','vt. 排除'],['execute','vt. 执行；实施'],
+    ['exhibit','vt./n. 展出；展览品'],['expand','v. 扩大；扩展'],['expert','n./adj. 专家；熟练的'],
+    ['explore','v. 探索；探究'],['extend','v. 延伸；扩展'],['factor','n. 因素'],
+    ['feature','n. 特征；特色'],['fundamental','adj. 基本的；根本的'],['generate','vt. 产生；生成'],
+    ['genuine','adj. 真实的；真诚的'],['guarantee','vt./n. 保证'],['identify','vt. 识别；确认'],
+    ['ignore','vt. 忽视；不理会'],['illustrate','vt. 说明；图解'],['impact','n./v. 影响；冲击'],
+    ['implement','vt. 实施；执行'],['imply','vt. 暗示；意味着'],['improve','v. 改进；提高'],
+    ['incentive','n. 激励；刺激'],['incline','v. 倾向；倾斜'],['incorporate','vt. 包含；合并'],
+    ['indicate','vt. 表明；指示'],['individual','n./adj. 个人；个别的'],['inevitable','adj. 不可避免的'],
+    ['influence','n./vt. 影响'],['inherit','vt. 继承'],['initiative','n. 主动性；倡议'],
+    ['innovation','n. 创新'],['insight','n. 洞察力；见解'],['inspire','vt. 激励；启发'],
+    ['install','vt. 安装；就职'],['institute','n. 机构；研究所'],['integrate','v. 整合；融入'],
+    ['intelligent','adj. 聪明的；智能的'],['intense','adj. 强烈的；紧张的'],['interpret','v. 解释；口译'],
+    ['interrupt','v. 打断'],['investigate','v. 调查'],['involve','vt. 涉及；包含'],
+    ['issue','n. 问题；议题'],['justify','vt. 证明……正当'],['knowledge','n. 知识'],
+    ['label','n./vt. 标签；标注'],['maintain','vt. 维持；维护'],['majority','n. 多数'],
+    ['manufacture','vt./n. 制造'],['mature','adj. 成熟的'],['maximum','n./adj. 最大值；最大的'],
+    ['mechanism','n. 机制；机械装置'],['mediate','v. 调解；斡旋'],['method','n. 方法'],
+    ['minimum','n./adj. 最小值；最小的'],['modify','vt. 修改；更改'],['monitor','vt./n. 监控；显示器'],
+    ['motivate','vt. 激励；激发'],['negotiate','v. 谈判；协商'],['objective','n./adj. 目标；客观的'],
+    ['obligation','n. 义务；责任'],['obtain','vt. 获得'],['obvious','adj. 明显的'],
+    ['occupy','vt. 占据；占用'],['occur','vi. 发生；出现'],['opportunity','n. 机会'],
+    ['oppose','v. 反对'],['optimistic','adj. 乐观的'],['origin','n. 起源；出身'],
+    ['outcome','n. 结果；成果'],['participate','vi. 参与'],['particular','adj. 特别的；特定的'],
+    ['perceive','vt. 感知；认为'],['perform','v. 执行；表演'],['permanent','adj. 永久的'],
+    ['permit','v. 允许'],['persist','vi. 坚持；持续'],['phenomenon','n. 现象'],
+    ['potential','n./adj. 潜力；潜在的'],['precise','adj. 精确的'],['predict','vt. 预测'],
+    ['prefer','vt. 更喜欢'],['preliminary','adj. 初步的'],['preserve','vt. 保护；保存'],
+    ['previous','adj. 以前的'],['priority','n. 优先事项'],['procedure','n. 程序；步骤'],
+    ['process','n./vt. 过程；处理'],['produce','v. 生产；产生'],['professional','adj./n. 专业的；专业人士'],
+    ['profit','n./v. 利润；获益'],['prohibit','vt. 禁止'],['promote','vt. 促进；提升'],
+    ['propose','vt. 提议；求婚'],['prospect','n. 前景；可能性'],['prosperity','n. 繁荣'],
+    ['protect','vt. 保护'],['provide','vt. 提供'],['pursue','vt. 追求；从事'],
+    ['qualify','v. 使合格；取得资格'],['quantity','n. 数量'],['range','n. 范围；一系列'],
+    ['rare','adj. 稀有的'],['react','vi. 反应'],['realize','vt. 意识到；实现'],
+    ['reasonable','adj. 合理的'],['recall','vt. 回忆；召回'],['recognize','vt. 认出；承认'],
+    ['recommend','vt. 推荐；建议'],['recover','v. 恢复；康复'],['reduce','vt. 减少'],
+    ['refer','v. 提及；参考'],['reflect','v. 反映；反射'],['regard','vt./n. 看待；尊重'],
+    ['region','n. 地区；区域'],['regulate','vt. 管理；调节'],['reject','vt. 拒绝；排斥'],
+    ['relevant','adj. 相关的'],['reliable','adj. 可靠的'],['reluctant','adj. 不情愿的'],
+    ['remark','n./v. 评论；话语'],['replace','vt. 替换'],['represent','vt. 代表'],
+    ['require','vt. 需要；要求'],['research','n./v. 研究'],['reserve','vt./n. 预订；储备'],
+    ['resist','v. 抵抗；抵制'],['resolve','v. 解决；决心'],['resource','n. 资源'],
+    ['respond','vi. 回应'],['responsible','adj. 负责的'],['restore','vt. 恢复；修复'],
+    ['restrict','vt. 限制'],['retain','vt. 保留'],['reveal','vt. 揭示；透露'],
+    ['reverse','v./n. 反转；相反'],['review','v./n. 复习；评论'],['revise','v. 修订；复习'],
+    ['reward','n./vt. 奖励'],['routine','n./adj. 常规；日常的'],['schedule','n./vt. 日程；安排'],
+    ['secure','adj./vt. 安全的；确保'],['select','vt. 选择'],['sensitive','adj. 敏感的'],
+    ['separate','v./adj. 分开；单独的'],['significant','adj. 重要的；显著的'],['similar','adj. 相似的'],
+    ['situation','n. 情况；局势'],['solution','n. 解决方案'],['specific','adj. 具体的'],
+    ['stable','adj. 稳定的'],['strategy','n. 策略'],['strengthen','vt. 加强'],
+    ['structure','n. 结构'],['submit','v. 提交；屈服'],['subsequent','adj. 随后的'],
+    ['substantial','adj. 大量的；实质的'],['sufficient','adj. 充足的'],['suggest','vt. 建议；暗示'],
+    ['summarize','vt. 总结'],['supplement','n./vt. 补充'],['support','vt./n. 支持'],
+    ['survive','v. 幸存；存活'],['sustain','vt. 维持；支撑'],['symbol','n. 象征；符号'],
+    ['tend','vi. 倾向；易于'],['transfer','v./n. 转移；转让'],['transform','vt. 转变；改变'],
+    ['translate','v. 翻译'],['transmit','vt. 传播；传送'],['trend','n. 趋势'],
+    ['unique','adj. 独特的'],['universal','adj. 普遍的；通用的'],['utilize','vt. 利用'],
+    ['valid','adj. 有效的；合理的'],['variety','n. 多样性；种类'],['vary','v. 变化'],
+    ['vehicle','n. 车辆；载体'],['verify','vt. 核实；验证'],['version','n. 版本'],
+    ['viewpoint','n. 观点'],['virtual','adj. 虚拟的；实际上的'],['visible','adj. 可见的'],
+    ['vital','adj. 至关重要的'],['volume','n. 体积；音量；卷'],['welfare','n. 福利；幸福'],
+    ['witness','n./vt. 目击者；见证'],['worthwhile','adj. 值得的'],['yield','v./n. 产出；屈服']
+  ];
+
+  var state={data:{},custom:[]};
+  var deck=[],pos=0,flipped=false,lastSeen={};
+
+  function load(){
+    try{state=JSON.parse(localStorage.getItem(STORE_KEY)||'null')||{data:{},custom:[]};}catch(e){state={data:{},custom:[]};}
+    if(!state.data)state.data={};
+    if(!state.custom)state.custom=[];
+  }
+  function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(state));}catch(e){}}
+
+  function allWords(){
+    var map={};
+    BUILTIN.concat(state.custom).forEach(function(w){
+      if(!map[w[0]])map[w[0]]=w;
+    });
+    return Object.keys(map).map(function(k){return map[k];});
+  }
+
+  function buildDeck(){
+    var mode=$('modeSel').value;
+    var words=allWords();
+    if(mode==='unknown')words=words.filter(function(w){return state.data[w[0]]&&state.data[w[0]].s==='unknown';});
+    if(mode==='known')words=words.filter(function(w){return state.data[w[0]]&&state.data[w[0]].s==='known';});
+    deck=words.slice();
+    // 未知优先 + 随机
+    deck.sort(function(a,b){return (state.data[a[0]]&&state.data[a[0]].s==='unknown'?0:1)-(state.data[b[0]]&&state.data[b[0]].s==='unknown'?0:1);});
+    for(var i=deck.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=deck[i];deck[i]=deck[j];deck[j]=t;}
+    pos=0;flipped=false;
+    renderStats();
+    showCard();
+  }
+
+  function showCard(){
+    if(!deck.length){$('cWord').textContent='词库为空';$('cPhon').textContent='';$('cPos').textContent='';$('cMean').textContent='去上方添加单词';$('msg').textContent='';return;}
+    if(pos>=deck.length){
+      $('cWord').textContent='本轮完成！';$('cPhon').textContent='';$('cPos').textContent='';$('cMean').textContent='点击「再来一轮」继续复习';
+      $('msg').textContent='';
+      return;
+    }
+    var w=deck[pos];
+    flipped=false;
+    $('card').classList.remove('flip');
+    $('cWord').textContent=w[0];
+    $('cPhon').textContent='';
+    $('cPos').textContent='';
+    $('cMean').textContent=w[1];
+    $('msg').textContent='';
+    renderStats();
+  }
+
+  function flip(){
+    if(!deck.length||pos>=deck.length)return;
+    var card=$('card');
+    if(flipped)return;
+    flipped=true;
+    card.classList.add('flip');
+  }
+
+  function answer(know){
+    if(!deck.length||pos>=deck.length)return;
+    var w=deck[pos][0];
+    lastSeen[w]=1;
+    state.data[w]=state.data[w]||{s:'unknown',n:0};
+    state.data[w].s=know?'known':'unknown';
+    state.data[w].n=(state.data[w].n||0)+1;
+    save();
+    pos++;
+    showCard();
+  }
+
+  function renderStats(){
+    var words=allWords();
+    var known=0,unknown=0;
+    words.forEach(function(w){var d=state.data[w[0]];if(d&&d.s==='known')known++;else unknown++;});
+    $('sTotal').textContent=words.length;
+    $('sKnown').textContent=known;
+    $('sReview').textContent=unknown;
+    $('sProg').textContent=deck.length?Math.min(pos+1,deck.length)+'/'+deck.length:'0/0';
+  }
+
+  function addWord(){
+    var w=$('newWord').value.trim(),m=$('newMean').value.trim();
+    if(!w||!m){$('msg').textContent='单词和释义都要填';return;}
+    state.custom.push([w,m]);
+    save();
+    $('newWord').value='';$('newMean').value='';
+    $('msg').textContent='已添加 '+w+'；若已有该词则忽略重复';
+    buildDeck();
+  }
+
+  function resetProgress(){
+    if(!confirm('确认清空全部学习进度？'))return;
+    state.data={};
+    save();
+    buildDeck();
+    $('msg').textContent='进度已清空';
+  }
+
+  $('card').addEventListener('click',flip);
+  $('knowBtn').addEventListener('click',function(){answer(true);});
+  $('dontBtn').addEventListener('click',function(){answer(false);});
+  $('againBtn').addEventListener('click',buildDeck);
+  $('addBtn').addEventListener('click',addWord);
+  $('modeSel').addEventListener('change',buildDeck);
+  $('resetBtn').addEventListener('click',resetProgress);
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='INPUT')return;
+    if(e.code==='Space'){e.preventDefault();if(flipped){answer(false);}else{flip();}}
+    if(e.code==='ArrowRight'||e.code==='ArrowLeft'){if(flipped)answer(true);}
+  });
+  load();
+  buildDeck();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

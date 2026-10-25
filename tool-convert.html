@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>单位换算 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#5aa9f0; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(90,169,240,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:720px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#8fc2f5,#5aa9f0 50%,#c2e0fb);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .cats{width:100%;max-width:720px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0 14px;}
+  .cat{padding:9px 16px;border-radius:9px;font-size:13.5px;cursor:pointer;background:rgba(33,41,62,.85);
+    border:1px solid #2c3650;color:var(--sub);transition:.2s;min-height:40px;}
+  .cat.on{color:#12141c;background:var(--gold);border-color:var(--gold);font-weight:600;}
+  .calc{width:100%;max-width:720px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+  #val{width:160px;padding:12px 14px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;color:var(--txt);
+    font-size:19px;text-align:center;outline:none;min-height:50px;}
+  #val:focus{border-color:var(--gold);}
+  select{padding:11px 12px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;color:var(--txt);
+    font-size:14.5px;cursor:pointer;outline:none;min-height:48px;}
+  .table{width:100%;max-width:720px;display:flex;flex-direction:column;gap:6px;}
+  .trow{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-radius:10px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:15px;transition:.15s;}
+  .trow:hover{border-color:rgba(90,169,240,.4);}
+  .trow .u{color:var(--sub);}
+  .trow .v{font-weight:600;font-size:17px;color:var(--txt);font-variant-numeric:tabular-nums;}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:29px;letter-spacing:5px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+  <div class="head">
+    <h1>单位换算</h1>
+    <p>长度 · 重量 · 面积 · 体积 · 温度 · 时间 · 数据 · 速度，一次全换</p>
+  </div>
+
+  <div class="cats" id="cats"></div>
+  <div class="calc">
+    <input id="val" type="number" value="1" inputmode="decimal">
+    <select id="fromSel"></select>
+    <span style="color:var(--sub)">=</span>
+    <select id="toSel"></select>
+  </div>
+  <div class="table" id="table"></div>
+
+  <div class="foot">妙搭小站 · 单位换算 · 纯本地</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  // 类别定义：factor 相对基准单位；temp 用函数
+  var CATS={
+    length:{name:'长度',base:'米',units:[['米',1],['千米',1000],['厘米',0.01],['毫米',0.001],['英里',1609.344],['码',0.9144],['英尺',0.3048],['英寸',0.0254],['海里',1852],['里',500]]},
+    weight:{name:'重量',base:'千克',units:[['千克',1],['克',0.001],['毫克',0.000001],['吨',1000],['斤',0.5],['两',0.05],['磅',0.45359237],['盎司',0.028349523125],['克拉',0.0002]]},
+    area:{name:'面积',base:'平方米',units:[['平方米',1],['平方千米',1000000],['公顷',10000],['亩',2000/3],['平方英尺',0.09290304],['平方码',0.83612736],['平方英寸',0.00064516]]},
+    volume:{name:'体积',base:'升',units:[['升',1],['毫升',0.001],['立方米',1000],['立方厘米',0.001],['加仑(美)',3.785411784],['加仑(英)',4.54609],['品脱(美)',0.473176473],['桶(石油)',158.987294928]]},
+    temp:{name:'温度',base:'°C',units:[['°C','c'],['°F','f'],['K','k']]},
+    time:{name:'时间',base:'秒',units:[['秒',1],['分钟',60],['小时',3600],['天',86400],['周',604800],['月(30天)',2592000],['年(365天)',31536000]]},
+    data:{name:'数据',base:'字节',units:[['字节',1],['KB',1024],['MB',1048576],['GB',1073741824],['TB',1099511627776],['PB',1125899906842624],['bit',0.125]]},
+    speed:{name:'速度',base:'米/秒',units:[['米/秒',1],['千米/时',1/3.6],['英里/时',0.44704],['节',0.514444444],['马赫(海平面)',340.29]]}
+  };
+  var curCat='length';
+
+  function buildCats(){
+    var box=$('cats');box.innerHTML='';
+    Object.keys(CATS).forEach(function(k){
+      var b=document.createElement('button');b.className='cat'+(k===curCat?' on':'');b.textContent=CATS[k].name;
+      b.addEventListener('click',function(){curCat=k;buildCats();buildSel();calc();});
+      box.appendChild(b);
+    });
+  }
+  function buildSel(){
+    var units=CATS[curCat].units;
+    var f=$('fromSel'),t=$('toSel');
+    f.innerHTML='';t.innerHTML='';
+    units.forEach(function(u,i){
+      f.appendChild(new Option(u[0],String(i)));
+      t.appendChild(new Option(u[0],String(i)));
+    });
+    t.selectedIndex=units.length>1?1:0;
+  }
+  function toBase(v,unit){
+    var u=CATS[curCat].units[unit];
+    if(curCat==='temp'){if(u[1]==='c')return v;if(u[1]==='f')return (v-32)*5/9;if(u[1]==='k')return v-273.15;}
+    return v*u[1];
+  }
+  function fromBase(v,unit){
+    var u=CATS[curCat].units[unit];
+    if(curCat==='temp'){if(u[1]==='c')return v;if(u[1]==='f')return v*9/5+32;if(u[1]==='k')return v+273.15;}
+    return v/u[1];
+  }
+  function fmt(n){
+    if(!isFinite(n))return '—';
+    if(Math.abs(n)>=1e12||(Math.abs(n)>0&&Math.abs(n)<1e-8))return n.toExponential(6).replace(/(\.\d*?)0+e/,'$1e');
+    var s=Math.round(n*1e8)/1e8;
+    return String(s);
+  }
+  function calc(){
+    var raw=$('val').value;
+    var v=parseFloat(raw);
+    if(isNaN(v))v=0;
+    var fi=parseInt($('fromSel').value,10),ti=parseInt($('toSel').value,10);
+    var base=toBase(v,fi);
+    var out=fromBase(base,ti);
+    var table=$('table');table.innerHTML='';
+    var units=CATS[curCat].units;
+    units.forEach(function(u,i){
+      var row=document.createElement('div');row.className='trow';
+      var n=document.createElement('span');n.className='u';n.textContent=u[0];
+      var val=document.createElement('span');val.className='v';
+      var converted=fromBase(base,i);
+      val.textContent=fmt(converted)+' '+u[0];
+      row.appendChild(n);row.appendChild(val);
+      row.addEventListener('click',function(){
+        $('val').value=fmt(converted).replace(/[^\d.\-eE+]/g,'');
+        var idx=units.indexOf(u);
+        $('fromSel').selectedIndex=idx;
+        calc();
+      });
+      table.appendChild(row);
+    });
+    // 高亮当前 from
+    var rows=table.children;
+    if(rows[fi])rows[fi].style.borderColor='rgba(232,199,122,.5)';
+    if(rows[ti])rows[ti].style.borderColor='rgba(90,169,240,.7)';
+  }
+
+  $('val').addEventListener('input',calc);
+  $('fromSel').addEventListener('change',calc);
+  $('toSel').addEventListener('change',calc);
+  buildCats();
+  buildSel();
+  calc();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>每日挑战 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#ff9c5b; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 40px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(255,156,91,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:760px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#ffb584,#ff9c5b 50%,#ffd9b8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .date{width:100%;max-width:760px;text-align:center;font-size:14px;color:var(--sub);letter-spacing:2px;margin:8px 0 6px;}
+  .date b{color:var(--gold);font-size:16px;}
+  .panel{width:100%;max-width:760px;margin-top:14px;padding:20px;border-radius:16px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,156,91,.22);}
+  .panel h2{font-size:16px;letter-spacing:2px;color:var(--txt);margin-bottom:14px;display:flex;align-items:center;gap:10px;font-family:"STKaiti","KaiTi",serif;}
+  .panel h2::before{content:'';width:4px;height:16px;background:var(--gold);border-radius:2px;}
+  .sudoku-wrap{display:flex;flex-direction:column;align-items:center;}
+  #board{display:grid;grid-template-columns:repeat(9,44px);gap:2px;background:#1b1f2c;padding:2px;border-radius:8px;}
+  .cell{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:19px;border-radius:4px;
+    background:#232a3c;cursor:pointer;user-select:none;color:var(--txt);}
+  .cell.given{color:var(--gold);font-weight:600;cursor:default;}
+  .cell.b3{border-right:2px solid rgba(255,255,255,.25);}
+  .cell.b6{border-right:2px solid rgba(255,255,255,.25);}
+  .cell.br3{border-bottom:2px solid rgba(255,255,255,.25);}
+  .cell.br6{border-bottom:2px solid rgba(255,255,255,.25);}
+  .cell.sel{outline:2px solid var(--gold);}
+  .cell.err{color:#e8453c;}
+  .nums{display:flex;gap:6px;margin:14px 0 6px;flex-wrap:wrap;justify-content:center;}
+  .num{width:40px;height:40px;border-radius:8px;background:rgba(33,41,62,.85);border:1px solid #2c3650;
+    color:var(--txt);font-size:17px;cursor:pointer;min-height:40px;}
+  .num:hover{border-color:var(--gold);}
+  .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
+  .btn{padding:11px 20px;border-radius:9px;font-size:14px;letter-spacing:1px;cursor:pointer;transition:.2s;min-height:44px;}
+  .btn.primary{background:var(--gold);color:#12141c;border:none;font-weight:600;}
+  .btn.ghost{background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--txt);}
+  .btn:hover{transform:translateY(-2px);}
+  .status{min-height:26px;text-align:center;font-size:14px;color:var(--gold);margin-top:8px;letter-spacing:1px;}
+  .hrd-card{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:18px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);margin-top:6px;}
+  .hrd-card .t{font-size:15.5px;}
+  .hrd-card .d{color:var(--sub);font-size:12.5px;margin-top:4px;line-height:1.7;}
+  .foot{margin-top:28px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:29px;letter-spacing:5px;}
+    #board{grid-template-columns:repeat(9,34px);gap:1px;padding:1px;}.cell{width:34px;height:34px;font-size:15px;}
+    .num{width:34px;height:34px;font-size:15px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+  <div class="head">
+    <h1>每日挑战</h1>
+    <p>每天一局，雷打不动 —— 数独与华容道，按日期固定，人人同题</p>
+  </div>
+  <div class="date">今日挑战 · <b id="dateStr">—</b></div>
+
+  <div class="panel">
+    <h2>今日数独（中等）</h2>
+    <div class="sudoku-wrap">
+      <div id="board"></div>
+      <div class="nums" id="nums"></div>
+      <div class="btns">
+        <button class="btn ghost" id="clearBtn">清空</button>
+        <button class="btn primary" id="checkBtn">检查</button>
+      </div>
+      <div class="status" id="status">点击格子，再点数字填入；金色为给定数字</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>今日华容道</h2>
+    <div class="hrd-card">
+      <div>
+        <div class="t">每日一关 · 经典布局「横刀立马」</div>
+        <div class="d">曹操出逃，81 步最短路。每天相同开局，比的就是谁更快。</div>
+      </div>
+      <button class="btn primary" id="hrdBtn">去挑战 →</button>
+    </div>
+  </div>
+
+  <div class="foot">妙搭小站 · 每日挑战 · 纯本地</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+
+  // ===== 种子随机 =====
+  function mulberry32(a){
+    return function(){
+      a|=0;a=a+0x6D2B79F5|0;
+      var t=Math.imul(a^a>>>15,1|a);
+      t=t+Math.imul(t^t>>>7,61|t)^t;
+      return ((t^t>>>14)>>>0)/4294967296;
+    };
+  }
+  function dayStr(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+  function seedFromDate(d){return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
+
+  // ===== 数独生成（模板解 + 种子变换 + 挖洞） =====
+  var BASE=[
+    [5,3,4,6,7,8,9,1,2],
+    [6,7,2,1,9,5,3,4,8],
+    [1,9,8,3,4,2,5,6,7],
+    [8,5,9,7,6,1,4,2,3],
+    [4,2,6,8,5,3,7,9,1],
+    [7,1,3,9,2,4,8,5,6],
+    [9,6,1,5,3,7,2,8,4],
+    [2,8,7,4,1,9,6,3,5],
+    [3,4,5,2,8,6,1,7,9]
+  ];
+  function genSudoku(seed){
+    var rnd=mulberry32(seed);
+    var g=BASE.map(function(r){return r.slice();});
+    // 数字置换
+    var p=[1,2,3,4,5,6,7,8,9];
+    for(var i=p.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1));var t=p[i];p[i]=p[j];p[j]=t;}
+    for(var r=0;r<9;r++)for(var c=0;c<9;c++)g[r][c]=p[g[r][c]-1];
+    // 转置（可能）
+    if(rnd()<.5){
+      var ng=[];
+      for(var r2=0;r2<9;r2++){ng[r2]=[];for(var c2=0;c2<9;c2++)ng[r2][c2]=g[c2][r2];}
+      g=ng;
+    }
+    // 行组内/组间交换（保持有效性）
+    function swapRows(block,n1,n2){
+      var base=block*3;
+      for(var c=0;c<9;c++){var t=g[base+n1][c];g[base+n1][c]=g[base+n2][c];g[base+n2][c]=t;}
+    }
+    function swapCols(block,n1,n2){
+      var base=block*3;
+      for(var r=0;r<9;r++){var t=g[r][base+n1];g[r][base+n1]=g[r][base+n2];g[r][base+n2]=t;}
+    }
+    for(var b=0;b<3;b++){if(rnd()<.5)swapRows(b,0,1);if(rnd()<.5)swapRows(b,1,2);}
+    for(var b2=0;b2<3;b2++){if(rnd()<.5)swapCols(b2,0,1);if(rnd()<.5)swapCols(b2,1,2);}
+    if(rnd()<.5){var t=g[0];g[0]=g[1];g[1]=t;}
+    if(rnd()<.5){var t2=g[1];g[1]=g[2];g[2]=t2;}
+    if(rnd()<.5){for(var r3=0;r3<9;r3++){var t3=g[r3][0];g[r3][0]=g[r3][1];g[r3][1]=t3;}}
+    if(rnd()<.5){for(var r4=0;r4<9;r4++){var t4=g[r4][1];g[r4][1]=g[r4][2];g[r4][2]=t4;}}
+    return g;
+  }
+  function digHoles(g,seed,nHoles){
+    var rnd=mulberry32(seed+7);
+    var sol=g.map(function(r){return r.slice();});
+    var pos=[];
+    for(var i=0;i<81;i++)pos.push(i);
+    for(var j=pos.length-1;j>0;j--){var k=Math.floor(rnd()*(j+1));var t=pos[j];pos[j]=pos[k];pos[k]=t;}
+    var board=sol.map(function(r){return r.slice();});
+    for(var h=0;h<nHoles&&h<pos.length;h++){
+      var idx=pos[h],r=Math.floor(idx/9),c=idx%9;
+      board[r][c]=0;
+    }
+    return {board:board,sol:sol};
+  }
+
+  // ===== 数独交互 =====
+  var P=null,sel=null;
+  function renderBoard(){
+    var b=$('board');b.innerHTML='';
+    for(var r=0;r<9;r++)for(var c=0;c<9;c++){
+      var d=document.createElement('div');
+      d.className='cell'+(P.board[r][c]?' given':'')+((c%3===2&&c<8)?' b3':'')+((c%3===0&&c>0)?' b6':'')+((r%3===2&&r<8)?' br3':'')+((r%3===0&&r>0)?' br6':'');
+      d.textContent=P.board[r][c]||'';
+      if(sel&&sel.r===r&&sel.c===c)d.classList.add('sel');
+      d.addEventListener('click',function(){sel={r:r,c:c};renderBoard();});
+      b.appendChild(d);
+    }
+  }
+  function putNum(n){
+    if(!sel)return;
+    if(P.board[sel.r][sel.c]){return;}
+    P.board[sel.r][sel.c]=n;
+    renderBoard();
+  }
+  function checkSudoku(){
+    var ok=true;
+    for(var r=0;r<9;r++)for(var c=0;c<9;c++){
+      var v=P.board[r][c];
+      if(!v){$('status').textContent='还有空格没填';return;}
+      if(v!==P.sol[r][c]){ok=false;}
+    }
+    if(ok){
+      $('status').textContent='✓ 完全正确！今日数独完成。';
+      $('status').style.color='#4ad6c1';
+    }else{
+      $('status').textContent='有填错的数字，请检查（不标注错误位置，自己找）';
+      $('status').style.color='#ff9c5b';
+    }
+  }
+  function clearBoard(){
+    for(var r=0;r<9;r++)for(var c=0;c<9;c++){
+      if(!P.givenMask[r][c])P.board[r][c]=0;
+    }
+    renderBoard();
+  }
+
+  // ===== 初始化 =====
+  var now=new Date();
+  $('dateStr').textContent=dayStr(now);
+  var seed=seedFromDate(now);
+  var sol=genSudoku(seed);
+  var dug=digHoles(sol,seed,40);
+  P={board:dug.board,sol:sol,givenMask:dug.board.map(function(r){return r.map(function(v){return v?1:0;});})};
+  renderBoard();
+  // 数字键盘
+  var nums=$('nums');
+  for(var n=1;n<=9;n++){
+    var b=document.createElement('button');b.className='num';b.textContent=n;
+    b.addEventListener('click',function(){putNum(parseInt(this.textContent,10));});
+    nums.appendChild(b);
+  }
+  $('checkBtn').addEventListener('click',checkSudoku);
+  $('clearBtn').addEventListener('click',clearBoard);
+  $('hrdBtn').addEventListener('click',function(){location.href='hrd.html?daily=1';});
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

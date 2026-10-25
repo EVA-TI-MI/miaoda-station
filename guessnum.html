@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>猜数字 · Bulls &amp; Cows — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#7ce06b; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(124,224,107,.13) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:680px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#a4ea96,#7ce06b 50%,#d2f7c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .toolbar{width:100%;max-width:680px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin:14px 0 8px;}
+  .btn{padding:9px 16px;border-radius:8px;font-size:14px;color:var(--txt);background:rgba(33,41,62,.85);
+    border:1px solid #2c3650;cursor:pointer;transition:.2s;min-height:42px;}
+  .btn:hover{border-color:var(--gold);color:var(--gold);}
+  select.btn{cursor:pointer;}
+  .info{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;color:var(--sub);font-size:13px;margin:6px 0;}
+  .info b{color:var(--gold);font-weight:600;}
+  .input-row{width:100%;max-width:680px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
+  #guess{width:180px;padding:12px 14px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;
+    color:var(--txt);font-size:22px;letter-spacing:6px;text-align:center;outline:none;min-height:50px;}
+  #guess:focus{border-color:var(--gold);}
+  .guess-btn{padding:12px 24px;border-radius:8px;font-size:15px;letter-spacing:2px;color:#12141c;
+    background:var(--c);border:none;cursor:pointer;font-weight:600;min-height:50px;}
+  .guess-btn:active{transform:scale(.97);}
+  .msg{min-height:30px;font-size:14.5px;color:var(--gold);letter-spacing:1px;text-align:center;line-height:1.8;}
+  .history{width:100%;max-width:680px;margin-top:12px;display:flex;flex-direction:column;gap:6px;}
+  .his-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-radius:10px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:15px;}
+  .his-num{font-weight:600;letter-spacing:3px;}
+  .his-res b{color:var(--gold);margin:0 6px;}
+  .his-res .b{color:#7ce06b;}
+  .stats{width:100%;max-width:680px;margin-top:14px;padding:16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(124,224,107,.16);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;color:var(--sub);font-size:13px;}
+  .stats b{color:var(--gold);}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:29px;letter-spacing:5px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="fun.html">← 返回</a></div>
+  <div class="head">
+    <h1>猜数字</h1>
+    <p>Bulls &amp; Cows · 数字推理 —— 猜中隐藏的不重复数字，位置对是 Bull，数字对是 Cow</p>
+  </div>
+
+  <div class="toolbar">
+    <select class="btn" id="lenSel" style="cursor:pointer">
+      <option value="3">3 位 · 入门</option>
+      <option value="4" selected>4 位 · 标准</option>
+      <option value="5">5 位 · 挑战</option>
+    </select>
+    <button class="btn" id="newBtn">新一局</button>
+  </div>
+  <div class="info"><span>猜了 <b id="tries">0</b> 次</span><span>用时 <b id="time">00:00</b></span><span>最少次数 <b id="best">—</b></span></div>
+
+  <div class="input-row">
+    <input id="guess" maxlength="5" inputmode="numeric" autocomplete="off" placeholder="____">
+    <button class="guess-btn" id="goBtn">猜！</button>
+  </div>
+  <div class="msg" id="msg">数字不重复。例如 4 位答案 1234，你猜 1243 → 2 Bull 2 Cow</div>
+  <div class="history" id="history"></div>
+
+  <div class="stats">
+    <span>Bull = <b>数字对且位置对</b>；Cow = <b>数字对但位置错</b></span>
+    <span>全部 Bull 即猜中，次数越少越好</span>
+  </div>
+
+  <div class="foot">妙搭小站 · 猜数字 · 纯本地</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var BEST_KEY='miaodaGuessNumBestV46';
+  var cur={ans:[],len:4,tries:0,time:0,timer:null,done:false,hist:[]};
+
+  function newGame(){
+    var len=parseInt($('lenSel').value,10);
+    cur.len=len;cur.tries=0;cur.time=0;cur.done=false;cur.hist=[];
+    var pool=[];
+    for(var i=0;i<10;i++)pool.push(i);
+    cur.ans=[];
+    for(var j=0;j<len;j++){var k=Math.floor(Math.random()*pool.length);cur.ans.push(pool.splice(k,1)[0]);}
+    startTimer();
+    $('history').innerHTML='';
+    $('msg').className='msg';
+    $('msg').textContent=len+' 位数字谜（不重复），猜对位置即 Bull';
+    $('guess').value='';$('guess').focus();
+    $('tries').textContent=0;
+    renderBest();
+  }
+
+  function guess(){
+    if(cur.done){$('msg').textContent='本局已结束，点「新一局」再战';return;}
+    var raw=$('guess').value.trim();
+    if(!/^\d+$/.test(raw)||raw.length!==cur.len){$('msg').textContent='请输入 '+cur.len+' 位数字';return;}
+    var nums=raw.split('').map(Number);
+    if(new Set(nums).size!==nums.length){$('msg').textContent='数字不能重复';return;}
+    cur.tries++;
+    var bulls=0,cows=0;
+    for(var i=0;i<cur.len;i++){
+      if(nums[i]===cur.ans[i])bulls++;
+      else if(cur.ans.indexOf(nums[i])>-1)cows++;
+    }
+    cur.hist.unshift({num:raw,bulls:bulls,cows:cows});
+    var h=$('history');
+    var row=document.createElement('div');row.className='his-row';
+    var n=document.createElement('span');n.className='his-num';n.textContent=raw;
+    var r=document.createElement('span');r.className='his-res';
+    r.innerHTML='<b class="b">'+bulls+' Bull</b><b>'+cows+' Cow</b>';
+    row.appendChild(n);row.appendChild(r);
+    h.insertBefore(row,h.firstChild);
+    if(bulls===cur.len){
+      cur.done=true;stopTimer();
+      var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+      var isNew=false;
+      if(!best[cur.len]||cur.tries<best[cur.len]){best[cur.len]=cur.tries;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+      $('msg').className='msg';
+      $('msg').textContent='🎉 猜中了！答案 '+cur.ans.join('')+' · 共 '+cur.tries+' 次'+(isNew?' · 新纪录！':'');
+      $('msg').style.color='#7ce06b';
+      renderBest();
+    }else{
+      $('msg').className='msg';
+      $('msg').textContent=bulls+' Bull '+cows+' Cow · 继续';
+    }
+    $('tries').textContent=cur.tries;
+    $('guess').value='';$('guess').focus();
+  }
+
+  function renderBest(){
+    var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+    $('best').textContent=best[cur.len]!=null?best[cur.len]:'—';
+  }
+
+  function startTimer(){stopTimer();cur.timer=setInterval(function(){if(!cur.done){cur.time++;var m=Math.floor(cur.time/60),s=cur.time%60;$('time').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;}},1000);}
+  function stopTimer(){if(cur.timer){clearInterval(cur.timer);cur.timer=null;}}
+
+  $('goBtn').addEventListener('click',guess);
+  $('guess').addEventListener('keydown',function(e){if(e.key==='Enter')guess();});
+  $('newBtn').addEventListener('click',newGame);
+  $('lenSel').addEventListener('change',newGame);
+  newGame();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

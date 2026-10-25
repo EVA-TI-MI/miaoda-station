@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="creative-medium" content="other">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>随机抽签 · 决策器 — 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#12141c; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; --c:#b98cff; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:28px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(185,140,255,.14) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(232,199,122,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:760px;display:flex;justify-content:flex-start;margin-bottom:16px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin:6px 0 4px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(135deg,#cfa9ff,#b98cff 50%,#e6d4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13.5px;letter-spacing:1px;line-height:1.8;}
+  .tabs{width:100%;max-width:760px;display:flex;gap:8px;justify-content:center;margin:16px 0 6px;}
+  .tab{flex:1;max-width:220px;padding:11px 10px;border-radius:10px;font-size:14.5px;letter-spacing:1px;cursor:pointer;
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);transition:.2s;text-align:center;min-height:44px;}
+  .tab.on{color:#12141c;background:var(--gold);border-color:var(--gold);font-weight:600;}
+  .panel{width:100%;max-width:760px;display:none;flex-direction:column;align-items:center;}
+  .panel.show{display:flex;}
+  .result-box{width:100%;min-height:96px;margin:16px 0 8px;padding:20px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(185,140,255,.25);display:flex;align-items:center;
+    justify-content:center;text-align:center;font-size:30px;letter-spacing:2px;color:var(--gold);font-family:"STKaiti","KaiTi",serif;transition:.3s;}
+  .result-box.roll{animation:pop .4s;}
+  @keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .opts{width:100%;margin:8px 0;}
+  #opts{width:100%;min-height:150px;padding:12px 14px;border-radius:10px;background:#1b1f2c;border:1px solid #2c3650;
+    color:var(--txt);font-size:15px;line-height:1.8;outline:none;resize:vertical;font-family:inherit;}
+  #opts:focus{border-color:var(--gold);}
+  .btns{width:100%;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0;}
+  .btn{padding:12px 22px;border-radius:10px;font-size:14.5px;letter-spacing:2px;color:var(--txt);
+    background:rgba(33,41,62,.85);border:1px solid #2c3650;cursor:pointer;transition:.2s;min-height:48px;}
+  .btn.primary{background:var(--gold);color:#12141c;border-color:var(--gold);font-weight:600;}
+  .btn:hover{transform:translateY(-2px);}
+  .left{width:100%;color:var(--sub);font-size:13px;text-align:center;line-height:1.8;min-height:26px;}
+  .wheel-wrap{width:100%;max-width:420px;margin:6px 0;}
+  canvas{width:100%;display:block;touch-action:none;}
+  .foot{margin-top:26px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:29px;letter-spacing:5px;}.result-box{font-size:24px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+  <div class="head">
+    <h1>随机抽签 · 决策器</h1>
+    <p>选择困难？交给命运 —— 抽签、转盘、掷骰，一应俱全</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" id="tabPick">🎯 抽签</div>
+    <div class="tab" id="tabWheel">🎡 转盘</div>
+    <div class="tab" id="tabDice">🎲 骰子</div>
+  </div>
+
+  <!-- 抽签 -->
+  <div class="panel show" id="panelPick">
+    <div class="result-box" id="pickResult">—</div>
+    <div class="left" id="pickLeft">每行一个选项，随机抽出一个</div>
+    <div class="opts"><textarea id="opts" placeholder="每行一个选项：&#10;看电影&#10;看书&#10;打游戏&#10;睡觉"></textarea></div>
+    <div class="btns">
+      <button class="btn primary" id="pickBtn">抽一个</button>
+      <button class="btn" id="repickBtn">再抽（不放回）</button>
+      <button class="btn" id="resetPickBtn">重置</button>
+    </div>
+  </div>
+
+  <!-- 转盘 -->
+  <div class="panel" id="panelWheel">
+    <div class="wheel-wrap"><canvas id="wheel" width="420" height="420"></canvas></div>
+    <div class="result-box" id="wheelResult" style="font-size:24px;">点转盘开始</div>
+    <div class="btns">
+      <button class="btn primary" id="spinBtn">转！</button>
+      <button class="btn" id="syncWheelBtn">同步选项到转盘</button>
+    </div>
+    <div class="left">转盘使用上方抽签区的选项；点「同步选项到转盘」后生效</div>
+  </div>
+
+  <!-- 骰子 -->
+  <div class="panel" id="panelDice">
+    <div class="result-box" id="diceResult" style="font-size:44px;">🎲</div>
+    <div class="btns">
+      <button class="btn primary" id="diceBtn">掷骰子</button>
+      <select class="btn" id="diceSel" style="cursor:pointer;">
+        <option value="1">1 枚 d6</option>
+        <option value="2">2 枚 d6</option>
+        <option value="d20">1 枚 d20</option>
+        <option value="coin">抛硬币</option>
+      </select>
+    </div>
+    <div class="left" id="diceLeft">命运时刻</div>
+  </div>
+
+  <div class="foot">妙搭小站 · 随机工具 · 纯本地</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var pool=[],picked=[];
+
+  function getOpts(){
+    var lines=$('opts').value.split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
+    return lines;
+  }
+
+  function pickOne(){
+    var opts=getOpts();
+    if(!opts.length){$('pickResult').textContent='先在下方填写选项';return;}
+    var i=Math.floor(Math.random()*opts.length);
+    $('pickResult').textContent=opts[i];
+    $('pickResult').classList.remove('roll');void $('pickResult').offsetWidth;$('pickResult').classList.add('roll');
+    $('pickLeft').textContent='共 '+opts.length+' 个选项';
+  }
+
+  function repick(){
+    var opts=getOpts();
+    if(!opts.length){$('pickResult').textContent='先在下方填写选项';return;}
+    if(!pool.length){pool=opts.slice();picked=[];}
+    if(!pool.length){$('pickLeft').textContent='全部抽完，点重置再来一轮';return;}
+    var i=Math.floor(Math.random()*pool.length);
+    var v=pool.splice(i,1)[0];
+    picked.push(v);
+    $('pickResult').textContent=v;
+    $('pickResult').classList.remove('roll');void $('pickResult').offsetWidth;$('pickResult').classList.add('roll');
+    $('pickLeft').textContent='已抽 '+picked.length+' 个，剩余 '+pool.length+' 个';
+  }
+
+  function resetPick(){
+    pool=[];picked=[];
+    $('pickResult').textContent='—';
+    $('pickLeft').textContent='每行一个选项，随机抽出一个';
+  }
+
+  // ===== 转盘 =====
+  var wheelCv=$('wheel'),wctx=wheelCv.getContext('2d');
+  var spinAngle=0,spinVel=0,spinTimer=null,wheelOptions=[];
+  function syncWheel(){
+    wheelOptions=getOpts();
+    if(!wheelOptions.length)wheelOptions=['选项 A','选项 B','选项 C','选项 D'];
+    drawWheel();
+  }
+  function drawWheel(){
+    var n=wheelOptions.length,cx=210,cy=210,r=196;
+    wctx.clearRect(0,0,420,420);
+    if(!n)return;
+    var arc=Math.PI*2/n;
+    var colors=['#b98cff','#e8453c','#4ad6c1','#f0b72a','#5b9bf5','#7ce06b','#ff7a59','#e0a44b','#46c39a','#f2a0c8'];
+    for(var i=0;i<n;i++){
+      var a0=spinAngle+i*arc;
+      wctx.beginPath();wctx.moveTo(cx,cy);
+      wctx.arc(cx,cy,r,a0,a0+arc);
+      wctx.closePath();
+      wctx.fillStyle=colors[i%colors.length];
+      wctx.fill();
+      wctx.strokeStyle='rgba(18,20,28,.6)';wctx.lineWidth=2;wctx.stroke();
+      // 文字
+      wctx.save();
+      wctx.translate(cx,cy);
+      wctx.rotate(a0+arc/2);
+      wctx.textAlign='right';wctx.fillStyle='#12141c';
+      wctx.font='bold 15px sans-serif';
+      var txt=wheelOptions[i];
+      if(txt.length>8)txt=txt.slice(0,8)+'…';
+      wctx.fillText(txt,r-22,5);
+      wctx.restore();
+    }
+    wctx.beginPath();wctx.arc(cx,cy,20,0,Math.PI*2);wctx.fillStyle='#e8c77a';wctx.fill();
+    wctx.strokeStyle='#12141c';wctx.lineWidth=3;wctx.stroke();
+  }
+  function spin(){
+    if(spinTimer)return;
+    syncWheel();
+    spinVel=20+Math.random()*18;
+    spinTimer=setInterval(function(){
+      spinAngle+=spinVel;
+      spinVel*=.982;
+      drawWheel();
+      if(spinVel<.25){
+        clearInterval(spinTimer);spinTimer=null;
+        // 结果：指针在正上方（12 点方向），计算命中的扇区
+        var n=wheelOptions.length,arc=Math.PI*2/n;
+        // 指针方向 = -PI/2（正上方）；扇区 i 覆盖 [spinAngle+i*arc, spinAngle+(i+1)*arc]
+        var p=-Math.PI/2;
+        var rel=(p-spinAngle)%(Math.PI*2);
+        if(rel<0)rel+=Math.PI*2;
+        var idx=Math.floor(rel/arc);
+        $('wheelResult').textContent='🎯 '+wheelOptions[idx];
+      }
+    },33);
+  }
+
+  // ===== 骰子 =====
+  function rollDice(){
+    var sel=$('diceSel').value;
+    var box=$('diceResult');
+    if(sel==='coin'){
+      box.textContent=Math.random()<.5?'正面':'反面';
+      $('diceLeft').textContent='抛硬币结果';
+      return;
+    }
+    if(sel==='d20'){
+      var v=1+Math.floor(Math.random()*20);
+      box.textContent='d20 → '+v;
+      $('diceLeft').textContent='20 面骰';
+      return;
+    }
+    var n=parseInt(sel,10),sum=0,parts=[];
+    for(var i=0;i<n;i++){var x=1+Math.floor(Math.random()*6);parts.push(x);sum+=x;}
+    box.textContent=parts.join(' + ')+' = '+sum;
+    $('diceLeft').textContent=n+' 枚 6 面骰';
+  }
+
+  // tabs
+  function showTab(t){
+    var map={pick:'panelPick',wheel:'panelWheel',dice:'panelDice'};
+    ['tabPick','tabWheel','tabDice'].forEach(function(id){$(id).classList.toggle('on',id==='tab'+t[0].toUpperCase()+t.slice(1));});
+    ['panelPick','panelWheel','panelDice'].forEach(function(id){$(id).classList.toggle('show',id==='panel'+t[0].toUpperCase()+t.slice(1));});
+    if(t==='wheel')syncWheel();
+  }
+  $('tabPick').addEventListener('click',function(){showTab('pick');});
+  $('tabWheel').addEventListener('click',function(){showTab('wheel');});
+  $('tabDice').addEventListener('click',function(){showTab('dice');});
+
+  $('pickBtn').addEventListener('click',pickOne);
+  $('repickBtn').addEventListener('click',repick);
+  $('resetPickBtn').addEventListener('click',resetPick);
+  $('spinBtn').addEventListener('click',spin);
+  $('syncWheelBtn').addEventListener('click',syncWheel);
+  $('diceBtn').addEventListener('click',rollDice);
+  syncWheel();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>
