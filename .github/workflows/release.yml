@@ -43,7 +43,13 @@ jobs:
             --add-data "sokoban.html;." --add-data "2048.html;." --add-data "minesweeper.html;." `
             --add-data "jump.html;." --add-data "tetris.html;." --add-data "breakout.html;." `
             --add-data "memory.html;." --add-data "mole.html;." --add-data "dino.html;." `
-            --add-data "pong.html;." --add-data "novels_data.js;." `
+            --add-data "pong.html;." --add-data "shogi.html;." --add-data "draughts.html;." `
+            --add-data "hashi.html;." --add-data "nurikabe.html;." --add-data "akari.html;." `
+            --add-data "lianliankan.html;." --add-data "p15.html;." --add-data "drawboard.html;." `
+            --add-data "whitenoise.html;." --add-data "backup.html;." `
+            --add-data "chess-hub.html;." --add-data "puzzle-hub.html;." `
+            --add-data "casual-hub.html;." --add-data "tools-hub.html;." `
+            --add-data "novels_data.js;." `
             --add-data "sw.js;." --add-data "manifest.json;." `
             --add-data "icon-192.png;." --add-data "icon-512.png;." snake_launcher.py
 

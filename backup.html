@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>存档管理 · 效率 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:10px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:12px;}
+  .cards{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:14px;width:min(94vw,620px);}
+  .card{background:#161b29;border:1px solid var(--line);border-radius:14px;padding:24px 18px;text-align:center;}
+  .card .ic{font-size:28px;margin-bottom:8px;}
+  .card .nm{font-size:15px;letter-spacing:2px;margin-bottom:6px;color:var(--gold);}
+  .card p{font-size:12px;color:var(--sub);line-height:1.8;margin-bottom:14px;}
+  .btn{padding:9px 18px;border-radius:8px;font-size:13.5px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.danger{color:#e8453c;border-color:#e8453c;background:rgba(232,69,60,.08);}
+  .btn.danger:hover{background:#e8453c;color:#fff;}
+  .list{width:100%;max-width:620px;margin-top:16px;background:#161b29;border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+  .list h3{font-size:14px;color:var(--gold);margin-bottom:10px;letter-spacing:1px;}
+  .list table{width:100%;font-size:12.5px;color:var(--sub);border-collapse:collapse;}
+  .list th,.list td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);}
+  .list th{color:var(--txt);font-weight:normal;}
+  .list tr:last-child td{border-bottom:none;}
+  .list .nm2{color:var(--txt);}
+  .rules{width:100%;max-width:700px;margin-top:14px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  input[type=file]{display:none;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="tools-hub.html">← 返回效率</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>存档管理</h1>
+    <p>BACKUP · 全站成绩导出导入 · 换设备不丢进度</p>
+  </div>
+  <div class="status" id="status">本站全部游戏进度都存在浏览器本地（localStorage）</div>
+  <div class="cards">
+    <div class="card">
+      <div class="ic">↓</div>
+      <div class="nm">导出存档</div>
+      <p>把全部游戏的成绩、进度、皮肤设置打包成一个 JSON 文件下载，可备份到任何地方。</p>
+      <button class="btn" id="exportBtn">导出全部存档</button>
+    </div>
+    <div class="card">
+      <div class="ic">↑</div>
+      <div class="nm">导入存档</div>
+      <p>选择之前导出的 JSON 文件，一键恢复全部进度（会覆盖当前存档）。</p>
+      <button class="btn" id="importBtn">选择文件导入</button>
+      <input type="file" id="file" accept=".json,application/json">
+    </div>
+  </div>
+  <div class="list">
+    <h3>当前本地存档</h3>
+    <div id="tableWrap"></div>
+  </div>
+  <div class="rules">
+    <b>说明</b>：各游戏的成绩（胜负数、最佳用时、皮肤选择等）均保存在本浏览器 localStorage 中，清除浏览器数据会一并清空。<b>建议</b>：定期导出备份，换设备后在新设备导入即可无缝续档。
+  </div>
+  <div class="foot">妙搭小站 · 存档管理 · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+function fmtBytes(b){if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(2)+' MB';}
+function refreshList(){
+  var total=0,count=0;
+  var rows=[];
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    var v=localStorage.getItem(k);
+    if(k.startsWith('miaoda')||k.startsWith('biquge')||k.includes('_record')||k.includes('Best')||k.includes('skin')||k.includes('score')||k.includes('snake')||k.includes('tetris')){
+      count++;total+=(v?v.length:0);
+      rows.push('<tr><td class="nm2">'+k+'</td><td>'+fmtBytes(v?v.length:0)+'</td></tr>');
+    }
+  }
+  var wrap=$('tableWrap');
+  if(!count){wrap.innerHTML='<p style="color:var(--sub);font-size:12.5px">暂无游戏存档</p>';}
+  else{
+    wrap.innerHTML='<table><tr><th>存档键</th><th>大小</th></tr>'+rows.join('')+'</table>';
+  }
+  $('status').textContent='共 '+count+' 条游戏存档 · 合计 '+fmtBytes(total)+' · 全部进度都在浏览器本地';
+}
+$('exportBtn').addEventListener('click',function(){
+  var data={};
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    data[k]=localStorage.getItem(k);
+  }
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.download='妙搭小站存档_'+new Date().toISOString().slice(0,10)+'.json';
+  a.href=URL.createObjectURL(blob);
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  $('status').textContent='存档已导出（'+fmtBytes(blob.size)+'）';
+});
+$('importBtn').addEventListener('click',function(){$('file').click();});
+$('file').addEventListener('change',function(){
+  var f=this.files[0];
+  if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var data=JSON.parse(reader.result);
+      var n=0;
+      Object.keys(data).forEach(function(k){
+        localStorage.setItem(k,data[k]);n++;
+      });
+      $('status').textContent='导入成功：写入 '+n+' 条存档 · 请刷新页面后生效';
+      refreshList();
+    }catch(e){
+      $('status').textContent='文件格式不正确，无法导入';
+    }
+  };
+  reader.readAsText(f,'utf-8');
+  this.value='';
+});
+refreshList();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

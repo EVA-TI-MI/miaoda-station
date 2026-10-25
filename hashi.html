@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>数桥 · 益智 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:760px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:8px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .bar{display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0;flex-wrap:wrap;}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13.5px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.ghost{color:var(--sub);border-color:var(--line);background:transparent;}
+  .btn.ghost:hover{color:var(--gold);border-color:var(--gold);background:rgba(232,199,122,.08);}
+  select{background:#161b29;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13.5px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:8px;}
+  .boardWrap{position:relative;display:inline-block;}
+  canvas{display:block;width:min(92vw,520px);aspect-ratio:1;background:#161b29;border:2px solid var(--gold);border-radius:10px;touch-action:none;cursor:pointer;}
+  .rules{width:100%;max-width:760px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,18,.75);z-index:9;}
+  .win.show{display:flex;}
+  .winbox{background:#1a2030;border:1px solid var(--gold);border-radius:16px;padding:34px 48px;text-align:center;}
+  .winbox h2{color:var(--gold);font-family:"STKaiti","KaiTi",serif;font-size:28px;letter-spacing:4px;margin-bottom:12px;}
+  .winbox p{color:var(--sub);font-size:14px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="puzzle-hub.html">← 返回益智</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>数桥</h1>
+    <p>HASHI · BRIDGES · 岛屿连桥 · 数字即桥数</p>
+  </div>
+  <div class="bar">
+    <select id="sizeSel">
+      <option value="6">6×6 · 入门</option>
+      <option value="8" selected>8×8 · 进阶</option>
+      <option value="10">10×10 · 高手</option>
+    </select>
+    <select id="densSel">
+      <option value="0.5">桥少 · 轻松</option>
+      <option value="0.65" selected>桥中 · 标准</option>
+      <option value="0.8">桥密 · 困难</option>
+    </select>
+    <button class="btn" id="newBtn">换一题</button>
+    <button class="btn ghost" id="checkBtn">检查</button>
+  </div>
+  <div class="status" id="status">点击两个岛屿之间连桥（再点加至双桥，三击清除）</div>
+  <div class="boardWrap"><canvas id="cv" width="520" height="520"></canvas></div>
+  <div class="rules">
+    <b>玩法</b>：圆点数字 = 该岛需要连出的桥数。桥必须水平或垂直连接两岛，最多双桥，桥不能交叉。<b>完成</b>：所有岛桥数与数字一致，且全图连成一片。点击两岛循环「单桥 → 双桥 → 清除」。
+  </div>
+  <div class="win" id="win">
+    <div class="winbox">
+      <h2>桥梁贯通！</h2>
+      <p id="winText"></p>
+      <button class="btn" id="winClose">再玩一局</button>
+    </div>
+  </div>
+  <div class="foot">妙搭小站 · 数桥 HASHI · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var cv=$('cv'),ctx=cv.getContext('2d');
+var W=8,H=8,islands=[],bridges={},sel=null,timer=null,time=0,solved=false;
+var BEST_KEY='miaodaHashiBestV47';
+function newPuzzle(){
+  W=parseInt($('sizeSel').value,10);H=W;
+  var dens=parseFloat($('densSel').value);
+  islands=[];bridges={};sel=null;solved=false;
+  // 生成岛屿：随机分布，间距≥1格
+  var attempts=0;
+  var target=Math.round(W*H*dens*0.42);
+  while(islands.length<target&&attempts<2000){
+    attempts++;
+    var r=Math.floor(Math.random()*H),c=Math.floor(Math.random()*W);
+    var ok=true;
+    for(var i=0;i<islands.length;i++){
+      var a=islands[i];
+      if(Math.abs(a.r-r)+Math.abs(a.c-c)<=2){ok=false;break;}
+    }
+    if(ok)islands.push({r:r,c:c,id:islands.length});
+  }
+  // 生成连通桥网络
+  function key(a,b){return a<b?a+'_'+b:b+'_'+a;}
+  function hasIslandBetween(a,b){
+    if(a.r===b.r){
+      var c1=Math.min(a.c,b.c),c2=Math.max(a.c,b.c);
+      for(var cc=c1+1;cc<c2;cc++)for(var i=0;i<islands.length;i++)if(islands[i].r===a.r&&islands[i].c===cc)return true;
+      return false;
+    }
+    if(a.c===b.c){
+      var r1=Math.min(a.r,b.r),r2=Math.max(a.r,b.r);
+      for(var rr=r1+1;rr<r2;rr++)for(var i=0;i<islands.length;i++)if(islands[i].c===a.c&&islands[i].r===rr)return true;
+      return false;
+    }
+    return true; // 斜线不可连
+  }
+  function canBridge(a,b){
+    if(a.r===b.r||a.c===b.c){
+      if(hasIslandBetween(a,b))return false;
+      var k=key(a.id,b.id);
+      if(bridges[k]>=2)return false;
+      // 度数上限 8
+      var da=bridges[key(a.id,a.id)]||0;
+      if(deg(a)>=8||deg(b)>=8)return false;
+      return true;
+    }
+    return false;
+  }
+  function deg(is){
+    var d=0;
+    islands.forEach(function(o){
+      if(o.id===is.id)return;
+      var k=key(is.id,o.id);
+      d+=(bridges[k]||0);
+    });
+    return d;
+  }
+  // 连通组
+  var groups=islands.map(function(x){return [x.id];});
+  function findGroup(id){for(var g=0;g<groups.length;g++)if(groups[g].indexOf(id)>=0)return g;return -1;}
+  function union(g1,g2){var a=groups[g1],b=groups[g2];groups[g1]=a.concat(b);groups.splice(g2,1);}
+  // 循环直到全连通：随机连
+  var guard=0;
+  while(groups.length>1&&guard<500){
+    guard++;
+    // 随机两个不同组
+    var g1=Math.floor(Math.random()*groups.length);
+    var g2=Math.floor(Math.random()*groups.length);
+    if(g1===g2)continue;
+    var idA=groups[g1][Math.floor(Math.random()*groups[g1].length)];
+    var idB=groups[g2][Math.floor(Math.random()*groups[g2].length)];
+    var a=islands[idA],b=islands[idB];
+    if(canBridge(a,b)){
+      var k=key(idA,idB);
+      bridges[k]=(bridges[k]||0)+1;
+      union(g1,g2);
+    }
+  }
+  // 若未全连通（罕见），补连
+  guard=0;
+  while(groups.length>1&&guard<300){
+    guard++;
+    var found=false;
+    for(var i=0;i<islands.length&&!found;i++)for(var j=i+1;j<islands.length&&!found;j++){
+      var gi=findGroup(i),gj=findGroup(j);
+      if(gi===gj)continue;
+      if(canBridge(islands[i],islands[j])){
+        var k=key(i,j);
+        bridges[k]=(bridges[k]||0)+1;
+        union(gi,gj);
+        found=true;
+      }
+    }
+  }
+  // 加双桥与额外桥（增加难度）
+  for(var t=0;t<W*H*1.2;t++){
+    var i=Math.floor(Math.random()*islands.length),j=Math.floor(Math.random()*islands.length);
+    if(i===j)continue;
+    var a=islands[i],b=islands[j];
+    if(canBridge(a,b)&&Math.random()<0.5){
+      var k=key(i,j);
+      bridges[k]=(bridges[k]||0)+1;
+    }
+  }
+  // 计算每个岛数字
+  islands.forEach(function(is){is.num=deg(is);});
+  // 度数>8 的极少见情况：删一些桥
+  for(var q=0;q<islands.length;q++){
+    var dq=deg(islands[q]);
+    if(dq>8){
+      islands.forEach(function(o){
+        if(o.id===islands[q].id)return;
+        var k=key(islands[q].id,o.id);
+        while(deg(islands[q])>8&&bridges[k]){
+          bridges[k]--;
+          if(bridges[k]===0)delete bridges[k];
+        }
+      });
+      islands[q].num=deg(islands[q]);
+    }
+  }
+  islands.forEach(function(is){is.num=deg(is);});
+  time=0;solved=false;
+  stopTimer();startTimer();
+  render();
+}
+function startTimer(){stopTimer();timer=setInterval(function(){time++;render();},1000);}
+function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+// ===== 渲染 =====
+function render(){
+  var s=cv.width;
+  ctx.clearRect(0,0,s,s);
+  var pad=s*0.08,gap=(s-pad*2)/(W-1);
+  function px(c){return pad+c*gap;}
+  function py(r){return pad+r*gap;}
+  // 已连桥
+  for(var i=0;i<islands.length;i++)for(var j=i+1;j<islands.length;j++){
+    var k=i+'_'+j;
+    var n=bridges[k]||0;
+    if(!n)continue;
+    var a=islands[i],b=islands[j];
+    var x1=px(a.c),y1=py(a.r),x2=px(b.c),y2=py(b.r);
+    ctx.strokeStyle='#4ad6c1';ctx.lineWidth=3;
+    if(a.r===b.r){
+      var mid=(x1+x2)/2;
+      if(n===2){ctx.beginPath();ctx.moveTo(x1,y1-5);ctx.lineTo(mid,y1-5);ctx.moveTo(mid,y1-5);ctx.lineTo(x2,y2-5);ctx.stroke();ctx.beginPath();ctx.moveTo(x1,y1+5);ctx.lineTo(mid,y1+5);ctx.moveTo(mid,y1+5);ctx.lineTo(x2,y2+5);ctx.stroke();}
+      else{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+    }else{
+      var mid2=(y1+y2)/2;
+      if(n===2){ctx.beginPath();ctx.moveTo(x1-5,y1);ctx.lineTo(x1-5,mid2);ctx.moveTo(x1-5,mid2);ctx.lineTo(x2-5,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x1+5,y1);ctx.lineTo(x1+5,mid2);ctx.moveTo(x1+5,mid2);ctx.lineTo(x2+5,y2);ctx.stroke();}
+      else{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+    }
+  }
+  // 岛屿
+  islands.forEach(function(is){
+    var x=px(is.c),y=py(is.r);
+    ctx.beginPath();ctx.arc(x,y,s*0.032,0,Math.PI*2);
+    ctx.fillStyle='#f2e6c8';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle='#e8c77a';ctx.stroke();
+    ctx.fillStyle='#241d12';ctx.font='bold '+(s*0.045)+'px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(String(is.num),x,y+1);
+  });
+  // 选中
+  if(sel){
+    var a=islands[sel];
+    ctx.beginPath();ctx.arc(px(a.c),py(a.r),s*0.038,0,Math.PI*2);
+    ctx.lineWidth=2;ctx.strokeStyle='#f2c537';ctx.stroke();
+  }
+  $('status').textContent=solved?'':'用时 '+fmt(time)+' · 点击两岛循环「单桥 → 双桥 → 清除」';
+}
+function fmt(t){var m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+// ===== 交互 =====
+function nearest(r,c){
+  var best=null,bd=1e9;
+  var s=cv.width,pad=s*0.08,gap=(s-pad*2)/(W-1);
+  for(var i=0;i<islands.length;i++){
+    var x=pad+islands[i].c*gap,y=pad+islands[i].r*gap;
+    var d=(x-c)*(x-c)+(y-r)*(y-r);
+    if(d<bd){bd=d;best=i;}
+  }
+  if(Math.sqrt(bd)<s*0.06)return best;
+  return null;
+}
+function key2(a,b){return a<b?a+'_'+b:b+'_'+a;}
+cv.addEventListener('click',function(e){
+  if(solved)return;
+  var rect=cv.getBoundingClientRect();
+  var sx=cv.width/rect.width,sy=cv.height/rect.height;
+  var mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+  var idx=nearest(mx,my);
+  if(idx===null)return;
+  if(sel===null){sel=idx;}
+  else{
+    if(sel===idx){sel=null;render();return;}
+    var a=islands[sel],b=islands[idx];
+    if(a.r===b.r||a.c===b.c){
+      // 检查中间无岛
+      if(!hasBetween(a,b)){
+        var k=key2(sel,idx);
+        var cur=bridges[k]||0;
+        bridges[k]=(cur+1)%3;
+        if(!bridges[k])delete bridges[k];
+        sel=null;
+        checkWin();
+      }else{$('status').textContent='两岛之间有其他岛屿挡路，无法连桥';}
+    }else{$('status').textContent='桥只能水平或垂直连接，请选择同行或同列的岛';}
+  }
+  render();
+});
+function hasBetween(a,b){
+  if(a.r===b.r){
+    var c1=Math.min(a.c,b.c),c2=Math.max(a.c,b.c);
+    for(var cc=c1+1;cc<c2;cc++)for(var i=0;i<islands.length;i++)if(islands[i].r===a.r&&islands[i].c===cc)return true;
+  }else if(a.c===b.c){
+    var r1=Math.min(a.r,b.r),r2=Math.max(a.r,b.r);
+    for(var rr=r1+1;rr<r2;rr++)for(var i=0;i<islands.length;i++)if(islands[i].c===a.c&&islands[i].r===rr)return true;
+  }
+  return false;
+}
+function checkWin(){
+  // 度数
+  var degs={};
+  for(var i=0;i<islands.length;i++)degs[i]=0;
+  Object.keys(bridges).forEach(function(k){
+    var p=k.split('_'),a=+p[0],b=+p[1],n=bridges[k];
+    degs[a]+=n;degs[b]+=n;
+  });
+  var allNum=true;
+  islands.forEach(function(is){if(degs[is.id]!==is.num)allNum=false;});
+  if(!allNum){$('status').textContent='还有岛的桥数不对，继续调整';return;}
+  // 连通
+  var adj={};
+  Object.keys(bridges).forEach(function(k){
+    var p=k.split('_'),a=+p[0],b=+p[1];
+    (adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a);
+  });
+  var seen={},q=[0];seen[0]=1;
+  while(q.length){var cur=q.pop();(adj[cur]||[]).forEach(function(nb){if(!seen[nb]){seen[nb]=1;q.push(nb);}});}
+  if(Object.keys(seen).length!==islands.length){$('status').textContent='桥网不连通，请把所有岛连成一片';return;}
+  // 胜
+  solved=true;stopTimer();
+  var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+  var dk=W+'-'+$('densSel').value;
+  var isNew=false;
+  if(!best[dk]||time<best[dk]){best[dk]=time;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+  $('winText').innerHTML='用时 <b>'+fmt(time)+'</b>'+(isNew?'<br><b style="color:var(--gold)">新纪录！</b>':'');
+  $('win').classList.add('show');
+  render();
+}
+$('newBtn').addEventListener('click',newPuzzle);
+$('checkBtn').addEventListener('click',function(){checkWin();});
+$('winClose').addEventListener('click',function(){$('win').classList.remove('show');newPuzzle();});
+newPuzzle();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

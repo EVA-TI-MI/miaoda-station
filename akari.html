@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>美术馆 · 益智 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:720px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:8px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .bar{display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0;flex-wrap:wrap;}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13.5px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.ghost{color:var(--sub);border-color:var(--line);background:transparent;}
+  .btn.ghost:hover{color:var(--gold);border-color:var(--gold);background:rgba(232,199,122,.08);}
+  select{background:#161b29;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13.5px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:8px;}
+  #grid{display:grid;gap:2px;width:min(92vw,520px);aspect-ratio:1;background:var(--line);border:2px solid var(--gold);border-radius:8px;padding:2px;}
+  .cell{background:#161b29;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;border-radius:3px;position:relative;transition:.15s;}
+  .cell.wall{background:#2b3245;color:#f2e6c8;font-weight:700;font-size:clamp(12px,3.6vw,20px);}
+  .cell.wall.dark{background:#3a4256;}
+  .cell.lit{background:#1c2233;}
+  .cell.lamp::after{content:"●";color:#ffd76a;font-size:clamp(13px,4vw,22px);text-shadow:0 0 8px rgba(255,215,106,.8);}
+  .cell.mark::after{content:"×";color:rgba(255,255,255,.3);font-size:clamp(12px,3.6vw,20px);}
+  .cell.err{box-shadow:inset 0 0 0 2px #e8453c;}
+  .cell:hover{filter:brightness(1.12);}
+  .rules{width:100%;max-width:720px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,18,.75);z-index:9;}
+  .win.show{display:flex;}
+  .winbox{background:#1a2030;border:1px solid var(--gold);border-radius:16px;padding:34px 48px;text-align:center;}
+  .winbox h2{color:var(--gold);font-family:"STKaiti","KaiTi",serif;font-size:28px;letter-spacing:4px;margin-bottom:12px;}
+  .winbox p{color:var(--sub);font-size:14px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="puzzle-hub.html">← 返回益智</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>美术馆</h1>
+    <p>AKARI · LIGHT UP · 点灯照亮 · 数字墙限灯</p>
+  </div>
+  <div class="bar">
+    <select id="sizeSel">
+      <option value="5">5×5 · 入门</option>
+      <option value="7" selected>7×7 · 进阶</option>
+      <option value="9">9×9 · 高手</option>
+    </select>
+    <select id="densSel">
+      <option value="0.15" selected>墙少 · 轻松</option>
+      <option value="0.25">墙多 · 标准</option>
+      <option value="0.35">墙密 · 困难</option>
+    </select>
+    <button class="btn" id="newBtn">换一题</button>
+    <button class="btn ghost" id="checkBtn">检查</button>
+  </div>
+  <div class="status" id="status">点空白放灯，再点移除；点黑格打 × 辅助</div>
+  <div id="grid"></div>
+  <div class="rules">
+    <b>玩法</b>：灯照亮所在行与列直到最近的墙（墙后不照）。<b>规则</b>：灯不能互照（同行列无墙遮挡的两灯非法）；黑格上的数字 = 其上下左右相邻灯数；每个白格必须被至少一盏灯照亮。<b>完成</b>：全照亮 + 无互照 + 数字全部满足。
+  </div>
+  <div class="win" id="win">
+    <div class="winbox">
+      <h2>满室通明！</h2>
+      <p id="winText"></p>
+      <button class="btn" id="winClose">再玩一局</button>
+    </div>
+  </div>
+  <div class="foot">妙搭小站 · 美术馆 AKARI · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var N=7,cells=[],timer=null,time=0,solved=false;
+var BEST_KEY='miaodaAkariBestV47';
+// cells[r][c] = {t:'w'|'s', num:0|1-4, lamp:bool, mark:bool, fixed:bool}
+// t: w=墙 s=空格
+function newPuzzle(){
+  N=parseInt($('sizeSel').value,10);
+  var dens=parseFloat($('densSel').value);
+  for(var attempt=0;attempt<200;attempt++){
+    var g=[];
+    for(var r=0;r<N;r++){g[r]=[];for(var c=0;c<N;c++)g[r][c]={t:'s',num:0,lamp:false,mark:false,fixed:false};}
+    // 布墙
+    var walls=0;
+    for(var r2=0;r2<N;r2++)for(var c2=0;c2<N;c2++){
+      if(Math.random()<dens){g[r2][c2].t='w';walls++;}
+    }
+    if(walls<Math.max(2,Math.floor(N*N*dens*0.3)))continue;
+    // 贪心放灯（保证全照亮且不互照）
+    function beams(rr,cc){ // 该格被照否
+      // 上下左右扫描到墙
+      for(var d=0;d<4;d++){
+        var dr=[[-1,0],[1,0],[0,-1],[0,1]][d][0],dc=[[-1,0],[1,0],[0,-1],[0,1]][d][1];
+        var nr=rr+dr,nc=cc+dc;
+        while(nr>=0&&nr<N&&nc>=0&&nc<N&&g[nr][nc].t!=='w'){
+          if(g[nr][nc].lamp)return true;
+          nr+=dr;nc+=dc;
+        }
+      }
+      return false;
+    }
+    function blocked(rr,cc){
+      if(g[rr][cc].t==='w')return true;
+      // 与已有灯是否互照
+      for(var d=0;d<4;d++){
+        var dr=[[-1,0],[1,0],[0,-1],[0,1]][d][0],dc=[[-1,0],[1,0],[0,-1],[0,1]][d][1];
+        var nr=rr+dr,nc=cc+dc;
+        while(nr>=0&&nr<N&&nc>=0&&nc<N&&g[nr][nc].t!=='w'){
+          if(g[nr][nc].lamp)return true;
+          nr+=dr;nc+=dc;
+        }
+      }
+      return false;
+    }
+    // 扫描未照格放灯
+    for(var r3=0;r3<N;r3++)for(var c3=0;c3<N;c3++){
+      if(g[r3][c3].t==='w')continue;
+      if(!beams(r3,c3)){
+        if(!blocked(r3,c3))g[r3][c3].lamp=true;
+      }
+    }
+    // 再补一轮
+    for(var r4=0;r4<N;r4++)for(var c4=0;c4<N;c4++){
+      if(g[r4][c4].t==='w')continue;
+      if(!beams(r4,c4)){
+        if(!blocked(r4,c4))g[r4][c4].lamp=true;
+      }
+    }
+    // 全照亮校验
+    var allLit=true;
+    for(var r5=0;r5<N&&allLit;r5++)for(var c5=0;c5<N;c5++){
+      if(g[r5][c5].t==='w')continue;
+      if(!beams(r5,c5)){allLit=false;break;}
+    }
+    if(!allLit)continue;
+    // 墙数字 = 相邻灯数
+    var ok=true;
+    for(var r6=0;r6<N&&ok;r6++)for(var c6=0;c6<N;c6++){
+      if(g[r6][c6].t!=='w')continue;
+      var n=0;
+      [[-1,0],[1,0],[0,-1],[0,1]].forEach(function(d){
+        var nr=r6+d[0],nc=c6+d[1];
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&g[nr][nc].lamp)n++;
+      });
+      if(n>0){
+        // 只有 n≤4 可标数字；n=0 的墙不给数字
+        g[r6][c6].num=n;
+        if(n>4){ok=false;}
+      }
+    }
+    if(!ok)continue;
+    // 复制给玩家盘（灯隐藏，玩家重放）
+    cells=[];
+    for(var r7=0;r7<N;r7++){cells[r7]=[];for(var c7=0;c7<N;c7++){
+      cells[r7][c7]={t:g[r7][c7].t,num:g[r7][c7].num,lamp:false,mark:false,fixed:false};
+    }}
+    // 数字墙 fixed
+    for(var r8=0;r8<N;r8++)for(var c8=0;c8<N;c8++)if(cells[r8][c8].t==='w')cells[r8][c8].fixed=true;
+    time=0;solved=false;stopTimer();startTimer();
+    render();
+    return;
+  }
+  $('status').textContent='生成失败，换一题再试';
+}
+function render(){
+  var grid=$('grid');
+  grid.style.gridTemplateColumns='repeat('+N+',1fr)';
+  grid.innerHTML='';
+  var lampCount=0;
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    var cell=document.createElement('div');
+    cell.className='cell';
+    var v=cells[r][c];
+    if(v.t==='w'){
+      cell.classList.add('wall'+(v.num?'':' dark'));
+      if(v.num)cell.textContent=v.num;
+    }else{
+      if(v.lamp){cell.classList.add('lamp');lampCount++;}
+      else if(v.mark)cell.classList.add('mark');
+      // 照亮效果
+      if(beamsPlayer(r,c))cell.classList.add('lit');
+    }
+    cell.addEventListener('click',function(){clickCell(parseInt(this.dataset.r,10),parseInt(this.dataset.c,10));});
+    cell.setAttribute('data-r',r);cell.setAttribute('data-c',c);
+    grid.appendChild(cell);
+  }
+  $('status').textContent=solved?'':'用时 '+fmt(time)+' · 已放灯 '+lampCount+' · 点空白放灯/点黑格打×';
+}
+function fmt(t){var m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+function beamsPlayer(rr,cc){
+  for(var d=0;d<4;d++){
+    var dr=[[-1,0],[1,0],[0,-1],[0,1]][d][0],dc=[[-1,0],[1,0],[0,-1],[0,1]][d][1];
+    var nr=rr+dr,nc=cc+dc;
+    while(nr>=0&&nr<N&&nc>=0&&nc<N&&cells[nr][nc].t!=='w'){
+      if(cells[nr][nc].lamp)return true;
+      nr+=dr;nc+=dc;
+    }
+  }
+  return false;
+}
+function clickCell(r,c){
+  if(solved)return;
+  var v=cells[r][c];
+  if(v.fixed)return;
+  if(v.t==='w'){v.mark=!v.mark;}
+  else{
+    if(v.lamp){v.lamp=false;}
+    else if(v.mark){v.mark=false;}
+    else{v.lamp=true;}
+  }
+  render();
+}
+function check(){
+  // 1) 灯互照
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    if(!cells[r][c].lamp)continue;
+    // 扫描行
+    for(var cc=c+1;cc<N;cc++){
+      if(cells[r][cc].t==='w')break;
+      if(cells[r][cc].lamp){$('status').textContent='两盏灯互照（第'+(r+1)+'行），请移除其一';return;}
+    }
+    for(var cc2=c-1;cc2>=0;cc2--){
+      if(cells[r][cc2].t==='w')break;
+      if(cells[r][cc2].lamp){$('status').textContent='两盏灯互照，请移除其一';return;}
+    }
+    for(var rr=r+1;rr<N;rr++){
+      if(cells[rr][c].t==='w')break;
+      if(cells[rr][c].lamp){$('status').textContent='两盏灯互照，请移除其一';return;}
+    }
+    for(var rr2=r-1;rr2>=0;rr2--){
+      if(cells[rr2][c].t==='w')break;
+      if(cells[rr2][c].lamp){$('status').textContent='两盏灯互照，请移除其一';return;}
+    }
+  }
+  // 2) 数字墙
+  for(var r2=0;r2<N;r2++)for(var c2=0;c2<N;c2++){
+    var v=cells[r2][c2];
+    if(v.t==='w'&&v.num>0){
+      var n=0;
+      [[-1,0],[1,0],[0,-1],[0,1]].forEach(function(d){
+        var nr=r2+d[0],nc=c2+d[1];
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&cells[nr][nc].lamp)n++;
+      });
+      if(n!==v.num){$('status').textContent='数字 '+v.num+' 的墙相邻灯数为 '+n+'，不匹配';return;}
+    }
+  }
+  // 3) 全照亮
+  for(var r3=0;r3<N;r3++)for(var c3=0;c3<N;c3++){
+    if(cells[r3][c3].t==='w')continue;
+    if(!beamsPlayer(r3,c3)){$('status').textContent='存在未照亮的空格，请继续放灯';return;}
+  }
+  // 胜
+  solved=true;stopTimer();
+  var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+  var dk=N+'-'+$('densSel').value;
+  var isNew=false;
+  if(!best[dk]||time<best[dk]){best[dk]=time;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+  $('winText').innerHTML='用时 <b>'+fmt(time)+'</b>'+(isNew?'<br><b style="color:var(--gold)">新纪录！</b>':'');
+  $('win').classList.add('show');
+}
+$('newBtn').addEventListener('click',newPuzzle);
+$('checkBtn').addEventListener('click',check);
+$('winClose').addEventListener('click',function(){$('win').classList.remove('show');newPuzzle();});
+newPuzzle();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

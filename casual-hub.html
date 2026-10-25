@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>休闲 · 妙搭小站</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root{ --bg:#0f0d08; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b; }
+  html,body{background:var(--bg);}
+  body { min-height:100vh; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--txt);
+    display:flex; flex-direction:column; align-items:center; padding:30px 20px 40px;
+    background: radial-gradient(ellipse at 18% 0%, rgba(212,168,75,.12) 0%, transparent 52%),
+      radial-gradient(ellipse at 85% 8%, rgba(70,195,154,.08) 0%, transparent 48%),
+      radial-gradient(ellipse at 80% 100%, rgba(110,168,254,.07) 0%, transparent 50%), var(--bg); }
+  .top{width:100%;max-width:1180px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;text-decoration:none;
+    background:rgba(212,168,75,.08);border:1px solid rgba(212,168,75,.3);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{color:var(--gold);border-color:var(--gold);}
+  .head{text-align:center;margin-bottom:6px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;
+    background:linear-gradient(135deg,#e8c77a,#d4a84b 45%,#f0dc9e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13px;letter-spacing:5px;margin-top:8px;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;width:100%;max-width:1180px;margin-top:22px;}
+  .app-card{ --c:#d4a84b; border-radius:14px; position:relative; overflow:hidden; text-decoration:none;
+    border:1px solid color-mix(in srgb,var(--c) 26%,transparent);
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 9%,#14110b) 0%,#14110b 72%);
+    display:flex; flex-direction:column; transition:transform .25s,box-shadow .25s,border-color .25s; min-height:250px;}
+  .app-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px color-mix(in srgb,var(--c) 24%,transparent);border-color:var(--c);}
+  .app-card::before{content:"";position:absolute;top:-24%;right:-24%;width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--c) 26%,transparent) 0%,transparent 70%);opacity:.5;pointer-events:none;}
+  .cc{position:relative;z-index:1;padding:22px 22px 20px;display:flex;flex-direction:column;flex:1;}
+  .ci{width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 14%,transparent);border:2px solid color-mix(in srgb,var(--c) 40%,transparent);margin-bottom:14px;}
+  .ct{font-size:21px;font-weight:bold;color:var(--c);font-family:"STKaiti","KaiTi",serif;letter-spacing:2px;}
+  .ce{font-size:10.5px;letter-spacing:1.5px;color:var(--sub);margin-top:3px;text-transform:uppercase;}
+  .cd{font-size:12.5px;line-height:1.8;color:rgba(255,255,255,.6);margin-top:9px;flex:1;}
+  .cb{margin-top:12px;padding:8px 16px;border-radius:7px;font-size:13px;letter-spacing:2px;align-self:flex-start;
+    color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid var(--c);transition:.2s;}
+  .app-card:hover .cb{background:var(--c);color:#14110b;}
+  .foot{margin-top:30px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){
+    body{padding:20px 12px 30px;}
+    .head h1{font-size:28px;letter-spacing:5px;}
+    .cards{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="index.html">← 返回首页</a>
+  </div>
+  <div class="head">
+    <h1>休闲</h1>
+    <p>CASUAL · 街机与阅读，轻松一刻</p>
+  </div>
+  <div class="cards">
+
+    <a href="snake.html" class="app-card" style="--c:#00ffc8">
+      <div class="cc">
+        <div class="ci">蛇</div>
+        <div class="ct">腾蛇</div>
+        <div class="ce">Neon Snake · Arcade</div>
+        <div class="cd">经典街机霓虹演绎，多款皮肤、三种难度、穿墙模式与多档地图，本地排行榜与用户系统。</div>
+        <div class="cb">开始游戏 →</div>
+      </div>
+    </a>
+
+    <a href="biquge.html" class="app-card" style="--c:#d4a84b">
+      <div class="cc">
+        <div class="ci">书</div>
+        <div class="ct">墨渊阁</div>
+        <div class="ce">Novel Reader · Library</div>
+        <div class="cd">精品书库免费畅读，进度精确到章内位置；排版主题自由调、自动滚屏、书签目录、TXT 导出，三引擎有声朗读。</div>
+        <div class="cb">进入书阁 →</div>
+      </div>
+    </a>
+
+    <a href="sokoban.html" class="app-card" style="--c:#e0a44b">
+      <div class="cc">
+        <div class="ci">箱</div>
+        <div class="ct">推箱子</div>
+        <div class="ce">Sokoban · Puzzle</div>
+        <div class="cd">经典仓库搬运谜题，7 道关卡由易到难；方向键或滑动推箱归位，撤销重置与最佳步数记录。</div>
+        <div class="cb">推箱入位 →</div>
+      </div>
+    </a>
+
+    <a href="2048.html" class="app-card" style="--c:#f0b72a">
+      <div class="cc">
+        <div class="ci">2</div>
+        <div class="ct">2048</div>
+        <div class="ce">Merge Puzzle · Math</div>
+        <div class="cd">滑动方块合并相同数字，一路合成 2048 冲击更高分；键鼠与触屏皆可，本地最佳成绩保存。</div>
+        <div class="cb">合并数字 →</div>
+      </div>
+    </a>
+
+    <a href="minesweeper.html" class="app-card" style="--c:#63a1e0">
+      <div class="cc">
+        <div class="ci">雷</div>
+        <div class="ct">扫雷</div>
+        <div class="ce">Minesweeper · Logic</div>
+        <div class="cd">经典排雷三档难度；左键挖开、右键插旗、双击展开，首步必安全，记录各难度最佳用时。</div>
+        <div class="cb">进入雷区 →</div>
+      </div>
+    </a>
+
+    <a href="jump.html" class="app-card" style="--c:#46d39a">
+      <div class="cc">
+        <div class="ci">跳</div>
+        <div class="ct">跳一跳</div>
+        <div class="ce">Jump Master · Skill</div>
+        <div class="cd">按住蓄力、松手起跳，力度决定远近；命中中心 +2 连击，落入空隙结束，刷新本地最佳。</div>
+        <div class="cb">蓄力一跳 →</div>
+      </div>
+    </a>
+
+    <a href="tetris.html" class="app-card" style="--c:#5aa9f0">
+      <div class="cc">
+        <div class="ci">块</div>
+        <div class="ct">俄罗斯方块</div>
+        <div class="ce">Tetris · Block</div>
+        <div class="cd">七种方块旋转下落，拼满整行消除、逐级加速；方向键/WASD 移动旋转、空格硬降，本地最高分。</div>
+        <div class="cb">拼满一行 →</div>
+      </div>
+    </a>
+
+    <a href="breakout.html" class="app-card" style="--c:#ff7a59">
+      <div class="cc">
+        <div class="ci">砖</div>
+        <div class="ct">打砖块</div>
+        <div class="ce">Breakout · Arcade</div>
+        <div class="cd">移动挡板反射小球击碎砖块，落点不同反弹角度不同；经典三命挑战，得分随关卡翻倍。</div>
+        <div class="cb">击碎砖块 →</div>
+      </div>
+    </a>
+
+    <a href="memory.html" class="app-card" style="--c:#b98cff">
+      <div class="cc">
+        <div class="ci">忆</div>
+        <div class="ct">记忆翻牌</div>
+        <div class="ce">Memory · Match</div>
+        <div class="cd">翻开卡片记住位置，两张相同即配对消除；4×4 与 6×4 两种尺寸，比拼最少步数。</div>
+        <div class="cb">翻开配对 →</div>
+      </div>
+    </a>
+
+    <a href="mole.html" class="app-card" style="--c:#ffb547">
+      <div class="cc">
+        <div class="ci">鼠</div>
+        <div class="ct">打地鼠</div>
+        <div class="ce">Whack-a-Mole · Reflex</div>
+        <div class="cd">地鼠从九宫格随机冒出，30 秒内点按敲打，越快越准分越高、连击加成，本地记录最高分。</div>
+        <div class="cb">敲一下 →</div>
+      </div>
+    </a>
+
+    <a href="dino.html" class="app-card" style="--c:#7ce06b">
+      <div class="cc">
+        <div class="ci">跑</div>
+        <div class="ct">小恐龙快跑</div>
+        <div class="ce">Dino Runner · Endless</div>
+        <div class="cd">点按或空格跃起，翻越不断逼近的仙人掌，奔跑越远速度越快，记录最远距离。</div>
+        <div class="cb">起跳开跑 →</div>
+      </div>
+    </a>
+
+    <a href="pong.html" class="app-card" style="--c:#4ad6c1">
+      <div class="cc">
+        <div class="ci">乒</div>
+        <div class="ct">乒乓球</div>
+        <div class="ce">Pong · Table Tennis</div>
+        <div class="cd">移动挡板与 AI 对打，先得 7 分获胜；球速随回合加快、回击角度随落点变化，比拼连胜。</div>
+        <div class="cb">发球对决 →</div>
+      </div>
+    </a>
+  </div>
+  <div class="foot">妙搭小站 · 休闲 · 街机与阅读</div>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

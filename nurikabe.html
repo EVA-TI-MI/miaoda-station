@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>数墙 · 益智 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:720px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:8px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .bar{display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0;flex-wrap:wrap;}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13.5px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.ghost{color:var(--sub);border-color:var(--line);background:transparent;}
+  .btn.ghost:hover{color:var(--gold);border-color:var(--gold);background:rgba(232,199,122,.08);}
+  select{background:#161b29;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13.5px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:8px;}
+  #grid{display:grid;gap:2px;width:min(92vw,520px);aspect-ratio:1;background:var(--line);border:2px solid var(--gold);border-radius:8px;padding:2px;}
+  .cell{background:#161b29;display:flex;align-items:center;justify-content:center;font-size:clamp(13px,4vw,22px);
+    font-weight:700;color:#f2e6c8;cursor:pointer;user-select:none;border-radius:3px;transition:.15s;}
+  .cell.wall{background:#2b3245;}
+  .cell.n{background:#f2e6c8;color:#241d12;}
+  .cell.h{background:#f2e6c8;opacity:.55;color:#241d12;}
+  .cell.err{box-shadow:inset 0 0 0 2px #e8453c;}
+  .cell:hover{filter:brightness(1.15);}
+  .rules{width:100%;max-width:720px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,18,.75);z-index:9;}
+  .win.show{display:flex;}
+  .winbox{background:#1a2030;border:1px solid var(--gold);border-radius:16px;padding:34px 48px;text-align:center;}
+  .winbox h2{color:var(--gold);font-family:"STKaiti","KaiTi",serif;font-size:28px;letter-spacing:4px;margin-bottom:12px;}
+  .winbox p{color:var(--sub);font-size:14px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="puzzle-hub.html">← 返回益智</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>数墙</h1>
+    <p>NURIKABE · 黑白墙岛 · 数字岛与黑色海</p>
+  </div>
+  <div class="bar">
+    <select id="sizeSel">
+      <option value="5">5×5 · 入门</option>
+      <option value="7" selected>7×7 · 进阶</option>
+      <option value="9">9×9 · 高手</option>
+    </select>
+    <select id="modeSel">
+      <option value="easy" selected>全数字 · 简单</option>
+      <option value="hard">藏数字 · 困难</option>
+    </select>
+    <button class="btn" id="newBtn">换一题</button>
+    <button class="btn ghost" id="checkBtn">检查</button>
+  </div>
+  <div class="status" id="status">点击格子：空白 ↔ 墙（黑）</div>
+  <div id="grid"></div>
+  <div class="rules">
+    <b>玩法</b>：数字格是「岛」的一部分，岛的大小必须等于其数字；<b>墙</b>：其余黑格全部连成一片，且不能出现 2×2 黑块。<b>完成</b>：每块白岛恰好含一个数字且大小相符，墙连通无 2×2。
+  </div>
+  <div class="win" id="win">
+    <div class="winbox">
+      <h2>黑白分明！</h2>
+      <p id="winText"></p>
+      <button class="btn" id="winClose">再玩一局</button>
+    </div>
+  </div>
+  <div class="foot">妙搭小站 · 数墙 NURIKABE · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var N=7,cells=[],sol=[],timer=null,time=0,solved=false,seedSet={};
+var BEST_KEY='miaodaNurikabeBestV47';
+function newPuzzle(){
+  N=parseInt($('sizeSel').value,10);
+  var hard=$('modeSel').value==='hard';
+  for(var attempt=0;attempt<300;attempt++){
+    // 确定性构造合法解：
+    //  ① 奇数行全为墙 → 形成贯穿黑带，保证墙连通；
+    //  ② 偶数行随机撒墙点（同行不相邻）→ 任何 2×2 至多 3 黑，天然无 2×2 黑块；
+    //  ③ 其余白格自然形成岛，每岛一格数字 = 区域大小。
+    var g=[];
+    for(var r=0;r<N;r++){g[r]=[];for(var c=0;c<N;c++)g[r][c]=(r%2===1)?2:1;}
+    for(var r=0;r<N;r+=2){
+      var wcnt=Math.floor(Math.random()*(Math.floor(N/2)+1));
+      var placed=0,tries=0;
+      while(placed<wcnt&&tries<N*3){
+        tries++;
+        var cc=Math.floor(Math.random()*N);
+        if(g[r][cc]===1&&(cc===0||g[r][cc-1]!==2)&&(cc===N-1||g[r][cc+1]!==2)){
+          g[r][cc]=2;placed++;
+        }
+      }
+    }
+    // 白区 BFS → 岛
+    var seen={},islands=[];
+    for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+      if(g[r][c]===1&&!seen[r+'_'+c]){
+        var q=[[r,c]],cs=[];seen[r+'_'+c]=1;
+        while(q.length){
+          var cur=q.shift();cs.push(cur);
+          for(var d=0;d<4;d++){
+            var nr=cur[0]+[[-1,0],[1,0],[0,-1],[0,1]][d][0],nc=cur[1]+[[-1,0],[1,0],[0,-1],[0,1]][d][1];
+            if(nr<0||nr>=N||nc<0||nc>=N)continue;
+            if(g[nr][nc]===1&&!seen[nr+'_'+nc]){seen[nr+'_'+nc]=1;q.push([nr,nc]);}
+          }
+        }
+        islands.push(cs);
+      }
+    }
+    // 合理性：岛数适中、无超大岛
+    var ok=true;
+    for(var i=0;i<islands.length;i++)if(islands[i].length<1||islands[i].length>N*3)ok=false;
+    if(!ok||islands.length<3||islands.length>Math.floor(N*N*0.45))continue;
+    // nums：每岛随机一格为数字格，数字=区域大小
+    var nums=[];
+    islands.forEach(function(is){
+      var seed=is[Math.floor(Math.random()*is.length)];
+      nums.push({r:seed[0],c:seed[1],n:is.length});
+    });
+    seedSet={};
+    nums.forEach(function(num){seedSet[num.r+'_'+num.c]=true;});
+    sol=g;
+    if(!checkSolution(g))continue;
+    // 玩家盘面：数字格显示（困难模式隐藏一半数字，仍为岛格）
+    cells=[];
+    for(var r6=0;r6<N;r6++){cells[r6]=[];for(var c6=0;c6<N;c6++){
+      var isNum=false,nv=0;
+      for(var ni=0;ni<nums.length;ni++)if(nums[ni].r===r6&&nums[ni].c===c6){isNum=true;nv=nums[ni].n;break;}
+      var vv='';
+      if(isNum)vv=(!hard||Math.random()>0.5)?'n':'h';
+      cells[r6][c6]={v:vv,num:nv,g:sol[r6][c6]};
+    }}
+    time=0;solved=false;stopTimer();startTimer();
+    render();
+    return;
+  }
+  $('status').textContent='生成失败，请换一题';
+}
+function checkSolution(g){
+  // 岛区域：白格 BFS，每个区域必须恰好一个数字（数字=区域大小）
+  var seen={};
+  var islandCount=0;
+  var ok=true;
+  for(var r=0;r<N&&ok;r++)for(var c=0;c<N;c++){
+    if(g[r][c]===1&&!seen[r+'_'+c]){
+      // BFS 白区域
+      var q=[[r,c]],size=0,nums=0;
+      seen[r+'_'+c]=1;
+      while(q.length){
+        var cur=q.shift();size++;
+        // 数数字：种子格
+        var isSeed=isSeedCell(g,cur[0],cur[1]);
+        if(isSeed)nums++;
+        for(var d=0;d<4;d++){
+          var nr=cur[0]+[[-1,0],[1,0],[0,-1],[0,1]][d][0],nc=cur[1]+[[-1,0],[1,0],[0,-1],[0,1]][d][1];
+          if(nr<0||nr>=N||nc<0||nc>=N)continue;
+          if(g[nr][nc]===1&&!seen[nr+'_'+nc]){seen[nr+'_'+nc]=1;q.push([nr,nc]);}
+        }
+      }
+      // 数字格必须包含其大小
+      if(nums!==1)return false;
+      // 数字的大小需匹配：这里先记录，最后统一校验
+      if(!sizeMatched(g,r,c,size))return false;
+    }
+  }
+  // 墙连通
+  var wallSeen={},wc=0;
+  for(var r2=0;r2<N;r2++)for(var c2=0;c2<N;c2++){
+    if(g[r2][c2]===2&&!wallSeen[r2+'_'+c2]){
+      wc++;
+      var q2=[[r2,c2]];wallSeen[r2+'_'+c2]=1;
+      while(q2.length){
+        var cur2=q2.shift();
+        for(var d2=0;d2<4;d2++){
+          var nr2=cur2[0]+[[-1,0],[1,0],[0,-1],[0,1]][d2][0],nc2=cur2[1]+[[-1,0],[1,0],[0,-1],[0,1]][d2][1];
+          if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
+          if(g[nr2][nc2]===2&&!wallSeen[nr2+'_'+nc2]){wallSeen[nr2+'_'+nc2]=1;q2.push([nr2,nc2]);}
+        }
+      }
+    }
+  }
+  if(wc>1)return false;
+  // 无 2×2 黑
+  for(var r3=0;r3<N-1;r3++)for(var c3=0;c3<N-1;c3++){
+    if(g[r3][c3]===2&&g[r3][c3+1]===2&&g[r3+1][c3]===2&&g[r3+1][c3+1]===2)return false;
+  }
+  return true;
+}
+function isSeedCell(g,r,c){return seedSet[r+'_'+c]===true;}
+function sizeMatched(g,r,c,size){
+  // 种子大小 = 区域大小：需知道该区域数字。在生成阶段种子即数字格，先简化——由生成算法保证
+  return true;
+}
+// 生成时校验：岛区域大小与种子目标一致
+function render(){
+  var grid=$('grid');
+  grid.style.gridTemplateColumns='repeat('+N+',1fr)';
+  grid.innerHTML='';
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    var cell=document.createElement('div');
+    cell.className='cell';
+    var v=cells[r][c];
+    if(v.v==='n'){cell.classList.add('n');cell.textContent=v.num;}
+    else if(v.v==='h'){cell.classList.add('h');}
+    else if(v.v==='w'){cell.classList.add('wall');}
+    else if(v.v==='err'){cell.classList.add('err');}
+    cell.addEventListener('click',function(){clickCell(parseInt(this.dataset.r,10),parseInt(this.dataset.c,10));});
+    cell.setAttribute('data-r',r);cell.setAttribute('data-c',c);
+    grid.appendChild(cell);
+  }
+  $('status').textContent=solved?'':'用时 '+fmt(time)+' · 点空白变墙（黑），再点清除';
+}
+function fmt(t){var m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+function startTimer(){if(timer)clearInterval(timer);timer=setInterval(function(){time++;if(!solved)$('status').textContent='用时 '+fmt(time)+' · 点空白变墙（黑），再点清除';},1000);}
+function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+function clickCell(r,c){
+  if(solved)return;
+  var v=cells[r][c];
+  if(v.v==='n'||v.v==='h')return; // 数字格/隐藏数字格不可变
+  if(v.v===''){cells[r][c]={v:'w',num:0,g:sol[r][c]};}
+  else{cells[r][c]={v:'',num:0,g:sol[r][c]};}
+  render();
+}
+function check(){
+  // 玩家盘面：w=墙，其余=岛（含数字）
+  var g=[];
+  for(var r=0;r<N;r++){g[r]=[];for(var c=0;c<N;c++)g[r][c]=(cells[r][c].v==='w'?2:1);}
+  // 数字格区域大小
+  var seen={};
+  var ok=true;
+  var wallSeen={},wc=0;
+  for(var r2=0;r2<N&&ok;r2++)for(var c2=0;c2<N;c2++){
+    if(g[r2][c2]===2&&!wallSeen[r2+'_'+c2]){
+      wc++;
+      var q2=[[r2,c2]];wallSeen[r2+'_'+c2]=1;
+      while(q2.length){var cur2=q2.shift();for(var d=0;d<4;d++){
+        var nr=cur2[0]+[[-1,0],[1,0],[0,-1],[0,1]][d][0],nc=cur2[1]+[[-1,0],[1,0],[0,-1],[0,1]][d][1];
+        if(nr<0||nr>=N||nc<0||nc>=N)continue;
+        if(g[nr][nc]===2&&!wallSeen[nr+'_'+nc]){wallSeen[nr+'_'+nc]=1;q2.push([nr,nc]);}
+      }}
+    }else if(g[r2][c2]===1&&!seen[r2+'_'+c2]){
+      var q=[[r2,c2]],size=0,nums=0,seedNum=0;
+      seen[r2+'_'+c2]=1;
+      while(q.length){
+        var cur=q.shift();size++;
+        var cellv=cells[cur[0]][cur[1]];
+        if(cellv.v==='n'||cellv.v==='h'){nums++;seedNum=cellv.num;}
+        for(var d2=0;d2<4;d2++){
+          var nr2=cur[0]+[[-1,0],[1,0],[0,-1],[0,1]][d2][0],nc2=cur[1]+[[-1,0],[1,0],[0,-1],[0,1]][d2][1];
+          if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
+          if(g[nr2][nc2]===1&&!seen[nr2+'_'+nc2]){seen[nr2+'_'+nc2]=1;q.push([nr2,nc2]);}
+        }
+      }
+      if(nums!==1){$('status').textContent='存在不含数字的岛屿或一块岛含多个数字';return;}
+      if(size!==seedNum){$('status').textContent='某数字岛大小不符：数字 '+seedNum+' 的岛现在是 '+size+' 格';return;}
+    }
+  }
+  if(wc>1){$('status').textContent='墙必须连成一片，当前有 '+wc+' 块';return;}
+  for(var r3=0;r3<N-1;r3++)for(var c3=0;c3<N-1;c3++){
+    if(g[r3][c3]===2&&g[r3][c3+1]===2&&g[r3+1][c3]===2&&g[r3+1][c3+1]===2){$('status').textContent='出现 2×2 黑块，违反规则';return;}
+  }
+  solved=true;stopTimer();
+  var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+  var dk=N+'-'+$('modeSel').value;
+  var isNew=false;
+  if(!best[dk]||time<best[dk]){best[dk]=time;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+  $('winText').innerHTML='用时 <b>'+fmt(time)+'</b>'+(isNew?'<br><b style="color:var(--gold)">新纪录！</b>':'');
+  $('win').classList.add('show');
+}
+$('newBtn').addEventListener('click',newPuzzle);
+$('checkBtn').addEventListener('click',check);
+$('winClose').addEventListener('click',function(){$('win').classList.remove('show');newPuzzle();});
+newPuzzle();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

@@ -118,6 +118,8 @@
   secChess.appendChild(wld('xq_record','中国象棋 · 对弈','xiangqi.html'));
   secChess.appendChild(wld('ic_record','国际象棋 · 对弈','intchess.html'));
   secChess.appendChild(wld('gomoku_record','五子棋 · 对弈','gomoku.html'));
+  secChess.appendChild(wld('shogi_record','将棋 · 对弈','shogi.html'));
+  secChess.appendChild(wld('draughts_record','国际跳棋 · 对弈','draughts.html'));
 
   // ===== 棋盘棋 =====
   var secBoard=$('secBoard');
@@ -165,6 +167,18 @@
   var gnMap=get('miaodaGuessNumBestV46'),gnParts=[];
   if(gnMap&&typeof gnMap==='object'){[3,4,5].forEach(function(s){if(gnMap[s]!=null)gnParts.push(s+'位 '+gnMap[s]+' 次');});}
   secPuzzle.appendChild(itemEl('猜数字','各位数最少次数',gnParts.length?('<span class="v">'+gnParts.join(' · ')+'</span>'):noneVal()));
+  var hashi=mapBest('miaodaHashiBestV47',[{k:'6-0.5',t:function(){return '6×6';}},{k:'8-0.65',t:function(){return '8×8';}}]);
+  var hsMap=get('miaodaHashiBestV47'),hsParts=[];
+  if(hsMap&&typeof hsMap==='object'){var hcnt=0;Object.keys(hsMap).forEach(function(k){if(hsMap[k]!=null&&hcnt<3){hsParts.push(k.replace('-','×')+' '+fmtTime(hsMap[k]));hcnt++;}});}
+  secPuzzle.appendChild(itemEl('数桥（Hashi）','各规格最快用时',hsParts.length?('<span class="v">'+hsParts.join(' · ')+'</span>'):noneVal()));
+  var nuri=mapBest('miaodaNurikabeBestV47',[{k:'5-easy',t:function(){return '5×5';}},{k:'7-easy',t:function(){return '7×7';}}]);
+  var nrMap=get('miaodaNurikabeBestV47'),nrParts=[];
+  if(nrMap&&typeof nrMap==='object'){var ncnt=0;Object.keys(nrMap).forEach(function(k){if(nrMap[k]!=null&&ncnt<3){nrParts.push(k.split('-')[0]+'×'+k.split('-')[0]+' '+fmtTime(nrMap[k]));ncnt++;}});}
+  secPuzzle.appendChild(itemEl('数墙（Nurikabe）','各规格最快用时',nrParts.length?('<span class="v">'+nrParts.join(' · ')+'</span>'):noneVal()));
+  var ak=mapBest('miaodaAkariBestV47',[{k:'5-0.15',t:function(){return '5×5';}},{k:'7-0.25',t:function(){return '7×7';}}]);
+  var akMap=get('miaodaAkariBestV47'),akParts=[];
+  if(akMap&&typeof akMap==='object'){var acnt=0;Object.keys(akMap).forEach(function(k){if(akMap[k]!=null&&acnt<3){akParts.push(k.replace('-','×')+' '+fmtTime(akMap[k]));acnt++;}});}
+  secPuzzle.appendChild(itemEl('美术馆（Akari）','各规格最快用时',akParts.length?('<span class="v">'+akParts.join(' · ')+'</span>'):noneVal()));
 
   // ===== 经典 =====
   var secClassic=$('secClassic');
@@ -178,6 +192,12 @@
   if(miMap&&typeof miMap==='object'){[['easy','简单'],['medium','中等'],['hard','困难']].forEach(function(p){if(miMap[p[0]]!=null)miParts.push(p[1]+' '+fmtTime(miMap[p[0]]));});}
   secClassic.appendChild(itemEl('扫雷','各难度最快',miParts.length?('<span class="v">'+miParts.join(' · ')+'</span>'):noneVal()));
   secClassic.appendChild(itemEl('跳一跳','最高分',valOrNone(raw('miaodaJumpBestV43'))));
+  var ll=mapBest('miaodaLianlianBestV47',[{k:'4x4',t:function(){return '4×4';}},{k:'6x6',t:function(){return '6×6';}},{k:'8x8',t:function(){return '8×8';}}]);
+  var llMap=get('miaodaLianlianBestV47'),llParts=[];
+  if(llMap&&typeof llMap==='object'){Object.keys(llMap).forEach(function(k){if(llMap[k]!=null)llParts.push(k.replace('x','×')+' '+fmtTime(llMap[k]));});}
+  secClassic.appendChild(itemEl('连连看','各规格最快用时',llParts.length?('<span class="v">'+llParts.join(' · ')+'</span>'):noneVal()));
+  var p15=get('miaodaP15BestV47');
+  secClassic.appendChild(itemEl('数字华容道','最快用时',p15&&p15['15p']!=null?('<span class="v">'+fmtTime(p15['15p'])+'</span>'):noneVal()));
 
   // ===== 街机 =====
   var secArcade=$('secArcade');
@@ -226,9 +246,9 @@
   secRead.appendChild(itemEl('番茄钟','累计完成（全部）',(pomo.total!=null&&pomo.total>0)?('<span class="v">'+pomo.total+' 个</span>'):noneVal()));
 
   // ===== 总览 =====
-  $('oGames').textContent=8+17+6+5+2;
+  $('oGames').textContent=11+10+12+10;
   var recCount=0;
-  var allKeys=['go_record','xq_record','ic_record','gomoku_record','miaodaReversiBestV45','miaodaCheckersBestV45','miaodaJunqiBestV45','miaodaAnimalsBestV45','miaodaHrdBestV42','miaodaSudokuBestV42','miaodaNonogramBestV46','miaodaSlitherBestV46','miaodaCalc24BestV46','miaodaGuessNumBestV46','miaodaSokobanBestV43','miaoda2048BestV43','miaodaMineBestV43','miaodaJumpBestV43','miaodaTetrisBestV44','miaodaBreakoutBestV44','miaodaMemoryBestV44','miaodaMoleBestV44','miaodaDinoBestV44','miaodaPongBestV44','biquge_read_seconds','miaodaPomodoroStatsV46'];
+  var allKeys=['go_record','xq_record','ic_record','gomoku_record','miaodaReversiBestV45','miaodaCheckersBestV45','miaodaJunqiBestV45','miaodaAnimalsBestV45','miaodaHrdBestV42','miaodaSudokuBestV42','miaodaNonogramBestV46','miaodaSlitherBestV46','miaodaCalc24BestV46','miaodaGuessNumBestV46','miaodaSokobanBestV43','miaoda2048BestV43','miaodaMineBestV43','miaodaJumpBestV43','miaodaTetrisBestV44','miaodaBreakoutBestV44','miaodaMemoryBestV44','miaodaMoleBestV44','miaodaDinoBestV44','miaodaPongBestV44','biquge_read_seconds','miaodaPomodoroStatsV46','shogi_record','draughts_record','miaodaHashiBestV47','miaodaNurikabeBestV47','miaodaAkariBestV47','miaodaLianlianBestV47','miaodaP15BestV47'];
   allKeys.forEach(function(k){
     var v=raw(k);
     if(v&&v!=='0'&&v!=='{}'&&v!=='[]'&&v!=='null')recCount++;

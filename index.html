@@ -28,7 +28,7 @@
       radial-gradient(ellipse at 80% 100%, rgba(110,168,254,.07) 0%, transparent 50%),
       var(--bg);
   }
-  .site-header { text-align: center; margin-bottom: 14px; }
+  .site-header { text-align: center; margin-bottom: 34px; }
   .site-title {
     font-family: "STKaiti","KaiTi","楷体",serif;
     font-size: 44px; font-weight: bold; letter-spacing: 10px;
@@ -39,56 +39,38 @@
   .site-subtitle { margin-top: 12px; font-size: 13px; color: var(--sub); letter-spacing: 6px; }
   .site-slogan{margin-top:10px;font-size:14px;color:#cbb88f;letter-spacing:2px;font-family:"STKaiti","KaiTi",serif;}
 
-  .section-label{width:100%;max-width:1180px;display:flex;align-items:center;gap:14px;margin:34px auto 18px;}
-  .section-label .line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,75,.35),transparent);}
-  .section-label span{font-family:"STKaiti","KaiTi",serif;letter-spacing:5px;font-size:18px;color:var(--gold);white-space:nowrap;}
-  .section-label small{color:var(--sub);font-size:12px;letter-spacing:1px;white-space:nowrap;}
-
-  .cards-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;width:100%;max-width:1180px;}
-  .app-card{
+  .hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;width:100%;max-width:1180px;}
+  .hub-card{
     --c:#d4a84b;
-    height:392px;border-radius:16px;position:relative;overflow:hidden;text-decoration:none;
-    border:1px solid color-mix(in srgb,var(--c) 28%,transparent);
-    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 10%,#14110b) 0%,#14110b 70%);
-    display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s,border-color .3s;
+    border-radius:18px;position:relative;overflow:hidden;text-decoration:none;
+    border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    background:linear-gradient(165deg,color-mix(in srgb,var(--c) 10%,#14110b) 0%,#14110b 75%);
+    display:flex;flex-direction:column;padding:30px 28px 26px;transition:transform .3s,box-shadow .3s,border-color .3s;
   }
-  .app-card:hover{transform:translateY(-6px);box-shadow:0 18px 48px color-mix(in srgb,var(--c) 26%,transparent);border-color:var(--c);}
-  .app-card::before{content:"";position:absolute;top:-26%;right:-26%;width:280px;height:280px;border-radius:50%;
-    background:radial-gradient(circle,color-mix(in srgb,var(--c) 30%,transparent) 0%,transparent 70%);opacity:.5;pointer-events:none;}
-  .card-content{position:relative;z-index:1;height:100%;padding:28px;display:flex;flex-direction:column;}
-  .card-icon{width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:18px;color:var(--c);
-    background:color-mix(in srgb,var(--c) 14%,transparent);border:2px solid color-mix(in srgb,var(--c) 42%,transparent);
+  .hub-card:hover{transform:translateY(-6px);box-shadow:0 20px 50px color-mix(in srgb,var(--c) 26%,transparent);border-color:var(--c);}
+  .hub-card::before{content:"";position:absolute;top:-30%;right:-30%;width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--c) 30%,transparent) 0%,transparent 70%);opacity:.55;pointer-events:none;}
+  .hub-inner{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;}
+  .hub-ic{width:64px;height:64px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 15%,transparent);border:2px solid color-mix(in srgb,var(--c) 44%,transparent);
     box-shadow:0 0 26px color-mix(in srgb,var(--c) 18%,transparent);}
-  .card-title{font-size:26px;font-weight:bold;margin-bottom:6px;color:var(--c);font-family:"STKaiti","KaiTi","楷体",serif;letter-spacing:3px;}
-  .card-en{font-size:11px;letter-spacing:2px;color:var(--sub);margin-bottom:12px;text-transform:uppercase;}
-  .card-desc{font-size:13.5px;line-height:1.85;color:rgba(255,255,255,.62);margin-bottom:14px;flex:1;}
-  .card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
-  .card-tag{padding:3px 10px;border-radius:5px;font-size:11.5px;color:var(--c);
+  .hub-title{font-size:27px;font-weight:bold;margin-top:18px;color:var(--c);font-family:"STKaiti","KaiTi","楷体",serif;letter-spacing:4px;}
+  .hub-en{font-size:11px;letter-spacing:2px;color:var(--sub);margin-top:4px;text-transform:uppercase;}
+  .hub-desc{font-size:13.5px;line-height:1.9;color:rgba(255,255,255,.62);margin-top:12px;flex:1;}
+  .hub-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+  .hub-tag{padding:3px 10px;border-radius:5px;font-size:11.5px;color:var(--c);
     background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);}
-  .card-btn{padding:11px 22px;border-radius:8px;font-size:14.5px;font-weight:500;align-self:flex-start;letter-spacing:2px;
+  .hub-btn{margin-top:20px;padding:11px 22px;border-radius:8px;font-size:14.5px;font-weight:500;align-self:flex-start;letter-spacing:2px;
     color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid var(--c);transition:.2s;}
-  .app-card:hover .card-btn{background:var(--c);color:#14110b;}
+  .hub-card:hover .hub-btn{background:var(--c);color:#14110b;}
 
-  /* 介绍文章 */
-  .article{width:100%;max-width:1180px;margin-top:40px;background:linear-gradient(160deg,rgba(212,168,75,.06),rgba(20,17,11,.6));
-    border:1px solid rgba(212,168,75,.18);border-radius:16px;padding:34px 38px;}
-  .article h2{font-family:"STKaiti","KaiTi",serif;color:var(--gold);font-size:24px;letter-spacing:3px;margin-bottom:8px;}
-  .article .lead{color:#cbb88f;font-size:14px;letter-spacing:1px;margin-bottom:20px;}
-  .article h3{font-size:16px;color:#e8dcc8;margin:22px 0 8px;letter-spacing:1px;border-left:3px solid var(--gold);padding-left:10px;}
-  .article p{font-size:14px;line-height:2;color:rgba(255,255,255,.7);}
-  .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;}
-  .feature{background:rgba(255,255,255,.03);border:1px solid rgba(212,168,75,.14);border-radius:10px;padding:14px 16px;}
-  .feature b{color:var(--gold);font-size:14px;letter-spacing:1px;display:block;margin-bottom:5px;}
-  .feature span{font-size:12.5px;line-height:1.7;color:rgba(255,255,255,.6);}
-  .footer{margin-top:46px;text-align:center;color:#6a5a3e;font-size:12px;letter-spacing:2px;}
+  .footer{margin-top:52px;text-align:center;color:#6a5a3e;font-size:12px;letter-spacing:2px;}
   .footer .version{margin-top:6px;font-size:11px;color:#8a7555;letter-spacing:1px;}
 
   @media (max-width:768px){
     body{padding:30px 14px;}
     .site-title{font-size:32px;letter-spacing:5px;}
-    .cards-container{gap:18px;}
-    .app-card{height:auto;min-height:340px;}
-    .article{padding:22px 18px;}
+    .hub-grid{gap:16px;}
   }
 </style>
 </head>
@@ -100,487 +82,57 @@
     <p class="site-slogan">弈境棋院 · 益智桌游 · 休闲阅读，一站尽得</p>
   </div>
 
-  <!-- 模块一~三：三弈棋院 -->
-  <div class="section-label">
-    <small>BOARD GAMES</small><span>弈境棋院 · 八棋</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
+  <!-- 四大类入口 -->
+  <div class="hub-grid">
 
-    <a href="go.html" class="app-card" style="--c:#46c39a" title="AI 围棋 · 弈境" aria-label="进入 AI 围棋">
-      <div class="card-content">
-        <div class="card-icon">⚫</div>
-        <h2 class="card-title">围棋 · 弈境</h2>
-        <div class="card-en">Weiqi / Go · MCTS AI</div>
-        <p class="card-desc">9/13/19 路标准棋盘，自动提子、打劫与禁着判定、让子贴目、终局数子。AI 以蒙特卡洛树搜索千局推演，支持人机、双人、AI 观战与 SGF 棋谱导出。</p>
-        <div class="card-tags"><span class="card-tag">MCTS AI</span><span class="card-tag">提子打劫</span><span class="card-tag">终局数子</span><span class="card-tag">SGF</span></div>
-        <div class="card-btn">手谈一局 →</div>
+    <a href="chess-hub.html" class="hub-card" style="--c:#46c39a" title="棋院 · 十一种棋" aria-label="进入棋院">
+      <div class="hub-inner">
+        <div class="hub-ic">棋</div>
+        <h2 class="hub-title">棋院</h2>
+        <div class="hub-en">Board Games · AI 对弈</div>
+        <p class="hub-desc">围棋、中国/国际象棋、五子棋、黑白棋、跳棋、军棋、斗兽棋、将棋、国际跳棋——十一种棋全部内置可离线 AI 对手，人机双人随意切。</p>
+        <div class="hub-meta"><span class="hub-tag">11 款</span><span class="hub-tag">MCTS / Minimax AI</span><span class="hub-tag">全部离线</span></div>
+        <div class="hub-btn">进入棋院 →</div>
       </div>
     </a>
 
-    <a href="chess.html" class="app-card" style="--c:#e0794a" title="象棋 · 中国象棋 / 国际象棋" aria-label="进入象棋选择">
-      <div class="card-content">
-        <div class="card-icon">♞&#xFE0E;</div>
-        <h2 class="card-title">象棋 · 中西</h2>
-        <div class="card-en">Xiangqi & Chess · AI</div>
-        <p class="card-desc">二级页面任选：中国象棋（蹩马腿、塞象眼、飞将、残局挑战、中文谱）与国际象棋（王车易位、过路兵、兵升变、代数谱）。两者均配四档迭代加深 AI、走法高亮、悔棋提示。</p>
-        <div class="card-tags"><span class="card-tag">中国象棋</span><span class="card-tag">国际象棋</span><span class="card-tag">Alpha-Beta</span><span class="card-tag">残局/棋谱</span></div>
-        <div class="card-btn">选择棋种 →</div>
+    <a href="puzzle-hub.html" class="hub-card" style="--c:#5b9bf5" title="益智 · 数字推理" aria-label="进入益智">
+      <div class="hub-inner">
+        <div class="hub-ic">谜</div>
+        <h2 class="hub-title">益智</h2>
+        <div class="hub-en">Puzzles · 数字推理</div>
+        <p class="hub-desc">数独、数织、数回、数桥、数墙、美术馆、华容道、24 点、猜数字、飞行棋——纯逻辑解谜，题题保证有解。</p>
+        <div class="hub-meta"><span class="hub-tag">10 款</span><span class="hub-tag">唯一解保证</span><span class="hub-tag">最佳纪录</span></div>
+        <div class="hub-btn">进入益智 →</div>
       </div>
     </a>
 
-    <a href="gomoku.html" class="app-card" style="--c:#6ea8fe" title="AI 五子棋 · 连珠" aria-label="进入 AI 五子棋">
-      <div class="card-content">
-        <div class="card-icon">◉</div>
-        <h2 class="card-title">五子棋 · 连珠</h2>
-        <div class="card-en">Gomoku · Minimax AI</div>
-        <p class="card-desc">15 路连珠，识别活四冲四活三诸般棋型，极小化极大加 Alpha-Beta 剪枝深算连攻。四档 AI、可选连珠禁手、落子编号、杀点提示、悔棋与棋谱导出。</p>
-        <div class="card-tags"><span class="card-tag">Minimax</span><span class="card-tag">连珠禁手</span><span class="card-tag">杀点提示</span><span class="card-tag">棋型评估</span></div>
-        <div class="card-btn">连珠对战 →</div>
+    <a href="casual-hub.html" class="hub-card" style="--c:#e0794a" title="休闲 · 街机与阅读" aria-label="进入休闲">
+      <div class="hub-inner">
+        <div class="hub-ic">乐</div>
+        <h2 class="hub-title">休闲</h2>
+        <div class="hub-en">Casual · Arcade &amp; Reading</div>
+        <p class="hub-desc">腾蛇（霓虹贪吃蛇）、墨渊阁书库、2048、扫雷、俄罗斯方块、推箱子、跳一跳、打砖块、记忆翻牌、打地鼠、小恐龙、乒乓球——轻松一刻。</p>
+        <div class="hub-meta"><span class="hub-tag">12 款</span><span class="hub-tag">街机高分</span><span class="hub-tag">有声阅读</span></div>
+        <div class="hub-btn">进入休闲 →</div>
       </div>
     </a>
 
-    <a href="reversi.html" class="app-card" style="--c:#f2f2f2" title="黑白棋" aria-label="进入黑白棋">
-      <div class="card-content">
-        <div class="card-icon">弈</div>
-        <h2 class="card-title">黑白棋</h2>
-        <div class="card-en">Othello Reversi · AI</div>
-        <p class="card-desc">八向夹子翻转黑白子的经典棋类，点选高亮格落子、夹住即翻。人机对弈内置六层极小化极大与位置权重，无子可落自动跳过，支持双人同屏与悔棋。</p>
-        <div class="card-tags"><span class="card-tag">人机AI</span><span class="card-tag">双人同屏</span><span class="card-tag">悔棋</span><span class="card-tag">最佳纪录</span></div>
-        <div class="card-btn">执黑落子 →</div>
-      </div>
-    </a>
-
-    <a href="checkers.html" class="app-card" style="--c:#e8453c" title="跳棋" aria-label="进入跳棋">
-      <div class="card-content">
-        <div class="card-icon">珠</div>
-        <h2 class="card-title">跳棋</h2>
-        <div class="card-en">Chinese Checkers · Star</div>
-        <p class="card-desc">六角星棋盘波子棋，隔子连跳直入对家星角。支持 2/3 人同屏与人机对战，一步一格、隔子可跳、连跳不限，先把十子全部归位者胜。</p>
-        <div class="card-tags"><span class="card-tag">2/3 人同屏</span><span class="card-tag">人机对战</span><span class="card-tag">隔子连跳</span><span class="card-tag">步数纪录</span></div>
-        <div class="card-btn">星移连跳 →</div>
-      </div>
-    </a>
-
-    <a href="junqi.html" class="app-card" style="--c:#4a8458" title="军棋 · 翻棋" aria-label="进入军棋翻棋">
-      <div class="card-content">
-        <div class="card-icon">军</div>
-        <h2 class="card-title">军棋 · 翻棋</h2>
-        <div class="card-en">Junqi · Hidden Chess</div>
-        <p class="card-desc">暗棋翻棋简化版，五列十行布阵五十子。先翻一子定阵营，司令至工兵九级相克、同级同归；工兵挖雷、炸弹同归，夺对方军旗即胜，可请 AI 建议。</p>
-        <div class="card-tags"><span class="card-tag">暗棋翻棋</span><span class="card-tag">大小相克</span><span class="card-tag">工兵挖雷</span><span class="card-tag">AI建议</span></div>
-        <div class="card-btn">翻子定营 →</div>
-      </div>
-    </a>
-
-    <a href="animals.html" class="app-card" style="--c:#4a8aa0" title="斗兽棋" aria-label="进入斗兽棋">
-      <div class="card-content">
-        <div class="card-icon">兽</div>
-        <h2 class="card-title">斗兽棋</h2>
-        <div class="card-en">Jungle · Animal Chess</div>
-        <p class="card-desc">七列九行八兽相争，象狮虎豹狼狗猫鼠按级吃子。鼠可吃象、可下水，水中鼠唯鼠可捉；狮虎能跳河，入陷阱任敌宰割，占对方兽穴者胜。</p>
-        <div class="card-tags"><span class="card-tag">八兽对弈</span><span class="card-tag">鼠吃象</span><span class="card-tag">狮虎跳河</span><span class="card-tag">陷阱兽穴</span></div>
-        <div class="card-btn">八兽争渡 →</div>
+    <a href="tools-hub.html" class="hub-card" style="--c:#b98cff" title="效率 · 小工具" aria-label="进入效率">
+      <div class="hub-inner">
+        <div class="hub-ic">工</div>
+        <h2 class="hub-title">效率</h2>
+        <div class="hub-en">Tools · 专注与站内系统</div>
+        <p class="hub-desc">番茄钟、随机决策器、单位换算、密码生成器、单词卡、涂鸦板、白噪音、存档管理，以及成就排行榜与每日挑战。</p>
+        <div class="hub-meta"><span class="hub-tag">10 款</span><span class="hub-tag">纯本地</span><span class="hub-tag">进度存档</span></div>
+        <div class="hub-btn">进入效率 →</div>
       </div>
     </a>
   </div>
-
-  <!-- 模块四~五：休闲与阅读 -->
-  <div class="section-label">
-    <small>LEISURE & READING</small><span>休闲 · 阅读</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
-
-    <a href="snake.html" class="app-card" style="--c:#00ffc8" title="腾蛇" aria-label="进入腾蛇">
-      <div class="card-content">
-        <div class="card-icon">🐍</div>
-        <h2 class="card-title">腾蛇</h2>
-        <div class="card-en">Neon Snake · Arcade</div>
-        <p class="card-desc">经典街机玩法的霓虹像素演绎。多款皮肤自由切换，三种难度、穿墙模式与多档地图尺寸，本地排行榜与用户系统，越吃越快，挑战你的极限手速。</p>
-        <div class="card-tags"><span class="card-tag">休闲</span><span class="card-tag">经典街机</span><span class="card-tag">霓虹风</span><span class="card-tag">排行榜</span></div>
-        <div class="card-btn">开始游戏 →</div>
-      </div>
-    </a>
-
-    <a href="biquge.html" class="app-card" style="--c:#d4a84b" title="墨渊阁 · 小说阅读" aria-label="进入墨渊阁小说阅读">
-      <div class="card-content">
-        <div class="card-icon">📚</div>
-        <h2 class="card-title">墨渊阁</h2>
-        <div class="card-en">Novel Reader · Library</div>
-        <p class="card-desc">精品书库免费畅读，玄幻仙侠都市历史应有尽有。阅读进度精确到章内位置，行距段距页宽亮度随心调，六套主题、自动滚屏、书签目录、本章查找与 TXT 导出齐备，更有三引擎有声书逐段高亮连播。</p>
-        <div class="card-tags"><span class="card-tag">书签排版</span><span class="card-tag">自动滚屏</span><span class="card-tag">有声朗读</span><span class="card-tag">离线阅读</span></div>
-        <div class="card-btn">进入书阁 →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 更多玩法：益智桌游 -->
-  <div class="section-label">
-    <small>MORE GAMES</small><span>更多玩法 · 益智</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
-
-    <a href="fun.html" class="app-card" style="--c:#e8453c" title="飞行棋" aria-label="进入飞行棋">
-      <div class="card-content">
-        <div class="card-icon">飞</div>
-        <h2 class="card-title">飞行棋</h2>
-        <div class="card-en">Aeroplane Chess · Party</div>
-        <p class="card-desc">经典四色飞行棋，掷 6 起飞、同色格跳四格、箭头格沿虚线飞跃，撞下敌机与掷出 6 点均可再投一次，终点精确到达、多退少补。支持 2/3/4 人、人机对战与同屏热座，配电脑对手与全程动画。</p>
-        <div class="card-tags"><span class="card-tag">2-4 人</span><span class="card-tag">人机对战</span><span class="card-tag">跳格虚线飞</span><span class="card-tag">撞机连投</span></div>
-        <div class="card-btn">开始飞行 →</div>
-      </div>
-    </a>
-
-    <a href="hrd.html" class="app-card" style="--c:#d98a3d" title="华容道" aria-label="进入华容道">
-      <div class="card-content">
-        <div class="card-icon">将</div>
-        <h2 class="card-title">华容道</h2>
-        <div class="card-en">Klotski · Sliding Puzzle</div>
-        <p class="card-desc">横刀立马、指挥若定、将拥曹营等九道经典布局，移动诸将护送曹操出关。拖拽或点选移动，内置广度优先最优解求解器：可单步提示最优走法，也可一键自动演示最少步数通关，附步数计时与最佳记录。</p>
-        <div class="card-tags"><span class="card-tag">九道布局</span><span class="card-tag">最优解求解</span><span class="card-tag">提示/演示</span><span class="card-tag">最佳记录</span></div>
-        <div class="card-btn">横刀立马 →</div>
-      </div>
-    </a>
-
-    <a href="sudoku.html" class="app-card" style="--c:#5b9bf5" title="数独" aria-label="进入数独">
-      <div class="card-content">
-        <div class="card-icon">9</div>
-        <h2 class="card-title">数独</h2>
-        <div class="card-en">Sudoku · Logic</div>
-        <p class="card-desc">随机回溯生成、保证唯一解的标准 9×9 盘面，简单至专家四档难度。数字键盘、候选笔记、即时检查、同数与行列宫高亮、剩余数字计数、撤销、擦除、三次提示，计时暂停并自动续玩。</p>
-        <div class="card-tags"><span class="card-tag">唯一解保证</span><span class="card-tag">四档难度</span><span class="card-tag">候选笔记</span><span class="card-tag">自动续玩</span></div>
-        <div class="card-btn">推数字 →</div>
-      </div>
-    </a>
-
-    <a href="nonogram.html" class="app-card" style="--c:#46c39a" title="数织" aria-label="进入数织">
-      <div class="card-content">
-        <div class="card-icon">织</div>
-        <h2 class="card-title">数织</h2>
-        <div class="card-en">Nonogram · Grid Logic</div>
-        <p class="card-desc">数字推理与绘图结合：行列提示决定哪些格涂黑，逐格推理还原隐藏图案。5/8/10/15 路四档尺寸、图案库随机发题，涂错即时标红提醒，按尺寸保存最快用时。</p>
-        <div class="card-tags"><span class="card-tag">行列推理</span><span class="card-tag">四档尺寸</span><span class="card-tag">图案库</span><span class="card-tag">错误标红</span></div>
-        <div class="card-btn">织出图案 →</div>
-      </div>
-    </a>
-
-    <a href="slitherlink.html" class="app-card" style="--c:#4ad6c1" title="数回" aria-label="进入数回">
-      <div class="card-content">
-        <div class="card-icon">回</div>
-        <h2 class="card-title">数回</h2>
-        <div class="card-en">Slitherlink · Loop Logic</div>
-        <p class="card-desc">数字标明周围线段数量，把所有线段连成一条闭合回路。5×5 至 10×10 三档尺寸、三档线索密度，单回路自动校验，数字全符即通关。</p>
-        <div class="card-tags"><span class="card-tag">单回路</span><span class="card-tag">三档尺寸</span><span class="card-tag">线索密度</span><span class="card-tag">自动校验</span></div>
-        <div class="card-btn">一圈定乾坤 →</div>
-      </div>
-    </a>
-
-    <a href="calc24.html" class="app-card" style="--c:#f0b72a" title="24 点" aria-label="进入 24 点">
-      <div class="card-content">
-        <div class="card-icon">24</div>
-        <h2 class="card-title">24 点</h2>
-        <div class="card-en">Calc 24 · Mental Math</div>
-        <p class="card-desc">四张牌各用一次，通过加减乘除与括号算出 24。内置穷举求解器保证每局有解，实时校验算式合法性，连对纪录不断刷新，想不出还能一键看提示。</p>
-        <div class="card-tags"><span class="card-tag">保证有解</span><span class="card-tag">实时校验</span><span class="card-tag">一键提示</span><span class="card-tag">连对纪录</span></div>
-        <div class="card-btn">心算挑战 →</div>
-      </div>
-    </a>
-
-    <a href="guessnum.html" class="app-card" style="--c:#7ce06b" title="猜数字" aria-label="进入猜数字">
-      <div class="card-content">
-        <div class="card-icon">猜</div>
-        <h2 class="card-title">猜数字</h2>
-        <div class="card-en">Bulls &amp; Cows · Deduction</div>
-        <p class="card-desc">猜隐藏的不重复数字：数字对且位置对为 Bull、数字对但位置错为 Cow。3/4/5 位三档难度，历史猜测一目了然，按位数记录最少次数。</p>
-        <div class="card-tags"><span class="card-tag">数字推理</span><span class="card-tag">三档位数</span><span class="card-tag">猜测记录</span><span class="card-tag">最少次数</span></div>
-        <div class="card-btn">来猜一猜 →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 效率工具 -->
-  <div class="section-label">
-    <small>TOOLS</small><span>效率工具</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
-
-    <a href="pomodoro.html" class="app-card" style="--c:#e8453c" title="番茄钟" aria-label="进入番茄钟">
-      <div class="card-content">
-        <div class="card-icon">钟</div>
-        <h2 class="card-title">番茄钟</h2>
-        <div class="card-en">Pomodoro · Focus Timer</div>
-        <p class="card-desc">经典番茄工作法：工作、短休、长休自动循环，环形进度一目了然。语音播报提醒开始与结束，时长自由调节，每日番茄数与累计数本地保存。</p>
-        <div class="card-tags"><span class="card-tag">专注循环</span><span class="card-tag">语音播报</span><span class="card-tag">自定义时长</span><span class="card-tag">今日统计</span></div>
-        <div class="card-btn">开始专注 →</div>
-      </div>
-    </a>
-
-    <a href="tool-random.html" class="app-card" style="--c:#b98cff" title="随机抽签 · 决策器" aria-label="进入随机抽签决策器">
-      <div class="card-content">
-        <div class="card-icon">签</div>
-        <h2 class="card-title">随机抽签 · 决策器</h2>
-        <div class="card-en">Random Picker · Decision</div>
-        <p class="card-desc">选择困难一键交给命运：抽签（可放回与不放回）、彩色转盘、骰子与抛硬币。午餐吃什么、周末去哪玩，多选项快刀斩乱麻。</p>
-        <div class="card-tags"><span class="card-tag">抽签</span><span class="card-tag">幸运转盘</span><span class="card-tag">掷骰</span><span class="card-tag">抛硬币</span></div>
-        <div class="card-btn">交给命运 →</div>
-      </div>
-    </a>
-
-    <a href="tool-convert.html" class="app-card" style="--c:#5aa9f0" title="单位换算" aria-label="进入单位换算">
-      <div class="card-content">
-        <div class="card-icon">换</div>
-        <h2 class="card-title">单位换算</h2>
-        <div class="card-en">Unit Converter</div>
-        <p class="card-desc">长度、重量、面积、体积、温度、时间、数据、速度八大类常用单位即时互转，点击任意结果行即可反向换算，毫米公里斤两毫秒一个不少。</p>
-        <div class="card-tags"><span class="card-tag">八大类</span><span class="card-tag">即时互转</span><span class="card-tag">点击反算</span><span class="card-tag">温度特殊公式</span></div>
-        <div class="card-btn">换算一下 →</div>
-      </div>
-    </a>
-
-    <a href="tool-password.html" class="app-card" style="--c:#46c39a" title="密码生成器" aria-label="进入密码生成器">
-      <div class="card-content">
-        <div class="card-icon">密</div>
-        <h2 class="card-title">密码生成器</h2>
-        <div class="card-en">Password Generator</div>
-        <p class="card-desc">加密级随机数生成强密码，长度、字符集、排除易混字符自由定制，熵值强度实时评估，一次可生成多枚，一键复制。纯本地，绝不联网。</p>
-        <div class="card-tags"><span class="card-tag">强随机</span><span class="card-tag">强度评估</span><span class="card-tag">批量生成</span><span class="card-tag">一键复制</span></div>
-        <div class="card-btn">生成密码 →</div>
-      </div>
-    </a>
-
-    <a href="wordcard.html" class="app-card" style="--c:#ff7a59" title="单词卡 · 背诵" aria-label="进入单词卡背诵">
-      <div class="card-content">
-        <div class="card-icon">词</div>
-        <h2 class="card-title">单词卡 · 背诵</h2>
-        <div class="card-en">Word Cards · Memory</div>
-        <p class="card-desc">内置四级高频词库，点卡翻转看释义；认识的进词库、不认识的进错词本循环复习。可添加自己的生词，学习进度本地保存，键盘也能操作。</p>
-        <div class="card-tags"><span class="card-tag">四级词库</span><span class="card-tag">错词本复习</span><span class="card-tag">自定义生词</span><span class="card-tag">本地进度</span></div>
-        <div class="card-btn">背单词 →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 站内系统 -->
-  <div class="section-label">
-    <small>SITE</small><span>站内系统</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
-
-    <a href="stats.html" class="app-card" style="--c:#ffd76a" title="成就 · 排行榜" aria-label="进入成就排行榜">
-      <div class="card-content">
-        <div class="card-icon">榜</div>
-        <h2 class="card-title">成就 · 排行榜</h2>
-        <div class="card-en">Stats & Leaderboard</div>
-        <p class="card-desc">全站最佳成绩一页总览：对弈胜率、益智最快用时、街机最高分、腾蛇玩家排行与墨渊阁阅读统计，所有数据汇总自本地浏览器。</p>
-        <div class="card-tags"><span class="card-tag">成绩总览</span><span class="card-tag">腾蛇排行</span><span class="card-tag">阅读统计</span><span class="card-tag">纯本地</span></div>
-        <div class="card-btn">查看成就 →</div>
-      </div>
-    </a>
-
-    <a href="daily.html" class="app-card" style="--c:#ff9c5b" title="每日挑战" aria-label="进入每日挑战">
-      <div class="card-content">
-        <div class="card-icon">日</div>
-        <h2 class="card-title">每日挑战</h2>
-        <div class="card-en">Daily Challenge</div>
-        <p class="card-desc">每天一局固定数独加一关华容道，按日期生成、人人同题。想不起来的日子可回溯往日题面，与全站玩家隔空比速度。</p>
-        <div class="card-tags"><span class="card-tag">每日数独</span><span class="card-tag">每日华容道</span><span class="card-tag">按日期固定</span><span class="card-tag">隔空比拼</span></div>
-        <div class="card-btn">开始今日挑战 →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 更多玩法：经典休闲 -->
-  <div class="section-label">
-    <small>MORE GAMES</small><span>更多玩法 · 经典</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
-
-    <a href="sokoban.html" class="app-card" style="--c:#e0a44b" title="推箱子" aria-label="进入推箱子">
-      <div class="card-content">
-        <div class="card-icon">箱</div>
-        <h2 class="card-title">推箱子</h2>
-        <div class="card-en">Sokoban · Puzzle</div>
-        <p class="card-desc">经典仓库搬运谜题，7 道精选关卡由易到难。方向键 / WASD 或屏幕滑动推动木箱归位，撤销、重置与跨关的最佳步数记录一应俱全，动脑不动手速。</p>
-        <div class="card-tags"><span class="card-tag">7 道关卡</span><span class="card-tag">滑动操作</span><span class="card-tag">撤销/重置</span><span class="card-tag">最佳记录</span></div>
-        <div class="card-btn">推箱入位 →</div>
-      </div>
-    </a>
-
-    <a href="2048.html" class="app-card" style="--c:#f0b72a" title="2048" aria-label="进入 2048">
-      <div class="card-content">
-        <div class="card-icon">2</div>
-        <h2 class="card-title">2048</h2>
-        <div class="card-en">Merge Puzzle · Math</div>
-        <p class="card-desc">滑动方块合并相同数字，一路合成 2048，合成后仍可继续冲击更高分。键鼠与触屏滑动皆可，实时得分与本地最佳成绩本地保存，随时再战。</p>
-        <div class="card-tags"><span class="card-tag">合并数字</span><span class="card-tag">触屏滑动</span><span class="card-tag">本地最佳</span><span class="card-tag">无限挑战</span></div>
-        <div class="card-btn">合并数字 →</div>
-      </div>
-    </a>
-
-    <a href="minesweeper.html" class="app-card" style="--c:#63a1e0" title="扫雷" aria-label="进入扫雷">
-      <div class="card-content">
-        <div class="card-icon">雷</div>
-        <h2 class="card-title">扫雷</h2>
-        <div class="card-en">Minesweeper · Logic</div>
-        <p class="card-desc">经典排雷三档难度（9×9 / 16×16 / 30×16）。左键挖开、右键或长按插旗、双击数字快速翻开四周，首步必安全，实时计时与剩余旗数，记录各难度最佳用时。</p>
-        <div class="card-tags"><span class="card-tag">三档难度</span><span class="card-tag">插旗/双击</span><span class="card-tag">首步安全</span><span class="card-tag">最佳用时</span></div>
-        <div class="card-btn">进入雷区 →</div>
-      </div>
-    </a>
-
-    <a href="jump.html" class="app-card" style="--c:#46d39a" title="跳一跳" aria-label="进入跳一跳">
-      <div class="card-content">
-        <div class="card-icon">跳</div>
-        <h2 class="card-title">跳一跳</h2>
-        <div class="card-en">Jump Master · Skill</div>
-        <p class="card-desc">按住蓄力、松手起跳，力度决定远近。落在下一方块即可得分，命中中心 +2 并累计连击，落入空隙则结束。点按或长按空格皆可，随时刷新本地最佳。</p>
-        <div class="card-tags"><span class="card-tag">蓄力跳跃</span><span class="card-tag">落点计分</span><span class="card-tag">连击加成</span><span class="card-tag">本地最佳</span></div>
-        <div class="card-btn">蓄力一跳 →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 更多玩法：街机 -->
-  <div class="section-label">
-    <small>MORE GAMES</small><span>更多玩法 · 街机</span><div class="line"></div>
-  </div>
-  <div class="cards-container">
-
-    <a href="tetris.html" class="app-card" style="--c:#5aa9f0" title="俄罗斯方块" aria-label="进入俄罗斯方块">
-      <div class="card-content">
-        <div class="card-icon">块</div>
-        <h2 class="card-title">俄罗斯方块</h2>
-        <div class="card-en">Tetris · Block</div>
-        <p class="card-desc">七种方块旋转下落，拼满整行即消除，逐级加速。方向键 / WASD 移动旋转、空格一键硬降，下一块提前预览，本地记录最高分。</p>
-        <div class="card-tags"><span class="card-tag">7 种方块</span><span class="card-tag">旋转/硬降</span><span class="card-tag">逐级加速</span><span class="card-tag">本地最高分</span></div>
-        <div class="card-btn">拼满一行 →</div>
-      </div>
-    </a>
-
-    <a href="breakout.html" class="app-card" style="--c:#ff7a59" title="打砖块" aria-label="进入打砖块">
-      <div class="card-content">
-        <div class="card-icon">砖</div>
-        <h2 class="card-title">打砖块</h2>
-        <div class="card-en">Breakout · Arcade</div>
-        <p class="card-desc">移动挡板反射小球击碎砖块，落点不同反弹角度不同，逐关加速。经典三命挑战，得分随关卡翻倍，看你能闯到第几关。</p>
-        <div class="card-tags"><span class="card-tag">反弹物理</span><span class="card-tag">多关连击</span><span class="card-tag">三命挑战</span><span class="card-tag">本地最高分</span></div>
-        <div class="card-btn">击碎砖块 →</div>
-      </div>
-    </a>
-
-    <a href="memory.html" class="app-card" style="--c:#b98cff" title="记忆翻牌" aria-label="进入记忆翻牌">
-      <div class="card-content">
-        <div class="card-icon">忆</div>
-        <h2 class="card-title">记忆翻牌</h2>
-        <div class="card-en">Memory · Match</div>
-        <p class="card-desc">翻开卡片记住位置，两张相同即配对消除，翻错自动盖回。4×4 与 6×4 两种尺寸，比拼谁的步数更少，最佳按牌数分别保存。</p>
-        <div class="card-tags"><span class="card-tag">配对记忆</span><span class="card-tag">4×4·6×4</span><span class="card-tag">最少步数</span><span class="card-tag">最佳成绩</span></div>
-        <div class="card-btn">翻开配对 →</div>
-      </div>
-    </a>
-
-    <a href="mole.html" class="app-card" style="--c:#ffb547" title="打地鼠" aria-label="进入打地鼠">
-      <div class="card-content">
-        <div class="card-icon">鼠</div>
-        <h2 class="card-title">打地鼠</h2>
-        <div class="card-en">Whack-a-Mole · Reflex</div>
-        <p class="card-desc">地鼠从九宫格随机冒出，30 秒内点按敲打，越快越准分越高，连击加成。点空不扣分，比拼你的反应极限，本地记录最高分。</p>
-        <div class="card-tags"><span class="card-tag">30 秒竞速</span><span class="card-tag">眼疾手快</span><span class="card-tag">随机出洞</span><span class="card-tag">本地最高分</span></div>
-        <div class="card-btn">敲一下 →</div>
-      </div>
-    </a>
-
-    <a href="dino.html" class="app-card" style="--c:#7ce06b" title="小恐龙快跑" aria-label="进入小恐龙快跑">
-      <div class="card-content">
-        <div class="card-icon">跑</div>
-        <h2 class="card-title">小恐龙快跑</h2>
-        <div class="card-en">Dino Runner · Endless</div>
-        <p class="card-desc">点按或空格跃起，翻越不断逼近的仙人掌，奔跑越远速度越快。一分神就可能撞上，本地记录你的最远距离。</p>
-        <div class="card-tags"><span class="card-tag">无尽跑酷</span><span class="card-tag">点按跳跃</span><span class="card-tag">逐渐提速</span><span class="card-tag">最远距离</span></div>
-        <div class="card-btn">起跳开跑 →</div>
-      </div>
-    </a>
-
-    <a href="pong.html" class="app-card" style="--c:#4ad6c1" title="乒乓球" aria-label="进入乒乓球">
-      <div class="card-content">
-        <div class="card-icon">乒</div>
-        <h2 class="card-title">乒乓球</h2>
-        <div class="card-en">Pong · Table Tennis</div>
-        <p class="card-desc">移动左挡板与 AI 右挡板对打，先得 7 分获胜。球速随回合加快、回击角度随落点变化，挑战自己最长的连胜纪录。</p>
-        <div class="card-tags"><span class="card-tag">人机对战</span><span class="card-tag">先得 7 分</span><span class="card-tag">回击角度</span><span class="card-tag">连胜纪录</span></div>
-        <div class="card-btn">发球对决 →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 介绍文章：与本站适配 -->
-  <article class="article">
-    <h2>关于妙搭小站</h2>
-    <p class="lead">一个把「棋 · 戏 · 书」装进同一扇门的轻量小站，打开浏览器即玩即读，无需注册、无需联网、没有广告。</p>
-
-    <h3>四大板块 · 三十一款内容</h3>
-    <p><b>弈境棋院</b>：围棋、中国象棋、国际象棋、五子棋、黑白棋、跳棋、军棋、斗兽棋，全部内置可离线 AI 对手。<b>更多玩法</b>：飞行棋、华容道、数独、数织、数回、24 点、猜数字、推箱子、2048、扫雷、跳一跳、俄罗斯方块、打砖块、记忆翻牌、打地鼠、小恐龙快跑、乒乓球。<b>效率工具</b>：番茄钟、随机抽签·决策器、单位换算、密码生成器、单词卡背诵。<b>休闲阅读与站内系统</b>：腾蛇、墨渊阁、成就·排行榜、每日挑战。</p>
-
-    <h3>弈境棋院</h3>
-    <div class="feature-grid">
-      <div class="feature"><b>围棋</b><span>9/13/19 路棋盘，自动提子、打劫与禁着判定，AI 蒙特卡洛树搜索，支持让子贴目与终局数子。</span></div>
-      <div class="feature"><b>象棋 · 中西两种</b><span>中国象棋还原蹩马腿塞象眼等全部规则；国际象棋支持王车易位、吃过路兵、兵升变；均可与 AI 对弈、悔棋、导出棋谱。</span></div>
-      <div class="feature"><b>五子棋 · 连珠</b><span>识别活四冲四活三诸般棋型，AI 能攻能守；可选连珠禁手、杀点提示，新手老手皆宜。</span></div>
-      <div class="feature"><b>黑白棋</b><span>八向夹子翻转，AI 深算 + 角位权重；无子可落自动跳过，子多者胜。</span></div>
-      <div class="feature"><b>跳棋</b><span>六角星棋盘隔子连跳，先把十珠运进对家星角者胜；支持 2/3 人同屏与人机。</span></div>
-      <div class="feature"><b>军棋 · 翻棋</b><span>暗棋翻棋，九级相克、工兵挖雷、炸弹同归，夺旗制胜；可请 AI 出谋划策。</span></div>
-      <div class="feature"><b>斗兽棋</b><span>八兽按级吃子、鼠吃象、狮虎跳河，抢先占对方兽穴者胜。</span></div>
-    </div>
-
-    <h3>更多玩法 · 益智</h3>
-    <div class="feature-grid">
-      <div class="feature"><b>飞行棋</b><span>掷 6 起飞、同色跳格、虚线飞跃、撞机连投，2/3/4 人同屏或人机。</span></div>
-      <div class="feature"><b>华容道</b><span>九道经典布局护送曹操出关，内置最优解求解器，可单步提示、可自动演示。</span></div>
-      <div class="feature"><b>数独</b><span>回溯生成保证唯一解，四档难度、候选笔记、即时检查、自动续玩。</span></div>
-      <div class="feature"><b>数织</b><span>按行列提示涂格还原隐藏图案，四档尺寸，涂错即标红。</span></div>
-      <div class="feature"><b>数回</b><span>按数字提示连线，连成一条闭合回路即胜；三档尺寸与线索密度。</span></div>
-      <div class="feature"><b>24 点</b><span>四张牌各用一次算出 24，保证有解，卡壳可看提示。</span></div>
-      <div class="feature"><b>猜数字</b><span>Bulls &amp; Cows 数字推理，3/4/5 位三档，记录最少次数。</span></div>
-      <div class="feature"><b>推箱子</b><span>七道关卡把木箱全部归位，纯逻辑零手速。</span></div>
-      <div class="feature"><b>2048</b><span>滑动合并相同数字，一路合成 2048 继续冲高分。</span></div>
-      <div class="feature"><b>扫雷</b><span>三档难度，首步必安全，插旗与双击快速展开。</span></div>
-      <div class="feature"><b>跳一跳</b><span>蓄力起跳落在下一方块，命中中心 +2 连击。</span></div>
-    </div>
-
-    <h3>更多玩法 · 街机</h3>
-    <div class="feature-grid">
-      <div class="feature"><b>俄罗斯方块</b><span>七种方块拼满横排消除，逐级提速冲高分。</span></div>
-      <div class="feature"><b>打砖块</b><span>挡板反弹小球击碎全部砖块，三命闯关。</span></div>
-      <div class="feature"><b>记忆翻牌</b><span>翻牌配对，4×4 / 6×4 比最少步数。</span></div>
-      <div class="feature"><b>打地鼠</b><span>30 秒九宫格竞速，越快越准分越高。</span></div>
-      <div class="feature"><b>小恐龙快跑</b><span>无尽跑酷，越远越快，撞上即止。</span></div>
-      <div class="feature"><b>乒乓球</b><span>与 AI 对打先得 7 分，落点决定回击角度。</span></div>
-    </div>
-
-    <h3>效率工具</h3>
-    <div class="feature-grid">
-      <div class="feature"><b>番茄钟</b><span>工作/短休/长休自动循环，语音播报，今日统计。</span></div>
-      <div class="feature"><b>随机抽签 · 决策器</b><span>抽签、转盘、骰子、硬币，选择困难交给命运。</span></div>
-      <div class="feature"><b>单位换算</b><span>八大类单位即时互转，点击结果行反算。</span></div>
-      <div class="feature"><b>密码生成器</b><span>加密级随机密码，熵值强度评估，一键复制。</span></div>
-      <div class="feature"><b>单词卡 · 背诵</b><span>四级词库卡片背诵，错词循环复习，进度本地保存。</span></div>
-    </div>
-
-    <h3>站内系统</h3>
-    <div class="feature-grid">
-      <div class="feature"><b>成就 · 排行榜</b><span>全站最佳成绩一页总览，含腾蛇玩家排行与阅读统计。</span></div>
-      <div class="feature"><b>每日挑战</b><span>按日期固定生成数独与华容道，人人同题、隔空比拼。</span></div>
-    </div>
-
-    <h3>腾蛇 · 墨渊阁</h3>
-    <p><b>腾蛇</b>：霓虹贪吃蛇，多皮肤多难度，道具、障碍与 AI 自动演示。<b>墨渊阁</b>：在线书库 + 本地 TXT 导入，排版主题自由调、自动滚屏、书签查找、导出 TXT，支持三引擎有声朗读，配套爬虫可抓取公开小说。</p>
-
-    <h3>纯本地、可离线、重隐私</h3>
-    <p>所有 AI 推演与阅读数据都在本地完成，不向任何服务器上传。站点基于 PWA，首次打开后即可离线访问，也可安装到桌面。</p>
-  </article>
 
   <div class="footer">
     方寸之间，自有天地
-    <p class="version">妙搭小站 V4.6.0 · 益智四款（数织·数回·24点·猜数字）、效率工具五款、成就总览与每日挑战上线</p>
+    <p class="version">妙搭小站 V4.7.0 · 棋院补将棋·国际跳棋，益智补数桥·数墙·美术馆，休闲补连连看·数字华容道，效率补涂鸦板·白噪音·存档管理</p>
   </div>
 
 <script>

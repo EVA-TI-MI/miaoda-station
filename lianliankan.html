@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>连连看 · 休闲 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:760px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:8px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .bar{display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0;flex-wrap:wrap;}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13.5px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.ghost{color:var(--sub);border-color:var(--line);background:transparent;}
+  .btn.ghost:hover{color:var(--gold);border-color:var(--gold);background:rgba(232,199,122,.08);}
+  select{background:#161b29;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13.5px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:8px;}
+  #board{display:grid;gap:4px;width:min(94vw,560px);}
+  .tile{background:#1c2233;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;transition:.15s;color:#f2e6c8;font-weight:700;}
+  .tile.ch{font-size:clamp(14px,4.6vw,26px);}
+  .tile.sel{background:#2a3145;border-color:var(--gold);box-shadow:0 0 0 2px rgba(232,199,122,.5);}
+  .tile.gone{visibility:hidden;}
+  .rules{width:100%;max-width:760px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,18,.75);z-index:9;}
+  .win.show{display:flex;}
+  .winbox{background:#1a2030;border:1px solid var(--gold);border-radius:16px;padding:34px 48px;text-align:center;}
+  .winbox h2{color:var(--gold);font-family:"STKaiti","KaiTi",serif;font-size:28px;letter-spacing:4px;margin-bottom:12px;}
+  .winbox p{color:var(--sub);font-size:14px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="casual-hub.html">← 返回休闲</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>连连看</h1>
+    <p>LINK MATCH · 两两配对 · 两次折线连接</p>
+  </div>
+  <div class="bar">
+    <select id="sizeSel">
+      <option value="4">4×4 · 轻松</option>
+      <option value="6" selected>6×6 · 标准</option>
+      <option value="8">8×8 · 挑战</option>
+    </select>
+    <button class="btn ghost" id="hintBtn">提示</button>
+    <button class="btn ghost" id="shuffleBtn">洗牌</button>
+    <button class="btn" id="newBtn">新一局</button>
+  </div>
+  <div class="status" id="status">点击两个相同图案消除，路径最多折两次</div>
+  <div id="board"></div>
+  <div class="rules">
+    <b>玩法</b>：点击两个相同图案，若它们之间能用不超过<b>两次折点</b>的连线相连（路径不得穿过其他图案），即消除。<b>目标</b>：消除全部图案。卡住可用「提示」「洗牌」。
+  </div>
+  <div class="win" id="win">
+    <div class="winbox">
+      <h2>全部配对！</h2>
+      <p id="winText"></p>
+      <button class="btn" id="winClose">再来一局</button>
+    </div>
+  </div>
+  <div class="foot">妙搭小站 · 连连看 · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var R=6,C=6,grid=[],sel=null,timer=null,time=0,steps=0,solved=false;
+var CHARS=['梅','兰','竹','菊','琴','棋','书','画','春','夏','秋','冬','风','花','雪','月','山','水','日','月','星','辰','松','柏','云','霞','鹤','鹿','诗','酒','剑','萧'];
+var BEST_KEY='miaodaLianlianBestV47';
+function newGame(){
+  R=C=parseInt($('sizeSel').value,10);
+  var total=R*C;
+  var pairs=total/2;
+  var chars=[];
+  for(var i=0;i<pairs;i++){chars.push(CHARS[i%CHARS.length]);chars.push(CHARS[i%CHARS.length]);}
+  // 洗牌
+  for(var k=chars.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1));var t=chars[k];chars[k]=chars[j];chars[j]=t;}
+  grid=[];
+  for(var r=0;r<R;r++){grid[r]=[];for(var c=0;c<C;c++)grid[r][c]={ch:chars[r*C+c],gone:false};}
+  sel=null;time=0;steps=0;solved=false;stopTimer();startTimer();render();
+}
+function startTimer(){stopTimer();timer=setInterval(function(){time++;render();},1000);}
+function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+// 连通检测：a,b 是格坐标，检测 ≤2 折路径（路径上格全空）
+function canConnect(r1,c1,r2,c2){
+  if(r1===r2&&c1===c2)return false;
+  function empty(r,c){
+    if(r<0||r>=R||c<0||c>=C)return true; // 棋盘外视为可走（经典规则允许外绕）
+    if(r===r1&&c===c1)return true;
+    if(r===r2&&c===c2)return true;
+    return grid[r][c].gone;
+  }
+  // 0 折：同行/同列直线
+  if(r1===r2){
+    var cmin=Math.min(c1,c2),cmax=Math.max(c1,c2),ok0=true;
+    for(var c=cmin+1;c<cmax;c++)if(!empty(r1,c)){ok0=false;break;}
+    if(ok0)return true;
+  }
+  if(c1===c2){
+    var rmin=Math.min(r1,r2),rmax=Math.max(r1,r2),ok1=true;
+    for(var r=rmin+1;r<rmax;r++)if(!empty(r,c1)){ok1=false;break;}
+    if(ok1)return true;
+  }
+  // 1 折：L 形
+  if(empty(r1,c2)&&straight(r1,c1,r1,c2)&&straight(r2,c2,r1,c2))return true;
+  if(empty(r2,c1)&&straight(r2,c2,r2,c1)&&straight(r1,c1,r2,c1))return true;
+  // 2 折：平行扫描
+  // 水平两折：从 r1 行扫描列
+  for(var rr=-1;rr<=R;rr++){
+    if(rr===r1||rr===r2)continue;
+    if(empty(rr,c1)&&empty(rr,c2)&&straight(r1,c1,rr,c1)&&straight(rr,c1,rr,c2)&&straight(rr,c2,r2,c2))return true;
+  }
+  // 垂直两折：从 c1 列扫描行
+  for(var cc=-1;cc<=C;cc++){
+    if(cc===c1||cc===c2)continue;
+    if(empty(r1,cc)&&empty(r2,cc)&&straight(r1,c1,r1,cc)&&straight(r1,cc,r2,cc)&&straight(r2,cc,r2,c2))return true;
+  }
+  return false;
+}
+function straight(r1,c1,r2,c2){
+  // 两点间直线全空（不含端点）
+  if(r1===r2){
+    var cmin=Math.min(c1,c2),cmax=Math.max(c1,c2);
+    for(var c=cmin+1;c<cmax;c++)if(!isEmptyOrOut(r1,c))return false;
+  }else if(c1===c2){
+    var rmin=Math.min(r1,r2),rmax=Math.max(r1,r2);
+    for(var r=rmin+1;r<rmax;r++)if(!isEmptyOrOut(r,c1))return false;
+  }else return false;
+  return true;
+}
+function isEmptyOrOut(r,c){
+  if(r<0||r>=R||c<0||c>=C)return true;
+  return grid[r][c].gone;
+}
+function render(){
+  var b=$('board');
+  b.style.gridTemplateColumns='repeat('+C+',1fr)';
+  b.style.aspectRatio=C+'/'+R;
+  b.innerHTML='';
+  var left=0;
+  for(var r=0;r<R;r++)for(var c=0;c<C;c++){
+    var tile=document.createElement('div');
+    tile.className='tile ch';
+    var g=grid[r][c];
+    if(g.gone){tile.classList.add('gone');}
+    else{
+      tile.textContent=g.ch;
+      left++;
+      if(sel&&sel[0]===r&&sel[1]===c)tile.classList.add('sel');
+    }
+    tile.addEventListener('click',function(){clickTile(parseInt(this.dataset.r,10),parseInt(this.dataset.c,10));});
+    tile.setAttribute('data-r',r);tile.setAttribute('data-c',c);
+    b.appendChild(tile);
+  }
+  $('status').textContent=solved?'':'剩余 '+left+' 个 · 用时 '+fmt(time)+' · 步数 '+steps;
+}
+function fmt(t){var m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+function clickTile(r,c){
+  if(solved)return;
+  var g=grid[r][c];
+  if(g.gone)return;
+  if(!sel){sel=[r,c];render();return;}
+  if(sel[0]===r&&sel[1]===c){sel=null;render();return;}
+  if(grid[sel[0]][sel[1]].ch===g.ch&&canConnect(sel[0],sel[1],r,c)){
+    grid[sel[0]][sel[1]].gone=true;g.gone=true;
+    steps++;sel=null;
+    if(isWin()){
+      solved=true;stopTimer();
+      var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+      var dk=R+'x'+C;
+      var isNew=false;
+      if(!best[dk]||time<best[dk]){best[dk]=time;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+      $('winText').innerHTML='用时 <b>'+fmt(time)+'</b> · 步数 '+steps+(isNew?'<br><b style="color:var(--gold)">新纪录！</b>':'');
+      $('win').classList.add('show');
+    }
+  }else{
+    // 换选
+    if(grid[r][c].ch!==grid[sel[0]][sel[1]].ch)sel=[r,c];
+  }
+  render();
+}
+function isWin(){
+  for(var r=0;r<R;r++)for(var c=0;c<C;c++)if(!grid[r][c].gone)return false;
+  return true;
+}
+// 提示：找一对可消
+function hint(){
+  if(solved)return;
+  for(var r=0;r<R;r++)for(var c=0;c<C;c++){
+    var g=grid[r][c];if(g.gone)continue;
+    for(var r2=0;r2<R;r2++)for(var c2=0;c2<C;c2++){
+      if(r===r2&&c===c2)continue;
+      var g2=grid[r2][c2];
+      if(g2.gone)continue;
+      if(g.ch===g2.ch&&canConnect(r,c,r2,c2)){
+        sel=[r,c];
+        // 高亮这对
+        render();
+        setTimeout(function(){
+          var tiles=$('board').children;
+          // 找这对的格子闪一下
+          flashPair(r,c,r2,c2);
+        },50);
+        return;
+      }
+    }
+  }
+  $('status').textContent='没有可消除的一对，试试洗牌';
+}
+function flashPair(r1,c1,r2,c2){
+  var tiles=$('board').children;
+  var i1=r1*C+c1,i2=r2*C+c2;
+  if(tiles[i1])tiles[i1].style.outline='2px solid #4ad6c1';
+  if(tiles[i2])tiles[i2].style.outline='2px solid #4ad6c1';
+  setTimeout(function(){
+    if(tiles[i1])tiles[i1].style.outline='';
+    if(tiles[i2])tiles[i2].style.outline='';
+    sel=null;render();
+  },700);
+}
+function shuffle(){
+  if(solved)return;
+  var remain=[];
+  for(var r=0;r<R;r++)for(var c=0;c<C;c++)if(!grid[r][c].gone)remain.push(grid[r][c].ch);
+  if(remain.length<2)return;
+  for(var k=remain.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1));var t=remain[k];remain[k]=remain[j];remain[j]=t;}
+  var idx=0;
+  for(var r2=0;r2<R;r2++)for(var c2=0;c2<C;c2++)if(!grid[r2][c2].gone){grid[r2][c2].ch=remain[idx++];}
+  sel=null;render();
+}
+$('newBtn').addEventListener('click',newGame);
+$('hintBtn').addEventListener('click',hint);
+$('shuffleBtn').addEventListener('click',shuffle);
+$('winClose').addEventListener('click',function(){$('win').classList.remove('show');newGame();});
+newGame();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

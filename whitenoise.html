@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>白噪音 · 效率 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:680px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:10px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:12px;}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:14px;width:min(94vw,560px);}
+  .card{background:#161b29;border:1px solid var(--line);border-radius:14px;padding:22px 16px;text-align:center;cursor:pointer;transition:.2s;user-select:none;}
+  .card:hover{border-color:var(--gold);}
+  .card.on{background:rgba(232,199,122,.12);border-color:var(--gold);box-shadow:0 0 18px rgba(232,199,122,.18);}
+  .card .ic{font-size:30px;margin-bottom:8px;}
+  .card .nm{font-size:15px;letter-spacing:2px;color:var(--txt);}
+  .card .desc{font-size:11.5px;color:var(--sub);margin-top:4px;}
+  .vol{width:100%;max-width:560px;margin:16px 0 4px;display:flex;align-items:center;gap:10px;}
+  .vol label{font-size:12.5px;color:var(--sub);flex:none;}
+  .vol input{flex:1;accent-color:var(--gold);}
+  .rules{width:100%;max-width:680px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="tools-hub.html">← 返回效率</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>白噪音</h1>
+    <p>WHITE NOISE · 环境声助眠 · 不联网合成</p>
+  </div>
+  <div class="status" id="status">点击声音开始播放，可叠加多种</div>
+  <div class="grid" id="grid"></div>
+  <div class="vol">
+    <label>音量</label>
+    <input type="range" id="vol" min="0" max="100" value="60">
+  </div>
+  <div class="rules">
+    <b>玩法</b>：所有声音均由浏览器实时合成，无需联网。可同时开启多种并调节音量，适合专注、学习与助眠。
+  </div>
+  <div class="foot">妙搭小站 · 白噪音 · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var ctx=null,master=null,playing={},vol=0.6;
+var SOUNDS=[
+  {id:'rain',ic:'雨',nm:'雨声',desc:'淅沥雨落 · 助眠首选',type:'noise',filter:'lowpass',freq:1400},
+  {id:'wave',ic:'浪',nm:'海浪',desc:'潮起潮落 · 舒缓放松',type:'noise',filter:'lowpass',freq:800,mod:true},
+  {id:'wind',ic:'风',nm:'风声',desc:'夜风轻拂 · 白噪基底',type:'noise',filter:'bandpass',freq:900},
+  {id:'brook',ic:'溪',nm:'溪流',desc:'潺潺流水 · 清心提神',type:'noise',filter:'highpass',freq:2500},
+  {id:'fire',ic:'火',nm:'篝火',desc:'噼啪作响 · 温暖安心',type:'crackle'},
+  {id:'fan',ic:'扇',nm:'风扇',desc:'低鸣转动 · 稳定掩蔽',type:'noise',filter:'lowpass',freq:500}
+];
+function ensureCtx(){
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    master=ctx.createGain();
+    master.gain.value=vol;
+    master.connect(ctx.destination);
+  }
+  if(ctx.state==='suspended')ctx.resume();
+}
+function noiseSource(){
+  var len=ctx.sampleRate*2;
+  var buf=ctx.createBuffer(1,len,ctx.sampleRate);
+  var d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  var src=ctx.createBufferSource();
+  src.buffer=buf;src.loop=true;
+  return src;
+}
+function build(spec){
+  var src=noiseSource();
+  var node=src;
+  if(spec.filter){
+    var f=ctx.createBiquadFilter();
+    f.type=spec.filter;
+    if(spec.filter==='lowpass'||spec.filter==='highpass')f.frequency.value=spec.freq;
+    else{f.type='bandpass';f.frequency.value=spec.freq;f.Q.value=1.2;}
+    node.connect(f);node=f;
+  }
+  if(spec.mod){
+    // 海浪：用 LFO 调制增益
+    var g=ctx.createGain();g.gain.value=0.5;
+    var lfo=ctx.createOscillator();lfo.frequency.value=0.12;
+    var lfoG=ctx.createGain();lfoG.gain.value=0.35;
+    lfo.connect(lfoG);lfoG.connect(g.gain);
+    node.connect(g);node=g;lfo.start();
+    node=g;
+  }
+  if(spec.id==='fire'){
+    // 篝火：随机短促噪声脉冲，模拟噼啪
+    var g2=ctx.createGain();g2.gain.value=0.6;
+    node.connect(g2);node=g2;
+    // 叠加噼啪
+    var crack=ctx.createBufferSource();
+    var len2=ctx.sampleRate*1;
+    var buf2=ctx.createBuffer(1,len2,ctx.sampleRate);
+    var d2=buf2.getChannelData(0);
+    for(var i=0;i<len2;i++)d2[i]=(Math.random()<0.02?(Math.random()*2-1):(Math.random()*2-1)*0.1);
+    crack.buffer=buf2;crack.loop=true;
+    var hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=3000;
+    crack.connect(hp);hp.connect(g2);crack.start();
+  }
+  return node;
+}
+function toggle(id){
+  ensureCtx();
+  if(playing[id]){
+    try{playing[id].stop();}catch(e){}
+    delete playing[id];
+  }else{
+    var spec=SOUNDS.filter(function(s){return s.id===id;})[0];
+    var node=build(spec);
+    node.connect(master);
+    node.start();
+    playing[id]=node;
+  }
+  render();
+}
+function render(){
+  var g=$('grid');g.innerHTML='';
+  SOUNDS.forEach(function(s){
+    var card=document.createElement('div');
+    card.className='card'+(playing[s.id]?' on':'');
+    card.innerHTML='<div class="ic">'+s.ic+'</div><div class="nm">'+s.nm+'</div><div class="desc">'+s.desc+'</div>';
+    card.addEventListener('click',function(){toggle(s.id);});
+    g.appendChild(card);
+  });
+  var onCount=Object.keys(playing).length;
+  $('status').textContent=onCount?('正在播放 '+onCount+' 种声音'):'点击声音开始播放，可叠加多种';
+}
+$('vol').addEventListener('input',function(){
+  vol=parseInt(this.value,10)/100;
+  if(master)master.gain.value=vol;
+});
+render();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

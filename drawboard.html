@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>涂鸦板 · 效率 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:760px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:8px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .bar{display:flex;gap:8px;justify-content:center;align-items:center;margin:8px 0;flex-wrap:wrap;}
+  .btn{padding:8px 14px;border-radius:8px;font-size:13px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.ghost{color:var(--sub);border-color:var(--line);background:transparent;}
+  .btn.ghost:hover{color:var(--gold);border-color:var(--gold);background:rgba(232,199,122,.08);}
+  .colorSw{width:34px;height:34px;border-radius:50%;border:2px solid #3a4256;cursor:pointer;transition:.15s;flex:none;}
+  .colorSw.on{border-color:var(--gold);transform:scale(1.12);}
+  input[type=range]{width:110px;accent-color:var(--gold);}
+  label{font-size:12.5px;color:var(--sub);}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:8px;}
+  #cv{display:block;width:min(94vw,700px);aspect-ratio:16/10;background:#f7f3ea;border:2px solid var(--gold);border-radius:10px;touch-action:none;cursor:crosshair;}
+  .rules{width:100%;max-width:760px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  input[type=file]{display:none;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="tools-hub.html">← 返回效率</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>涂鸦板</h1>
+    <p>DRAWBOARD · 画布随笔 · 本地保存</p>
+  </div>
+  <div class="bar">
+    <span class="colorSw" data-c="#1f2329" style="background:#1f2329"></span>
+    <span class="colorSw" data-c="#e8453c" style="background:#e8453c"></span>
+    <span class="colorSw" data-c="#3a7bd5" style="background:#3a7bd5"></span>
+    <span class="colorSw" data-c="#35a36f" style="background:#35a36f"></span>
+    <span class="colorSw" data-c="#e8c77a" style="background:#e8c77a"></span>
+    <span class="colorSw" data-c="#9b59b6" style="background:#9b59b6"></span>
+    <label>粗细</label><input type="range" id="width" min="2" max="40" value="6">
+    <button class="btn ghost" id="undoBtn">撤销</button>
+    <button class="btn ghost" id="clearBtn">清空</button>
+    <button class="btn" id="saveBtn">保存图片</button>
+  </div>
+  <div class="status" id="status">画布自动保存到本地 · 画完可保存为图片</div>
+  <canvas id="cv" width="1120" height="700"></canvas>
+  <div class="rules">
+    <b>玩法</b>：鼠标或手指在画布上涂抹；选颜色、调粗细、随时撤销或清空。<b>保存</b>：内容自动存在浏览器本地，关闭重开仍在；点「保存图片」可导出 PNG 下载。
+  </div>
+  <div class="foot">妙搭小站 · 涂鸦板 · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var cv=$('cv'),ctx=cv.getContext('2d');
+var color='#1f2329',w=6,drawing=false,lastX=0,lastY=0;
+var STORE_KEY='miaodaDrawboardV47';
+var savedSnapshots=[]; // 撤销栈
+function loadFromStore(){
+  try{
+    var d=JSON.parse(localStorage.getItem(STORE_KEY)||'');
+    if(d&&d.data){
+      var img=new Image();
+      img.onload=function(){ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0,cv.width,cv.height);};
+      img.src=d.data;
+      $('status').textContent='已恢复上次的画作';
+    }
+  }catch(e){}
+}
+function saveToStore(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify({data:cv.toDataURL('image/png')}));}catch(e){}
+}
+function snapshot(){savedSnapshots.push(cv.toDataURL('image/png'));if(savedSnapshots.length>30)savedSnapshots.shift();}
+function getPos(e){
+  var rect=cv.getBoundingClientRect();
+  return{x:(e.clientX-rect.left)*(cv.width/rect.width),y:(e.clientY-rect.top)*(cv.height/rect.height)};
+}
+cv.addEventListener('pointerdown',function(e){
+  drawing=true;snapshot();
+  var p=getPos(e);lastX=p.x;lastY=p.y;
+  ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+0.1,p.y+0.1);ctx.stroke();
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',function(e){
+  if(!drawing)return;
+  var p=getPos(e);
+  ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();
+  lastX=p.x;lastY=p.y;
+});
+cv.addEventListener('pointerup',function(){if(drawing){drawing=false;saveToStore();}});
+cv.addEventListener('pointerleave',function(){if(drawing){drawing=false;saveToStore();}});
+var swatches=document.querySelectorAll('.colorSw');
+swatches.forEach(function(s){
+  s.addEventListener('click',function(){
+    color=s.getAttribute('data-c');
+    swatches.forEach(function(x){x.classList.remove('on');});
+    s.classList.add('on');
+  });
+});
+$('width').addEventListener('input',function(){w=parseInt(this.value,10);});
+$('undoBtn').addEventListener('click',function(){
+  if(savedSnapshots.length){
+    var img=new Image();
+    img.onload=function(){ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0,cv.width,cv.height);saveToStore();};
+    img.src=savedSnapshots.pop();
+  }
+});
+$('clearBtn').addEventListener('click',function(){
+  snapshot();
+  ctx.clearRect(0,0,cv.width,cv.height);
+  saveToStore();
+});
+$('saveBtn').addEventListener('click',function(){
+  var a=document.createElement('a');
+  a.download='涂鸦_'+Date.now()+'.png';
+  a.href=cv.toDataURL('image/png');
+  a.click();
+  $('status').textContent='图片已保存到下载目录';
+});
+loadFromStore();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

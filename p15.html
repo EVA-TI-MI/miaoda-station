@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12141c">
+<link rel="manifest" href="manifest.json">
+<title>数字华容道 · 休闲 — 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#12141c;--txt:#e9eef7;--sub:#8b97b0;--gold:#e8c77a;--line:#2c3650;}
+  body{min-height:100vh;background:var(--bg);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.10) 0%,transparent 50%),
+      radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.10) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;text-decoration:none;
+    background:rgba(33,41,62,.85);border:1px solid var(--line);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
+  .head{text-align:center;margin-bottom:8px;}
+  .head h1{font-family:"STKaiti","KaiTi",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:1px;margin-top:6px;}
+  .bar{display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0;flex-wrap:wrap;}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13.5px;letter-spacing:1px;color:var(--gold);
+    background:rgba(232,199,122,.1);border:1px solid var(--gold);cursor:pointer;transition:.2s;}
+  .btn:hover{background:var(--gold);color:#111520;}
+  .btn.ghost{color:var(--sub);border-color:var(--line);background:transparent;}
+  .btn.ghost:hover{color:var(--gold);border-color:var(--gold);background:rgba(232,199,122,.08);}
+  select{background:#161b29;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13.5px;}
+  .status{text-align:center;font-size:14px;color:var(--gold);min-height:20px;margin-bottom:8px;}
+  #board{display:grid;gap:6px;width:min(92vw,480px);aspect-ratio:1;background:#161b29;border:2px solid var(--gold);border-radius:12px;padding:10px;}
+  .tile{background:linear-gradient(145deg,#2a3145,#1c2233);border:1px solid var(--line);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;color:#f2e6c8;
+    font-weight:700;font-size:clamp(16px,5.4vw,30px);transition:.18s;box-shadow:0 2px 6px rgba(0,0,0,.4);}
+  .tile:hover{transform:scale(1.03);border-color:var(--gold);}
+  .tile.blank{background:transparent;border-color:transparent;box-shadow:none;cursor:default;}
+  .rules{width:100%;max-width:560px;margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.9;color:var(--sub);}
+  .rules b{color:var(--gold);font-weight:normal;}
+  .foot{margin-top:16px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  .win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,18,.75);z-index:9;}
+  .win.show{display:flex;}
+  .winbox{background:#1a2030;border:1px solid var(--gold);border-radius:16px;padding:34px 48px;text-align:center;}
+  .winbox h2{color:var(--gold);font-family:"STKaiti","KaiTi",serif;font-size:28px;letter-spacing:4px;margin-bottom:12px;}
+  .winbox p{color:var(--sub);font-size:14px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="casual-hub.html">← 返回休闲</a>
+    <a class="back" href="index.html">首页</a>
+  </div>
+  <div class="head">
+    <h1>数字华容道</h1>
+    <p>15-PUZZLE · 滑动归位 · 4×4 经典</p>
+  </div>
+  <div class="bar">
+    <button class="btn ghost" id="shuffleBtn">打乱</button>
+    <button class="btn" id="newBtn">新一局</button>
+  </div>
+  <div class="status" id="status">点击空格相邻的滑块，把它滑入空格</div>
+  <div id="board"></div>
+  <div class="rules">
+    <b>玩法</b>：把打乱的 1–15 数字按序排好（最后一格为空）。点击与空格相邻的滑块即可滑动。<b>提示</b>：数字越大越靠近右下；从左上角 1 开始逐行归位最稳妥。
+  </div>
+  <div class="win" id="win">
+    <div class="winbox">
+      <h2>完美归位！</h2>
+      <p id="winText"></p>
+      <button class="btn" id="winClose">再来一局</button>
+    </div>
+  </div>
+  <div class="foot">妙搭小站 · 数字华容道 · 纯本地</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var N=4,grid=[],timer=null,time=0,steps=0,solved=false;
+var BEST_KEY='miaodaP15BestV47';
+function newGame(){
+  N=4;
+  grid=[];
+  for(var r=0;r<N;r++){grid[r]=[];for(var c=0;c<N;c++)grid[r][c]=r*N+c+1;}
+  grid[N-1][N-1]=0;
+  // 可解打乱：随机相邻交换空位，确保可解
+  shuffleBoard();
+  time=0;steps=0;solved=false;stopTimer();startTimer();render();
+}
+function shuffleBoard(){
+  var er=N-1,ec=N-1;
+  var dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+  for(var i=0;i<150;i++){
+    var d=dirs[Math.floor(Math.random()*4)];
+    var nr=er+d[0],nc=ec+d[1];
+    if(nr<0||nr>=N||nc<0||nc>=N)continue;
+    grid[er][ec]=grid[nr][nc];
+    grid[nr][nc]=0;
+    er=nr;ec=nc;
+  }
+  // 打乱后校验可解（确保合法）
+  if(!solvable())shuffleBoard();
+}
+function solvable(){
+  var arr=[];
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(grid[r][c])arr.push(grid[r][c]);
+  var inv=0;
+  for(var i=0;i<arr.length;i++)for(var j=i+1;j<arr.length;j++)if(arr[i]>arr[j])inv++;
+  // 4×4：逆序数为偶即可解（空位在右下）
+  return inv%2===0;
+}
+function startTimer(){stopTimer();timer=setInterval(function(){time++;render();},1000);}
+function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+function render(){
+  var b=$('board');
+  b.style.gridTemplateColumns='repeat('+N+',1fr)';
+  b.innerHTML='';
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    var tile=document.createElement('div');
+    tile.className='tile';
+    var v=grid[r][c];
+    if(v===0)tile.classList.add('blank');
+    else tile.textContent=v;
+    tile.addEventListener('click',function(){clickTile(parseInt(this.dataset.r,10),parseInt(this.dataset.c,10));});
+    tile.setAttribute('data-r',r);tile.setAttribute('data-c',c);
+    b.appendChild(tile);
+  }
+  $('status').textContent=solved?'':'用时 '+fmt(time)+' · 步数 '+steps;
+}
+function fmt(t){var m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+function findBlank(){for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(grid[r][c]===0)return[r,c];}
+function clickTile(r,c){
+  if(solved)return;
+  var b=findBlank();
+  // 相邻判断
+  if(Math.abs(r-b[0])+Math.abs(c-b[1])===1){
+    grid[b[0]][b[1]]=grid[r][c];
+    grid[r][c]=0;
+    steps++;
+    if(isWin()){
+      solved=true;stopTimer();
+      var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
+      var isNew=false;
+      if(!best['15p']||time<best['15p']){best['15p']=time;isNew=true;try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){}}
+      $('winText').innerHTML='用时 <b>'+fmt(time)+'</b> · 步数 '+steps+(isNew?'<br><b style="color:var(--gold)">新纪录！</b>':'');
+      $('win').classList.add('show');
+    }
+    render();
+  }
+}
+function isWin(){
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+    if(grid[r][c]!==r*N+c+1&&!(r===N-1&&c===N-1&&grid[r][c]===0))return false;
+  }
+  return true;
+}
+$('newBtn').addEventListener('click',newGame);
+$('shuffleBtn').addEventListener('click',function(){shuffleBoard();time=0;steps=0;solved=false;stopTimer();startTimer();render();});
+$('winClose').addEventListener('click',function(){$('win').classList.remove('show');newGame();});
+newGame();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>
