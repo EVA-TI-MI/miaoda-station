@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f0d08">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>四级词库 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0f0d08; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b; --c:#b98cff; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:26px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(185,140,255,.13) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(212,168,75,.09) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:680px;display:flex;justify-content:flex-start;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(212,168,75,.08);border:1px solid rgba(212,168,75,.3);color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{color:var(--gold);border-color:var(--gold);}
+  .head{text-align:center;margin:4px 0 6px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:34px;letter-spacing:8px;
+    background:linear-gradient(135deg,#cfb0ff,#b98cff 50%,#e6d6ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:3px;margin-top:6px;}
+  .stats{width:100%;max-width:680px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    margin-bottom:14px;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);color:var(--sub);font-size:13px;}
+  .stats b{color:var(--c);font-size:16px;}
+  .panel{width:100%;max-width:680px;padding:18px;border-radius:14px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);margin-bottom:14px;}
+  .panel h3{font-size:15px;color:var(--c);letter-spacing:2px;margin-bottom:12px;font-family:"STKaiti","KaiTi",serif;}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;}
+  .chip{padding:11px 14px;border-radius:9px;background:#1b1810;border:1px solid #33291a;color:var(--sub);
+    font-size:13.5px;cursor:pointer;min-height:44px;transition:.2s;line-height:1.3;}
+  .chip.on{background:color-mix(in srgb,var(--c) 20%,transparent);border-color:var(--c);color:var(--c);font-weight:600;}
+  .chip.dis{opacity:.35;cursor:not-allowed;}
+  .btn{padding:12px 26px;border-radius:10px;font-size:15px;letter-spacing:3px;cursor:pointer;transition:.2s;min-height:48px;
+    background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid var(--c);color:var(--c);font-weight:600;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn.ghost{background:transparent;border:1px solid #33291a;color:var(--sub);font-weight:400;}
+  .btn.big{width:100%;margin-top:14px;}
+  .quiz{width:100%;max-width:680px;display:none;flex-direction:column;}
+  .quiz.on{display:flex;}
+  .qtop{display:flex;justify-content:space-between;color:var(--sub);font-size:13px;margin-bottom:10px;}
+  .qcard{border-radius:18px;padding:30px 20px;text-align:center;min-height:180px;
+    background:linear-gradient(160deg,#221a30,#181222);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);
+    display:flex;flex-direction:column;justify-content:center;}
+  .qcard .prompt{font-size:34px;font-weight:bold;letter-spacing:2px;color:var(--txt);word-break:break-word;}
+  .qcard .hint{color:var(--sub);font-size:14px;margin-top:10px;}
+  .opts{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px;}
+  .opt{min-height:56px;padding:12px 16px;border-radius:11px;background:#1b1526;border:1px solid #3a2f4d;
+    color:var(--txt);font-size:16px;cursor:pointer;text-align:left;transition:.15s;line-height:1.4;}
+  .opt:hover{border-color:var(--c);}
+  .opt.right{background:rgba(70,211,154,.18);border-color:#46d39a;color:#7ae0b8;}
+  .opt.wrong{background:rgba(232,69,60,.18);border-color:#e8453c;color:#ff9c95;}
+  .opt:disabled{cursor:default;}
+  .spellrow{display:flex;gap:10px;margin-top:14px;}
+  .spellrow input{flex:1;min-width:0;padding:14px;border-radius:11px;background:#16130c;border:1px solid #3a2f4d;
+    color:var(--txt);font-size:18px;outline:none;min-height:56px;letter-spacing:1px;}
+  .spellrow input:focus{border-color:var(--c);}
+  .fb{margin-top:14px;min-height:54px;border-radius:11px;padding:12px 16px;font-size:14.5px;line-height:1.7;display:none;}
+  .fb.on{display:block;}
+  .fb.ok{background:rgba(70,211,154,.12);border:1px solid #2f6b52;color:#7ae0b8;}
+  .fb.bad{background:rgba(232,69,60,.12);border:1px solid #7a2f2a;color:#ff9c95;}
+  .nxt{margin-top:12px;display:none;}
+  .nxt.on{display:block;}
+  .result{width:100%;max-width:680px;display:none;padding:26px 20px;border-radius:16px;text-align:center;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 12%,#14110b),#14110b 75%);
+    border:1px solid color-mix(in srgb,var(--c) 45%,transparent);}
+  .result.on{display:block;}
+  .result h2{font-family:"STKaiti","KaiTi",serif;font-size:30px;color:var(--c);letter-spacing:4px;margin-bottom:14px;}
+  .result .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;}
+  .result .cell{background:rgba(0,0,0,.25);border-radius:10px;padding:12px 6px;}
+  .result .cell b{display:block;font-size:22px;color:var(--gold);}
+  .result .cell span{font-size:12px;color:var(--sub);}
+  .rule{margin-top:14px;font-size:12.5px;line-height:2;color:var(--sub);}
+  .rule b{color:var(--c);}
+  .foot{margin-top:24px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:27px;letter-spacing:5px;}.qcard .prompt{font-size:26px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="learn-hub.html">← 返回学习</a></div>
+  <div class="head">
+    <h1>四级词库</h1>
+    <p>CET-4 WORDS · 核心词刷题</p>
+  </div>
+
+  <div class="stats">
+    <span>总词 <b id="sTotal">0</b></span>
+    <span>已刷 <b id="sSeen">0</b></span>
+    <span>累计正确率 <b id="sAcc">0%</b></span>
+    <span>错词本 <b id="sWrong">0</b></span>
+  </div>
+
+  <!-- ===== 设置 ===== -->
+  <div class="panel" id="setup">
+    <h3>刷题模式</h3>
+    <div class="chips" id="modeChips">
+      <button class="chip on" data-m="e2z">英译中</button>
+      <button class="chip" data-m="z2e">中译英</button>
+      <button class="chip" data-m="spell">拼写</button>
+      <button class="chip" id="wrongChip">只刷错词（<span id="wrongN">0</span>）</button>
+    </div>
+    <h3 style="margin-top:16px;">每题组数</h3>
+    <div class="chips" id="sizeChips">
+      <button class="chip" data-s="5">5 题</button>
+      <button class="chip on" data-s="10">10 题</button>
+      <button class="chip" data-s="20">20 题</button>
+    </div>
+    <button class="btn big" id="startBtn">开始刷题 →</button>
+    <div class="rule">
+      <b>规则：</b>英译中 / 中译英为四选一；拼写模式看中文与词性手输英文，首字母大小写不判定错误。答错的词自动收进错词本并持久保存，答对则移出；「只刷错词」仅从错词本抽题。学习进度（已刷词数、累计正确率）保存在本机。
+    </div>
+  </div>
+
+  <!-- ===== 刷题 ===== -->
+  <div class="quiz" id="quiz">
+    <div class="qtop"><span id="qProg">1/10</span><span id="qMode">英译中</span></div>
+    <div class="qcard">
+      <div class="prompt" id="qPrompt">—</div>
+      <div class="hint" id="qHint"></div>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="spellrow" id="spellRow" style="display:none;">
+      <input id="spellInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入英文单词…">
+      <button class="btn" id="spellBtn">提交</button>
+    </div>
+    <div class="fb" id="fb"></div>
+    <button class="btn nxt" id="nxtBtn">下一题 →</button>
+  </div>
+
+  <!-- ===== 结算 ===== -->
+  <div class="result" id="result">
+    <h2>本组完成</h2>
+    <div class="grid">
+      <div class="cell"><b id="rAcc">0%</b><span>正确率</span></div>
+      <div class="cell"><b id="rOk">0</b><span>答对</span></div>
+      <div class="cell"><b id="rTotal">0</b><span>题数</span></div>
+    </div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:16px;" id="rMsg"></div>
+    <button class="btn" id="againBtn">再来一组</button>
+    <button class="btn ghost" id="backBtn" style="margin-left:10px;">返回设置</button>
+  </div>
+
+  <div class="foot">妙搭小站 · 学习 · 四级核心词刷题</div>
+
+<script>
+/* ===== 四级核心词库（word, 词性, 中文释义）===== */
+var WORDS = [
+["abandon","vt.","放弃；抛弃；遗弃"],
+["aboard","adv./prep.","在船(车、飞机)上；上船"],
+["absent","adj.","缺席的；心不在焉的"],
+["abstract","adj./n.","抽象的；摘要；梗概"],
+["academic","adj.","学术的；学院的；理论的"],
+["accept","v.","接受；同意；认可"],
+["accompany","vt.","陪伴；伴随；为…伴奏"],
+["accurate","adj.","准确的；精确的"],
+["ache","n./vi.","疼痛；渴望"],
+["acquire","vt.","获得；习得；取得"],
+["addition","n.","增加；加法；附加物"],
+["adjust","v.","调整；调节；适应"],
+["admit","v.","承认；准许进入；接纳"],
+["advance","v./n.","前进；进展；预付；预先的"],
+["advertise","v.","做广告；宣传；公告"],
+["affair","n.","事务；事件；私事"],
+["afford","vt.","买得起；承担得起；提供"],
+["aim","n./v.","目标；瞄准；旨在"],
+["alike","adj./adv.","相似的；同样地"],
+["allowance","n.","津贴；零用钱；限额"],
+["alternative","n./adj.","可供选择的事物；备选的"],
+["amaze","vt.","使惊讶；使惊奇"],
+["ambulance","n.","救护车"],
+["analysis","n.","分析；解析；分解"],
+["anger","n./vt.","愤怒；使发怒"],
+["announce","vt.","宣布；通告；发表"],
+["anticipate","vt.","预期；期望；预料到"],
+["apartment","n.","公寓套房；房间"],
+["appeal","n./vi.","呼吁；上诉；吸引力；恳求"],
+["applaud","v.","鼓掌；称赞；赞许"],
+["appoint","vt.","任命；约定；指派"],
+["appropriate","adj.","适当的；合适的；恰当的"],
+["approximate","adj./v.","大约的；接近；近似"],
+["argue","v.","争论；辩论；主张；说服"],
+["arouse","vt.","唤起；激起；唤醒"],
+["arrival","n.","到达；到来；到达者"],
+["aspect","n.","方面；外观；方位"],
+["assign","vt.","分配；指派；布置(作业)"],
+["assume","vt.","假定；设想；承担；呈现"],
+["atmosphere","n.","大气；气氛；氛围；空气"],
+["attack","v./n.","攻击；袭击；发作；抨击"],
+["attention","n.","注意；关注；关心；立正"],
+["attractive","adj.","有吸引力的；迷人的"],
+["available","adj.","可获得的；有空的；可用的"],
+["awake","adj./v.","醒着的；唤醒；意识到"],
+["awful","adj.","糟糕的；可怕的；非常的"],
+["balance","n./v.","平衡；余额；权衡；使均衡"],
+["band","n.","乐队；带子；波段；一群"],
+["bar","n./vt.","酒吧；条；障碍；禁止；闩住"],
+["barrier","n.","障碍；屏障；关卡；壁垒"],
+["basin","n.","盆；水盆；流域；盆地"],
+["bay","n.","海湾；湾；隔间"],
+["beard","n.","胡须；络腮胡"],
+["being","n.","存在；生物；人；生命"],
+["belong","vi.","属于；应归入；适合"],
+["bend","v./n.","弯曲；弯腰；屈服；弯道"],
+["besides","prep./adv.","除…之外；而且；此外"],
+["bill","n.","账单；钞票；议案；清单"],
+["bit","n.","一点；少量；比特；碎片"],
+["blank","adj./n.","空白的；茫然的；空白处"],
+["blend","v./n.","混合；融合；调和；混合物"],
+["blog","n.","博客；网络日志"],
+["boast","v./n.","自夸；夸耀；拥有(值得自豪之物)"],
+["boil","v.","煮沸；沸腾；激怒"],
+["bond","n.","纽带；债券；契约；结合"],
+["boot","n.","靴子；后备箱；启动"],
+["boring","adj.","无聊的；令人厌烦的"],
+["bother","v./n.","打扰；麻烦；费心；烦扰"],
+["bounce","v./n.","弹跳；反弹；解雇"],
+["bow","v./n.","鞠躬；弯腰；弓；蝴蝶结"],
+["brave","adj.","勇敢的；无畏的；华丽的"],
+["breath","n.","呼吸；气息；一口气；微风"],
+["brick","n.","砖；砖块；积木"],
+["bright","adj.","明亮的；聪明的；鲜艳的"],
+["broad","adj.","宽阔的；广泛的；概括的"],
+["brown","adj./n.","棕色的；褐色；棕色"],
+["bubble","n.","气泡；泡沫；泡影"],
+["bulk","n.","大块；大批；体积；主体"],
+["burden","n.","负担；重担；负荷；责任"],
+["business","n.","商业；生意；事务；公司"],
+["cabinet","n.","橱柜；内阁；密室"],
+["call","v./n.","呼叫；称呼；打电话；拜访；号召"],
+["campus","n.","校园；校区"],
+["cancer","n.","癌症；肿瘤；弊端"],
+["capacity","n.","容量；能力；职位；生产量"],
+["capture","vt./n.","捕获；俘获；拍摄；夺取"],
+["careful","adj.","小心的；仔细的；谨慎的"],
+["cash","n./v.","现金；现款；兑现"],
+["catalog","n.","目录；目录册；条目"],
+["cattle","n.","牛；牲畜"],
+["cave","n.","洞穴；山洞；地窖"],
+["celebrate","v.","庆祝；颂扬；举行(仪式)"],
+["central","adj.","中心的；中央的；主要的"],
+["ceremony","n.","典礼；仪式；礼节；客套"],
+["chain","n.","链条；连锁；一系列；连锁店"],
+["chamber","n.","房间；议院；腔；会议室"],
+["change","v./n.","改变；更换；找零；零钱"],
+["charge","v./n.","收费；指控；充电；负责；冲锋"],
+["chase","v./n.","追逐；追赶；追求；追寻"],
+["check","v./n.","检查；核对；支票；抑制；寄存"],
+["chemical","adj./n.","化学的；化学品；化学药品"],
+["cherish","vt.","珍爱；怀有；珍惜；抚育"],
+["chew","v.","咀嚼；思量；深思"],
+["chill","n./adj./v.","寒冷；寒意；冷淡的；使变冷"],
+["choice","n.","选择；抉择；选择权；精选品"],
+["church","n.","教堂；教会；礼拜"],
+["circular","adj.","圆形的；循环的；迂回的"],
+["cite","vt.","引用；引证；援引；传讯"],
+["claim","vt./n.","声称；索赔；认领；值得"],
+["classification","n.","分类；类别；等级；分类法"],
+["clean","adj./v.","干净的；清洁的；打扫；净化"],
+["clever","adj.","聪明的；机灵的；精巧的"],
+["climb","v.","攀登；爬；上升；登山"],
+["clock","n.","时钟；计时器；打卡钟"],
+["clothes","n.","衣服；服装；衣着"],
+["coal","n.","煤；煤炭；木炭"],
+["code","n.","代码；密码；法典；准则；邮编"],
+["coin","n.","硬币；钱币；钱币"],
+["collect","v.","收集；采集；收藏；收款；聚集"],
+["color","n.","颜色；色彩；肤色；颜料"],
+["combination","n.","结合；组合；联合体；密码锁"],
+["comfortable","adj.","舒适的；舒服的；宽裕的"],
+["commerce","n.","商业；贸易；商务"],
+["commit","vt.","犯罪；承诺；投入；委托；致力于"],
+["communication","n.","交流；通讯；沟通；信息；交通"],
+["company","n.","公司；陪伴；同伴；连队"],
+["compass","n.","罗盘；指南针；圆规；范围"],
+["competition","n.","竞争；比赛；竞赛；角逐"],
+["complex","adj./n.","复杂的；合成的；综合体；情结"],
+["compose","v.","组成；创作；作曲；使平静；撰写"],
+["comprehension","n.","理解；理解力；理解力练习"],
+["comprise","vt.","包含；由…组成；构成"],
+["concentrate","v.","集中；专心；浓缩；聚集"],
+["concert","n.","音乐会；演奏会；一致；协同"],
+["condition","n.","条件；状况；环境；疾病；条款"],
+["conference","n.","会议；讨论会；协商会；会谈"],
+["confirm","vt.","确认；证实；批准；巩固"],
+["congratulate","vt.","祝贺；庆贺；道喜"],
+["conquer","vt.","征服；克服；战胜；攻取"],
+["consent","n./vi.","同意；赞成；许可；答应"],
+["consider","v.","考虑；认为；体谅；细想"],
+["constitution","n.","宪法；构成；体质；章程"],
+["consume","vt.","消耗；消费；吃喝；耗尽；沉迷于"],
+["contain","vt.","包含；容纳；控制；等于；装有"],
+["content","n./adj.","内容；目录；满足的；满意的"],
+["continent","n.","大陆；洲；陆地"],
+["contract","n./v.","合同；契约；感染；收缩；订约"],
+["contribute","v.","贡献；捐献；促成；投稿；有助于"],
+["conventional","adj.","传统的；常规的；惯例的；因循守旧的"],
+["convey","vt.","传达；表达；运送；转让"],
+["cooperate","vi.","合作；协作；配合；配合"],
+["copy","n./v.","复制；副本；拷贝；抄写；模仿"],
+["corner","n.","角落；拐角；街角；困境"],
+["correspond","vi.","符合；一致；通信；相当于"],
+["cotton","n.","棉花；棉布；棉线"],
+["council","n.","理事会；委员会；市政议会"],
+["country","n.","国家；乡村；祖国；国民"],
+["courage","n.","勇气；胆量；胆识"],
+["cousin","n.","堂兄弟姐妹；表兄弟姐妹；亲戚"],
+["create","vt.","创造；创作；造成；引起；授予"],
+["credit","n./v.","信用；学分；赞扬；存款；归功于"],
+["criminal","n./adj.","罪犯；刑事的；犯罪的"],
+["critical","adj.","批评的；关键的；危急的；临界的"],
+["cross","v./n./adj.","穿过；交叉；十字形；生气的"],
+["cruise","v./n.","巡航；巡游；缓慢行驶；乘船游览"],
+["cure","v./n.","治愈；治疗；纠正；良药；对策"],
+["currency","n.","货币；通货；流通；流行"],
+["curse","v./n.","诅咒；咒骂；祸根；咒语"],
+["cut","v./n.","切；割；剪；削减；伤口；剪辑"],
+["damp","adj./n.","潮湿的；湿气；潮湿"],
+["dark","adj./n.","黑暗的；深色的；黑暗；黄昏"],
+["date","n./v.","日期；年代；约会；注明日期；过时"],
+["deadline","n.","最后期限；截止日期"],
+["dear","adj.","亲爱的；昂贵的；珍贵的"],
+["debt","n.","债务；欠款；负债；恩情"],
+["deceive","v.","欺骗；蒙蔽；哄骗；欺诈"],
+["decline","v./n.","下降；谢绝；衰退；婉拒；斜面"],
+["deep","adj./adv.","深的；深刻的；深深地；晚"],
+["defend","v.","保卫；防御；辩护；防守"],
+["definition","n.","定义；释义；清晰度；界定"],
+["delete","vt.","删除；删去；划掉"],
+["delight","n./v.","高兴；快乐；使高兴；乐于"],
+["democracy","n.","民主；民主制度；民主国家"],
+["deny","vt.","否认；拒绝；剥夺；背弃"],
+["depend","vi.","依靠；取决于；信赖；视情况而定"],
+["derive","v.","获得；源自；推导；派生"],
+["desert","n./v.","沙漠；抛弃；擅离职守；开小差"],
+["desirable","adj.","理想的；值得拥有的；可取的"],
+["despair","n./vi.","绝望；丧失信心；令人绝望的事物"],
+["dessert","n.","甜点；餐后甜食"],
+["detail","n./v.","细节；详情；详述；选派；零件"],
+["develop","v.","发展；开发；研制；患(病)；冲洗"],
+["devote","vt.","致力于；奉献；把…专用于"],
+["dialogue","n.","对话；对白；交换意见"],
+["differ","vi.","不同；相异；有分歧；意见不一"],
+["dig","v.","挖；掘；探究；喜欢；戳"],
+["dignity","n.","尊严；高贵；体面；自尊"],
+["dip","v./n.","蘸；浸；下沉；浏览；倾斜"],
+["directly","adv.","直接地；立刻；正好地；立即"],
+["dirty","adj.","脏的；卑鄙的；下流的；恶劣的"],
+["disappear","vi.","消失；不见；失踪；绝迹"],
+["discard","vt.","丢弃；抛弃；打出(牌)；摒弃"],
+["discount","n./v.","折扣；打折；忽视；减价"],
+["discuss","vt.","讨论；商量；论述；详述"],
+["disgust","n./vt.","厌恶；憎恶；使作呕；使反感"],
+["disorder","n.","混乱；无序；失调；疾病；动乱"],
+["dissolve","v.","溶解；解散；解除；消失；软化"],
+["distinct","adj.","明显的；截然不同的；清晰的；确定的"],
+["distribute","vt.","分发；分配；散布；分销；分类"],
+["dive","vi./n.","潜水；跳水；俯冲；钻研；暴跌"],
+["division","n.","划分；部门；除法；分歧；师"],
+["doll","n.","玩偶；洋娃娃；玩具娃娃"],
+["donate","v.","捐赠；捐献；赠送；献血"],
+["download","v./n.","下载；下载文件"],
+["draft","n./v.","草稿；草案；汇票；起草；征兵"],
+["drama","n.","戏剧；剧本；戏剧性事件；激动"],
+["drawer","n.","抽屉；开票人"],
+["dress","n./v.","连衣裙；服装；穿衣；打扮；包扎"],
+["drink","v./n.","喝；饮；喝酒；饮料；一杯"],
+["drop","v./n.","落下；下降；放弃；滴；落差；空投"],
+["dry","adj./v.","干的；干燥的；口渴的；弄干；脱水"],
+["dull","adj.","迟钝的；枯燥的；阴沉的；钝的"],
+["durable","adj.","耐用的；持久的；耐久的"],
+["dusk","n.","黄昏；薄暮；幽暗"],
+["dynamic","adj.","动态的；有活力的；动力的；不断变化的"],
+["earnest","adj./n.","认真的；诚挚的；认真；郑重其事"],
+["ease","n./v.","容易；舒适；缓和；减轻；使安心"],
+["easy","adj.","容易的；舒适的；随和的；安逸的"],
+["economic","adj.","经济的；经济学的；有利可图的"],
+["edition","n.","版本；版次；一期；很像的人"],
+["education","n.","教育；培养；教育学；知识"],
+["efficient","adj.","高效的；效率高的；有能力的"],
+["elastic","adj./n.","有弹性的；灵活的；橡皮筋"],
+["election","n.","选举；当选；当选权"],
+["electronic","adj.","电子的；电子设备的；电子学的"],
+["elephant","n.","象；大象；象牌图画纸"],
+["embarrass","vt.","使尴尬；使困窘；使负债；妨碍"],
+["emerge","vi.","出现；浮现；显露；摆脱；兴起"],
+["emotional","adj.","情感的；情绪激动的；易动感情的"],
+["emphasize","vt.","强调；着重；使突出；重读"],
+["employee","n.","雇员；员工；职员"],
+["enable","vt.","使能够；使成为可能；授权；启动"],
+["encourage","vt.","鼓励；激励；促进；支持；怂恿"],
+["ending","n.","结局；结尾；词尾；终结"],
+["enemy","n.","敌人；仇敌；敌军；危害物"],
+["engage","v.","从事；参与；雇用；订婚；吸引；交战"],
+["enhance","vt.","提高；增强；增进；美化"],
+["ensure","vt.","确保；保证；担保；使安全"],
+["entertain","v.","娱乐；款待；招待；考虑；怀抱"],
+["entitle","vt.","给…权利；给…题名；使有资格"],
+["environment","n.","环境；周围状况；自然环境；围绕"],
+["equality","n.","平等；相等；同等；等式"],
+["equivalent","adj./n.","相等的；等价的；对应物；等同词"],
+["error","n.","错误；差错；过失；误差"],
+["essay","n.","散文；短文；随笔；论文"],
+["estimate","v./n.","估计；估价；评价；判断；预算"],
+["event","n.","事件；大事；比赛项目；结果；场合"],
+["everyday","adj.","每天的；日常的；平常的；普通的"],
+["evil","adj./n.","邪恶的；坏的；罪恶；祸害"],
+["exact","adj.","确切的；精确的；严谨的；原样的"],
+["examination","n.","考试；检查；审问；诊察"],
+["excellent","adj.","优秀的；极好的；杰出的"],
+["excess","n./adj.","过量；超额；过度的；额外的"],
+["exciting","adj.","令人兴奋的；刺激的；激动人心的"],
+["execute","vt.","执行；实施；处死；完成；演奏"],
+["exhibit","v./n.","展览；展出；表现；展品；展览品"],
+["exit","n./v.","出口；离开；退场；退出；离去"],
+["expect","vt.","期待；预期；预料；盼望；认为"],
+["expensive","adj.","昂贵的；花钱多的；奢华的"],
+["expert","n./adj.","专家；能手；熟练的；内行的"],
+["explode","v.","爆炸；爆发；激增；推翻；勃然大怒"],
+["explosion","n.","爆炸；爆发；激增；突发"],
+["express","v./adj.","表达；表示；特快的；明确的；快车"],
+["extensive","adj.","广泛的；广阔的；大量的；粗放的"],
+["external","adj.","外部的；外界的；对外的；外面的"],
+["extreme","adj./n.","极端的；极度的；尽头；极端行为"],
+["fact","n.","事实；真相；实际；论据"],
+["faculty","n.","才能；全体教员；院系；能力"],
+["failure","n.","失败；故障；不及格；失败者；缺乏"],
+["faith","n.","信任；信念；信仰；忠诚；约定"],
+["false","adj.","错误的；假的；虚伪的；不真实的"],
+["family","n.","家庭；家人；家族；科；族"],
+["fancy","n./adj.","想象力；爱好；精致的；花哨的"],
+["farm","n./v.","农场；农庄；务农；耕作"],
+["fast","adj./adv.","快的；迅速地；牢的；牢固地；禁食"],
+["fate","n.","命运；天数；结局；毁灭"],
+["fault","n.","过失；缺点；故障；断层；过错"],
+["fear","n./v.","害怕；恐惧；担心；敬畏；可能性"],
+["feature","n./v.","特征；特色；面貌；特写；以…为特色"],
+["fee","n.","费用；酬金；学费；会费；手续费"],
+["feel","v.","感觉；觉得；触摸；认为；摸索"],
+["fence","n.","栅栏；篱笆；围栏；剑术；赃物买卖"],
+["fever","n.","发烧；发热；狂热；兴奋状态"],
+["fiction","n.","小说；虚构的事；编造；假想"],
+["fifteen","num.","十五；十五个"],
+["figure","n./v.","数字；人物；身材；图形；认为；计算"],
+["film","n.","电影；胶片；薄膜；薄层；拍摄"],
+["finally","adv.","最后；终于；最终；彻底地"],
+["find","v.","找到；发现；觉得；达到；判决"],
+["finger","n.","手指；指针；指状物"],
+["first","num./adv.","第一；首先；最初；宁愿；第一名"],
+["fit","adj./v.","适合的；健康的；合身；安装；适应"],
+["flame","n.","火焰；热情；光辉；情人；燃烧"],
+["flavor","n./v.","味道；风味；特色；给…调味"],
+["flesh","n.","肉；果肉；肉体；肌肤；肉欲"],
+["flight","n.","飞行；航班；楼梯的一段；逃跑；飞翔"],
+["flood","n./v.","洪水；泛滥；大量涌入；淹没"],
+["flow","v./n.","流动；流淌；涌出；流畅；流量"],
+["focus","v./n.","集中；聚焦；焦点；重点；焦距"],
+["folk","n./adj.","人们；民间的；民俗的；家属"],
+["fond","adj.","喜爱的；深情的；溺爱的；盲目轻信的"],
+["foolish","adj.","愚蠢的；可笑的；傻的；荒谬的"],
+["for","prep./conj.","为了；给；因为；对于；长达；支持"],
+["forecast","n./v.","预测；预报；预言；预报天气"],
+["foreigner","n.","外国人；外来人；外人"],
+["forget","v.","忘记；遗忘；忽略；不再考虑"],
+["form","n./v.","形式；表格；形状；形成；组成；养成"],
+["former","adj./n.","以前的；前任的；前者；从前的"],
+["fortunate","adj.","幸运的；侥幸的；带来好运的"],
+["forward","adv./adj.","向前；前进；提早；前部的；转发"],
+["foundation","n.","基础；地基；基金会；建立；根据"],
+["fraction","n.","小部分；分数；碎片；一点儿"],
+["frank","adj.","坦率的；直率的；明白的"],
+["freeze","v.","结冰；冻结；愣住；冷藏；冻住"],
+["fresh","adj.","新鲜的；清新的；新近的；无经验的"],
+["friendship","n.","友谊；友好关系；友情"],
+["front","n./adj.","前面；正面；前线；前部的；前面的"],
+["fruit","n.","水果；果实；成果；产物；结果"],
+["fuel","n./v.","燃料；刺激；加油；加燃料；助长"],
+["fun","n./adj.","乐趣；玩笑；有趣的人或事；有趣的"],
+["fundamental","adj./n.","基本的；根本的；基本原则；基础"],
+["fur","n.","毛皮；软毛；皮衣；皮子"],
+["furthermore","adv.","此外；而且；再者；另外"],
+["galaxy","n.","银河；星系；一群显赫的人"],
+["gang","n.","一帮；一伙；帮派；一队"],
+["garden","n./v.","花园；菜园；果园；从事园艺"],
+["gate","n.","大门；门口；闸门；登机口；门票收入"],
+["gear","n.","齿轮；装备；用具；衣物；调节"],
+["general","adj./n.","一般的；总的；普遍的；将军；总则"],
+["generation","n.","一代；产生；世代；一代人；产生"],
+["gentle","adj.","温和的；温柔的；轻柔的；文雅的"],
+["geography","n.","地理；地理学；地形；布局"],
+["German","adj./n.","德国的；德语；德国人；德语"],
+["ghost","n.","鬼；幽灵；影子；一丝；重影"],
+["give","v.","给；给予；赠送；付出；产生；举办"],
+["glare","v./n.","怒视；瞪眼；刺眼的光；显眼"],
+["globe","n.","地球；地球仪；球体；世界"],
+["glow","v./n.","发光；发热；脸红；洋溢；鲜艳"],
+["god","n.","神；上帝；神像；极其崇拜的对象"],
+["golf","n.","高尔夫球；高尔夫运动"],
+["govern","v.","统治；管理；支配；控制；指导"],
+["grab","v.","抓住；抓取；抢夺；吸引；匆忙取"],
+["graduate","v./n.","毕业；毕业生；研究生；渐变"],
+["grammar","n.","语法；语法书；文理；语法规则"],
+["grandmother","n.","祖母；外祖母；老奶奶"],
+["graph","n.","图表；曲线图；图形；图"],
+["grateful","adj.","感激的；感谢的；令人快意的"],
+["great","adj.","伟大的；巨大的；极好的；重要的"],
+["greet","vt.","问候；迎接；致意；映入眼帘；被感知"],
+["grip","v./n.","紧握；抓住；控制；把手；吸引力"],
+["ground","n.","地面；土地；场地；理由；基础；地线"],
+["guarantee","v./n.","保证；担保；保修；保证人；保证书"],
+["guest","n.","客人；宾客；旅客；客串演员；特邀"],
+["guilty","adj.","有罪的；内疚的；心虚的；有过失的"],
+["gum","n.","牙龈；口香糖；树胶；橡皮；胶"],
+["gym","n.","体育馆；健身房；体操；体育"],
+["half","n./adj./adv.","一半；半；部分地；不完全地"],
+["hammer","n./v.","锤子；榔头；锤打；反复敲打；抨击"],
+["handle","v./n.","处理；应付；操纵；把手；柄"],
+["hang","v.","悬挂；吊；垂下；吊死；悬浮"],
+["harbor","n./v.","港口；海港；庇护；怀有；藏匿"],
+["hardship","n.","艰难；困苦；苦难；贫困"],
+["harmony","n.","和谐；协调；和声；融洽；一致"],
+["hat","n.","帽子；礼帽；职务象征"],
+["have","v.","有；拥有；经历；吃；喝；进行；必须"],
+["head","n./v.","头；头部；领导；率领；朝…去；头脑"],
+["headquarters","n.","总部；司令部；总机构；总署"],
+["healthy","adj.","健康的；有益健康的；健全的；相当大的"],
+["heart","n.","心；心脏；内心；中心；勇气；心形"],
+["height","n.","高度；身高；高地；顶点；海拔"],
+["hello","int./n.","你好；喂；打招呼；问候"],
+["hen","n.","母鸡；雌禽；雌虾"],
+["hero","n.","英雄；男主角；勇士；偶像"],
+["hide","v./n.","隐藏；躲藏；隐瞒；兽皮；皮革"],
+["highway","n.","公路；大路；高速公路；途径"],
+["himself","pron.","他自己；他亲自；他本人"],
+["hire","v./n.","雇用；租用；租金；出租；工钱"],
+["historic","adj.","历史上著名的；有历史意义的"],
+["hobby","n.","爱好；嗜好；兴趣；业余消遣"],
+["holiday","n.","假日；节日；假期；休息日"],
+["home","n./adv.","家；家乡；本国；在家；回家；深地"],
+["honey","n.","蜂蜜；宝贝；甜美；亲爱的；蜜色"],
+["hope","v./n.","希望；期望；盼望；期待；被寄予希望的人"],
+["horn","n.","角；号角；喇叭；触角；警报器"],
+["hospital","n.","医院；兽医院；收容所"],
+["hot","adj.","热的；辣的；热门的；激动的；性感的"],
+["household","n./adj.","家庭；一户；家用的；家常的"],
+["huge","adj.","巨大的；庞大的；非常的；极大的"],
+["humorous","adj.","幽默的；诙谐的；滑稽的；逗人笑的"],
+["hunt","v./n.","打猎；搜寻；追捕；寻找；猎食"],
+["husband","n.","丈夫；老公；管家；节用"],
+["ice","n./v.","冰；冰块；冰层；结冰；冰镇"],
+["identify","vt.","识别；确认；认出；认同；视为同一"],
+["ignorant","adj.","无知的；不知道的；愚昧的；无礼的"],
+["illegal","adj.","非法的；违法的；违规的"],
+["imaginary","adj.","想象中的；虚构的；假想的；幻想的"],
+["imitate","vt.","模仿；仿效；仿制；模拟；效法"],
+["immune","adj.","免疫的；免除的；不受影响的；有免疫力的"],
+["implication","n.","含义；暗示；牵连；影响；可能的结果"],
+["importance","n.","重要性；重大；名望；自大"],
+["impossible","adj.","不可能的；办不到的；难以忍受的"],
+["impressive","adj.","令人印象深刻的；感人的；威严的"],
+["in","prep./adv.","在…里；在…期间；用；进入；在家"],
+["include","vt.","包括；包含；计入；算入；包住"],
+["incredible","adj.","难以置信的；惊人的；极好的；不可思议的"],
+["independent","adj.","独立的；自主的；无关的；无党派的"],
+["indifferent","adj.","漠不关心的；冷淡的；一般的；不在乎的"],
+["indoors","adv.","在室内；往室内；在屋里"],
+["infant","n.","婴儿；幼儿；初期的；未成年的"],
+["influence","n./v.","影响；作用；势力；感化；改变"],
+["information","n.","信息；资料；情报；知识；通知"],
+["inherit","v.","继承；遗传；接手；经遗传获得"],
+["injection","n.","注射；注射剂；注入；喷射"],
+["inn","n.","小旅馆；客栈；小酒馆；酒吧"],
+["input","n./v.","输入；投入；输入的数据；把…输入电脑"],
+["insect","n.","昆虫；虫；可鄙的人"],
+["insight","n.","洞察力；深刻见解；顿悟；洞悉"],
+["inspire","vt.","激励；鼓舞；启发；激发；产生灵感"],
+["instant","adj./n.","立即的；速食的；瞬间；时刻；速溶的"],
+["institute","n./v.","学院；研究所；学会；建立；开始"],
+["instruction","n.","指示；说明；教学；命令；用法说明"],
+["insurance","n.","保险；保险费；保险业；安全保障"],
+["intend","vt.","打算；意图；想要；计划；为…设计"],
+["intensive","adj.","密集的；集中的；强化的；精耕细作的"],
+["interaction","n.","相互作用；互动；交流；交互作用"],
+["interfere","vi.","干涉；干预；妨碍；打扰；抵触"],
+["internal","adj.","内部的；内在的；国内的；体内的"],
+["interpret","v.","解释；口译；理解；演绎；说明"],
+["interval","n.","间隔；间歇；幕间休息；间距；区间"],
+["into","prep.","进入；变成；成为；持续到；撞"],
+["invasion","n.","入侵；侵略；侵犯；涌入；侵袭"],
+["invest","v.","投资；投入；授予；耗费；购买"],
+["investment","n.","投资；投资额；投入；覆盖；授予"],
+["invite","v.","邀请；聘请；请求；招致；吸引"],
+["island","n.","岛；岛屿；岛状物；孤立地区"],
+["item","n.","项目；条目；一件商品；一则消息；项"],
+["jacket","n.","夹克；短上衣；外套；保温套"],
+["January","n.","一月；元月"],
+["jealous","adj.","嫉妒的；妒忌的；吃醋的；珍惜的"],
+["join","v.","参加；加入；连接；联合；会合"],
+["journal","n.","期刊；杂志；日记；日志；日报"],
+["joy","n.","欢乐；喜悦；乐事；成功；欣慰"],
+["juice","n.","果汁；菜汁；肉汁；体液；电"],
+["June","n.","六月"],
+["jury","n.","陪审团；评奖团；评审委员会"],
+["justify","vt.","证明…正当；为…辩护；对齐；是…的理由"],
+["kettle","n.","水壶；釜；小汽锅"],
+["kick","v./n.","踢；踹；反冲；快感；踢腿"],
+["kilogram","n.","千克；公斤；公斤重量"],
+["kindergarten","n.","幼儿园；学前班"],
+["kiss","v./n.","吻；亲吻；轻拂；接吻；小甜饼"],
+["knife","n.","刀；小刀；餐刀；匕首；刀具"],
+["know","v.","知道；了解；认识；精通；识别；确信"],
+["label","n./v.","标签；标记；称号；贴标签；归类"],
+["ladder","n.","梯子；阶梯；途径；晋升手段"],
+["lake","n.","湖；湖泊；池；色淀"],
+["landlord","n.","房东；地主；店主；老板"],
+["largely","adv.","主要地；大部分；大量地；广泛地"],
+["late","adj./adv.","迟的；晚的；已故的；最近的；晚"],
+["latter","adj.","后者的；后半的；近来的；后一半"],
+["launch","v./n.","发射；发起；推出；下水；开办；上市"],
+["law","n.","法律；定律；规律；法学；警方"],
+["lay","v.","放置；铺设；下蛋；安排；提出； lay"],
+["lazy","adj.","懒惰的；懒散的；慢吞吞的；懒洋洋的"],
+["leadership","n.","领导；领导层；领导能力；领导地位"],
+["league","n.","联盟；同盟；联赛；协会；等级"],
+["learn","v.","学习；学会；得知；记住；认识到"],
+["least","adj./adv.","最少的；最小；最不；一点点"],
+["left","adj./n./adv.","左边的；左；左面；向左；剩余的"],
+["leisure","n.","闲暇；空闲；悠闲；安逸"],
+["length","n.","长度；长；篇幅；一段；程度"],
+["lesson","n.","课；功课；教训；一堂课；惩罚"],
+["level","n./adj.","水平；等级；水平面；平的；平稳的"],
+["liberate","vt.","解放；释放；解除；使自由"],
+["lie","v./n.","躺；位于；说谎；谎言；存在；展现"],
+["lifetime","n.","一生；终身；有生之年；使用期"],
+["lightning","n.","闪电；雷电；意外的；闪电式的"],
+["likewise","adv.","同样地；也；而且；照样地"],
+["limitation","n.","限制；局限；缺点；限额；制约"],
+["link","n./v.","联系；连接；环节；纽带；链接"],
+["liquid","n./adj.","液体；液体的；清澈的；流畅的；流动的"],
+["listen","v.","听；倾听；听从；听信；收听"],
+["literature","n.","文学；文学作品；文献；资料；著作"],
+["living","adj./n.","活着的；现存的；生活；生计；谋生"],
+["loan","n./v.","贷款；借出；借；公债；借贷"],
+["locate","v.","找到；位于；设置；安置；定位"],
+["lodge","v./n.","寄宿；借宿；容纳；门房；小屋；递交"],
+["logical","adj.","合乎逻辑的；合理的；必然的；逻辑学的"],
+["look","v./n.","看；看起来；注视；面容；寻找；样子"],
+["lorry","n.","卡车；货运汽车；重型卡车"],
+["lost","adj.","失去的；迷路的；输掉的；不知所措的"],
+["love","v./n.","爱；热爱；喜欢；爱情；喜爱；亲爱的"],
+["loyal","adj.","忠诚的；忠心的；忠贞的；效忠的"],
+["luggage","n.","行李；箱包；随身行李"],
+["lung","n.","肺；肺脏；呼吸器官"],
+["mad","adj.","发疯的；狂热的；生气的；愚蠢的；着迷的"],
+["magnet","n.","磁铁；磁石；有吸引力的人或物"],
+["mail","n./v.","邮件；邮政；邮寄；信件；盔甲"],
+["maintain","vt.","维持；保持；维修；主张；坚持；赡养"],
+["majority","n.","大多数；大部分；多数票；成年；少校军阶"],
+["man","n.","男人；人；人类；男子汉；雇员；伙计"],
+["manner","n.","方式；态度；礼貌；举止；风俗；风格"],
+["manufacturer","n.","制造商；厂商；制造厂；生产商"],
+["March","n.","三月"],
+["mark","n./v.","标记；分数；痕迹；标志；做记号；打分"],
+["marry","v.","结婚；娶；嫁；为…证婚；结合"],
+["mass","n.","大量；块；团；群众；质量；弥撒"],
+["mat","n.","垫子；席子；丛；垫子层；网"],
+["material","n./adj.","材料；原料；资料；物质的；重要的"],
+["matter","n./v.","事情；物质；问题；要紧；有关系；材料"],
+["maybe","adv.","也许；大概；可能；或许"],
+["mean","v./adj./n.","意思是；意味着；卑鄙的；平均的；中间"],
+["meantime","n./adv.","其间；同时；在此期间"],
+["measurement","n.","测量；度量；尺寸；计量单位；厚度"],
+["mechanical","adj.","机械的；机械般的；呆板的；力学的"],
+["media","n.","媒体；媒介；传媒；介质"],
+["medium","n./adj.","媒介；手段；中等的；中号的；介质"],
+["member","n.","成员；会员；议员；部件；一员"],
+["mention","v./n.","提到；提及；说起；提名；简述"],
+["mercy","n.","怜悯；宽恕；仁慈；幸运；恩惠"],
+["merit","n./v.","优点；功绩；价值；值得；应受"],
+["message","n.","信息；消息；口信；要点；祝词；启示"],
+["method","n.","方法；办法；条理；教学法；秩序"],
+["midnight","n.","午夜；半夜；子夜；漆黑"],
+["mile","n.","英里；英里距离；较大距离；一英里赛跑"],
+["mill","n.","磨坊；工厂；磨粉机；制造厂；铣床"],
+["mine","pron./n./v.","我的；矿；矿藏；采矿；布雷；地雷"],
+["ministry","n.","部；部的办公楼；牧师职务；内阁"],
+["minus","prep./adj.","减去；负的；零下的；缺点；负号"],
+["mirror","n./v.","镜子；写照；反映；反射；真实写照"],
+["miss","v./n.","错过；想念；未击中；遗漏；避免；小姐"],
+["mission","n.","使命；任务；使团；传教团；天职"],
+["misunderstand","v.","误解；误会；曲解；不理解"],
+["mobile","adj.","移动的；流动的；手机；多变的；便携的"],
+["moderate","adj./v.","中等的；温和的；适度的；缓和；主持"],
+["modify","vt.","修改；调整；修饰；缓和；改造"],
+["money","n.","钱；货币；金钱；财富；款项"],
+["month","n.","月；月份；一个月时间；月亮"],
+["mood","n.","心情；情绪；语气；气氛；心境"],
+["more","adj./adv.","更多的；更加；另外；再；更多数量"],
+["mortgage","n./v.","抵押；抵押贷款；按揭；抵押契据"],
+["mother","n.","母亲；妈妈；根源；母体；大娘"],
+["motive","n.","动机；目的；原因；主题；发动的"],
+["mountain","n.","山；高山；山脉；大量；一大堆"],
+["move","v./n.","移动；搬动；搬家；感动；进展；一步棋"],
+["mud","n.","泥；泥浆；污蔑；泥淖"],
+["multiply","v.","乘；繁殖；增加；增殖；相乘"],
+["museum","n.","博物馆；博物院；展览馆"],
+["musician","n.","音乐家；乐师；作曲家；指挥家"],
+["my","pron.","我的；我的；用于称呼；哎呀"],
+["mystery","n.","神秘；谜；神秘事件；推理小说；秘诀"],
+["name","n./v.","名字；名称；名誉；命名；说出；提名"],
+["nasty","adj.","令人不快的；恶劣的；恶意的；严重的"],
+["nationality","n.","国籍；民族；民族性；国家；独立国地位"],
+["nature","n.","自然；自然界；本性；性质；种类；天理"],
+["near","prep./adj./adv.","靠近；近的；接近；几乎；亲近的"],
+["neat","adj.","整洁的；简洁的；巧妙的；纯的；优雅的"],
+["neck","n.","脖子；颈；领口；海峡；瓶颈"],
+["negative","adj./n.","否定的；消极的；阴性的；负数；底片"],
+["negotiation","n.","谈判；协商；洽谈；顺利通过；转让"],
+["neither","pron./adj./conj.","两者都不；也不；既不；也不"],
+["nervous","adj.","紧张的；神经的；不安的；神经质的；强有力的"],
+["never","adv.","从不；决不；永不；根本不；不曾"],
+["news","n.","新闻；消息；新闻报道；新闻节目；新情况"],
+["nice","adj.","好的；美好的；令人愉快的；精致的；友善的"],
+["nine","num.","九；九个；九岁"],
+["nobody","pron./n.","没有人；无人；小人物；无足轻重的人"],
+["noisy","adj.","嘈杂的；喧闹的；噪音大的；过分鲜艳的"],
+["nonsense","n.","胡说；废话；胡闹；荒谬的念头"],
+["nor","conj.","也不；也没有；又不；而…也不"],
+["north","n./adj.","北；北方；北部；向北的；北方的"],
+["note","n./v.","笔记；便条；注意；音符；钞票；指出"],
+["notice","n./v.","通知；注意；布告；察觉；短评；提到"],
+["now","adv.","现在；如今；这时；马上；既然"],
+["nuclear","adj.","核的；原子核的；核武器的；核心的"],
+["numerous","adj.","许多的；众多的；无数的；数不清的"],
+["nylon","n.","尼龙；耐纶；尼龙制品；尼龙丝袜"],
+["objection","n.","反对；异议；反对的理由；厌恶"],
+["oblige","vt.","迫使；责成；施恩于；使感激；满足"],
+["observer","n.","观察者；观察员；观测者；旁听者"],
+["occasion","n.","场合；时机；机会；理由；盛会"],
+["occupation","n.","职业；工作；占领；消遣；居住"],
+["occurrence","n.","发生；出现；事件；发生的事；存在"],
+["October","n.","十月"],
+["offend","v.","冒犯；得罪；违反；使不适；犯罪"],
+["officer","n.","军官；官员；警官；高级职员；干事"],
+["oil","n./v.","油；石油；油画；润滑油；加油；涂油"],
+["olive","n.","橄榄；橄榄树；橄榄色；橄榄绿"],
+["once","adv./conj.","一次；曾经；一旦；一度；一次"],
+["only","adj./adv./conj.","唯一的；只有；才；不过；但是"],
+["opera","n.","歌剧；歌剧艺术；歌剧院；歌剧团"],
+["operator","n.","操作员；接线员；经营者；算子；手术者"],
+["opportunity","n.","机会；时机；良机；际遇"],
+["opposition","n.","反对；反抗；对立；反对党；反对派"],
+["option","n.","选择；选择权；选项；选修课；买卖权"],
+["oral","adj.","口头的；口服的；口腔的；口述的"],
+["order","n./v.","命令；顺序；订单；秩序；点(菜)；订购"],
+["ore","n.","矿石；矿；矿砂；金属矿石"],
+["organization","n.","组织；机构；团体；编制；条理"],
+["original","adj./n.","最初的；原文的；原创的；原作；原版"],
+["ought","aux.","应该；应当；总该；大概；理应"],
+["ours","pron.","我们的东西；我们的家人；我们的"],
+["outcome","n.","结果；后果；成果；结局；出口"],
+["outlet","n.","出口；排放口；经销店；发泄途径；电源插座"],
+["outside","prep./adv./n.","在外面；外部；在外；外界的；超出"],
+["overcome","v.","克服；战胜；胜过；使无能为力；被感动"],
+["overseas","adv./adj.","海外；国外；向海外；外国的；远洋的"],
+["own","adj./v.","自己的；拥有；承认；特有；承认"],
+["pace","n./v.","步速；节奏；步伐；速度；踱步；步调"],
+["packet","n.","小包；小盒； packet；一小笔钱；数据包"],
+["pain","n.","疼痛；痛苦；辛劳；讨厌的人或事；努力"],
+["painter","n.","画家；油漆工；缆绳；系船索"],
+["palace","n.","宫殿；王宫；豪华大厦；宅邸"],
+["pamphlet","n.","小册子；活页文选；小册子出版物"],
+["panic","n./v.","恐慌；惊慌；使惊慌；慌乱；恐慌情绪"],
+["parallel","adj./n.","平行的；类似的；平行线；相似处；对比"],
+["parent","n.","父亲；母亲；父母；根源；亲本"],
+["parliament","n.","议会；国会；议院；英国议会"],
+["partially","adv.","部分地；不完全地；偏爱地；不公平地"],
+["particular","adj./n.","特别的；特定的；挑剔的；细节；详情"],
+["partner","n.","伙伴；合伙人；配偶；搭档；合作者"],
+["passage","n.","通道；段落；航程；通过；走廊；经过"],
+["passive","adj.","被动的；消极的；顺从的；无源的；被动语态"],
+["past","adj./n./prep.","过去的；以往的；经过；晚于；过去；昔日"],
+["patience","n.","耐心；忍耐；毅力；忍耐期；单人牌戏"],
+["pause","n./v.","暂停；中止；停顿；犹豫；停顿符号"],
+["pay","v./n.","支付；付款；付出；给予；工资；报酬"],
+["peace","n.","和平；安宁；平静；和睦；治安"],
+["peanut","n.","花生；花生米；小人物；小数目"],
+["peculiar","adj.","奇怪的；特有的；独特的；不舒服的"],
+["penalty","n.","处罚；罚款；刑罚；不利后果；点球"],
+["penny","n.","便士；一分钱；小钱；一枚硬币"],
+["pepper","n.","胡椒；辣椒；胡椒粉；甜椒"],
+["percentage","n.","百分比；百分率；比例；提成；可能性"],
+["perform","v.","表演；执行；履行；表现；运转；做"],
+["period","n.","时期；时代；句号；课时；周期；经期"],
+["permit","v./n.","允许；许可；准许；许可证；执照"],
+["personality","n.","个性；人格；名人；品格；魅力"],
+["perspective","n.","视角；观点；透视；远景；判断力"],
+["pet","n./adj.","宠物；宠儿；宝贝；宠爱的；动物的"],
+["phase","n.","阶段；时期；方面；相；相位；状态"],
+["phone","n./v.","电话；电话机；打电话；耳机；听筒"],
+["phrase","n.","短语；词组；措辞；乐句；警句"],
+["physicist","n.","物理学家；物理学研究者"],
+["pick","v./n.","挑选；采摘；捡起；扒窃；选择；镐"],
+["pie","n.","馅饼；派；喜鹊；杂乱状态"],
+["pigeon","n.","鸽子；易上当受骗的人；野鸽"],
+["pillow","n.","枕头；枕垫；枕状物"],
+["pinch","v./n.","捏；掐；夹；偷窃；紧缺；一撮"],
+["pint","n.","品脱；一品脱的量；一杯啤酒"],
+["place","n./v.","地方；地点；位置；放置；安排；任职"],
+["plane","n.","飞机；平面；水平；刨子；悬铃木"],
+["plantation","n.","种植园；林场；人造林；殖民"],
+["platform","n.","站台；平台；讲台；月台；政纲；站台"],
+["pleasant","adj.","令人愉快的；舒适的；友善的；晴朗的"],
+["pledge","n./v.","誓言；保证；抵押；许诺；举杯祝健康"],
+["plow","n./v.","犁；耕地；耕作；破浪前进；费力前进"],
+["plus","prep./adj.","加；加上；正的；外加的；优点；加号"],
+["poet","n.","诗人；空想家；富有想象力的人"],
+["poisonous","adj.","有毒的；恶毒的；分泌毒液的；令人讨厌的"],
+["policeman","n.","警察；巡警；警官"],
+["polite","adj.","有礼貌的；客气的；文雅的；上流的"],
+["politics","n.","政治；政治学；政纲；政见；权术"],
+["pollution","n.","污染；污染物；玷污；腐败；公害"],
+["poor","adj.","贫穷的；可怜的；贫乏的；拙劣的；不幸的"],
+["popularity","n.","受欢迎；普及；流行；声望；名气"],
+["port","n.","港口；口岸；港口城市；左舷；端口"],
+["portion","n./v.","部分；一份；份额；分配；嫁妆；命运"],
+["positive","adj.","积极的；肯定的；正的；阳的；确信的；正片"],
+["possibility","n.","可能性；可能的事；潜力；希望；契机"],
+["post","n./v.","邮政；邮件；岗位；帖子；张贴；邮寄；派驻"],
+["poster","n.","海报；招贴；张贴者；广告画"],
+["pot","n.","锅；罐；壶；一盆；大量；奖杯"],
+["pound","n.","磅；英镑；重击；砰地击；收容所"],
+["powder","n.","粉；粉末；火药；尘土；香粉；药粉"],
+["practical","adj.","实际的；实用的；可行的；实践的；老练的"],
+["practise","v.","练习；实践；行医；经常做；养成…习惯"],
+["precious","adj.","珍贵的；宝贵的；贵重的；十足的；矫揉的"],
+["preface","n.","序言；前言；开场白；引语；前奏"],
+["preference","n.","偏爱；偏好；优先权；偏爱的事物；特惠"],
+["premier","n./adj.","总理；首相；首要的；最早的；首位的"],
+["prescribe","v.","开(药)；规定；指示；命令；建议"],
+["presentation","n.","展示；陈述；介绍；演出；赠送；外观"],
+["press","v./n.","压；按；挤；催促；新闻界；出版社；熨"],
+["pretend","v.","假装；伪装；自称；妄求；自诩"],
+["prevent","v.","预防；防止；阻止；妨碍；避免"],
+["pride","n./v.","骄傲；自豪；自尊心；得意；以…自豪"],
+["primary","adj.","主要的；初级的；最初的；初等的；原色的"],
+["prince","n.","王子；亲王；王孙；巨头；名家"],
+["principle","n.","原则；原理；准则；道义；信念；主义"],
+["prior","adj./adv.","先前的；优先的；在前的；居先；比…优先"],
+["prisoner","n.","囚犯；俘虏；被拘留者；失去自由的人"],
+["prize","n./v.","奖品；奖赏；珍视；估价；捕获物"],
+["probably","adv.","很可能；大概；或许；说不定"],
+["process","n./v.","过程；进程；工序；加工；处理；列队前进"],
+["produce","v./n.","生产；制造；产生；出示；引起；农产品"],
+["production","n.","生产；制作；产量；作品；上映；出产"],
+["professor","n.","教授；专家；公开讲授者"],
+["program","n./v.","程序；节目；计划；项目；编程；安排"],
+["prohibit","vt.","禁止；不准；阻止；使不可能"],
+["promise","v./n.","答应；许诺；希望；前途；迹象；承诺"],
+["pronoun","n.","代词；代名词"],
+["proof","n./adj.","证据；证明；校样；防…的；耐…的"],
+["proportion","n.","比例；部分；均衡；面积；大小"],
+["prospect","n.","前景；前途；可能性；景象；勘探"],
+["protect","v.","保护；防护；警戒；投保；关税保护"],
+["protein","n.","蛋白质；朊；高蛋白食物"],
+["prove","v.","证明；证实；结果是；检验；勘探；展现"],
+["province","n.","省；省份；领域；范围；本省"],
+["psychological","adj.","心理的；心理学的；精神上的；心灵的"],
+["publication","n.","出版；发行；出版物；公布；发表"],
+["publisher","n.","出版商；出版社；出版者；发表者"],
+["pump","n./v.","泵；抽水机；打气筒；泵送；灌注；盘问"],
+["punish","v.","惩罚；处罚；罚款；折磨；损害"],
+["purchase","v./n.","购买；采购；购置物；收益；抓手"],
+["purpose","n.","目的；意图；用途；效果；意志；意义"],
+["pursuit","n.","追求；追赶；职业；消遣；研究"],
+["puzzle","v./n.","使迷惑；使为难；谜；拼图；难题；费解"],
+["quality","n.","质量；品质；特性；品质；优质；音色"],
+["quarter","n.","四分之一；一刻钟；季度；地区；营房"],
+["queue","n./v.","队列；长队；排队；辫子；排队等候"],
+["quite","adv.","相当；非常；完全；的确；很；颇"],
+["rabbit","n.","兔子；野兔；兔肉；懦夫；新手"],
+["rack","n./v.","架子；搁架；拷问台；使痛苦；折磨"],
+["radical","adj./n.","根本的；激进的；彻底的；激进分子"],
+["raid","n./v.","突袭；袭击；搜查；劫夺；突然查抄"],
+["rain","n./v.","雨；雨水；下雨；如雨般落下；大量降下"],
+["range","n./v.","范围；一系列；山脉；射程；排列；涉及"],
+["rare","adj.","稀有的；罕见的；稀薄的；半熟的；极好的"],
+["rate","n./v.","比率；速度；价格；等级；评价；值得"],
+["raw","adj.","生的；未加工的；原始的；阴冷的；未经训练的"],
+["react","vi.","反应；回应；起化学反应；反抗；影响"],
+["reader","n.","读者；读物；读本；审稿人；读卡器"],
+["ready","adj.","准备好的；乐意的；现成的；迅速的；敏捷的"],
+["reality","n.","现实；真实；实际情况；真实感；事实"],
+["realm","n.","领域；范围；王国；国度；界"],
+["reason","n./v.","理由；原因；理性；道理；推理；劝告"],
+["recall","v./n.","回忆；召回；撤销；回忆起；收回；罢免"],
+["recent","adj.","最近的；近来的；近代的；新的"],
+["recognition","n.","认出；识别；承认；赏识；招呼"],
+["recommendation","n.","推荐；建议；推荐信；优点；劝告"],
+["recover","v.","恢复；痊愈；找回；重新获得；弥补"],
+["recruit","v./n.","招募；吸收；新成员；新兵；补充"],
+["reduction","n.","减少；下降；缩小；降价；还原"],
+["refine","v.","提炼；精炼；完善；改进；使优雅"],
+["reform","v./n.","改革；改良；改造；改过自新；革新"],
+["refusal","n.","拒绝；推辞；优先取舍权"],
+["regardless","adv.","不管怎样；无论如何；不顾；不惜"],
+["register","v./n.","登记；注册；挂号；记录；登记簿；寄存器"],
+["regulate","vt.","调节；调整；管理；控制；规定；校准"],
+["relate","v.","联系；叙述；有关联；适应；相处融洽"],
+["relative","n./adj.","亲戚；相对的；比较的；有关的；相应的"],
+["release","v./n.","释放；松开；发布；发行；免除；放出"],
+["reliable","adj.","可靠的；可信赖的；确实的；稳定的"],
+["religion","n.","宗教；信仰；宗教活动；一心追求之事"],
+["remain","v.","保持；仍然是；剩下；留下；遗留；停留"],
+["remedy","n./v.","补救；治疗；药品；纠正；治好；修补"],
+["remote","adj.","遥远的；偏僻的；远程的；冷淡的；微小的"],
+["render","v.","使得；使成为；给予；翻译；提供；粉刷"],
+["repair","v./n.","修理；修补；补救；恢复；赔偿；维修状态"],
+["replace","v.","取代；更换；归还；替换；把…放回原处"],
+["report","n./v.","报告；报道；传说；汇报；告发；报到"],
+["representative","n./adj.","代表；代理人；典型的；代议制的"],
+["reputation","n.","名声；名誉；声望；信誉；名气"],
+["requirement","n.","要求；必要条件；必需品；规定；需要"],
+["resemble","vt.","像；类似于；与…相像；相似"],
+["reservoir","n.","水库；蓄水池；储藏；汇集；宝库"],
+["resign","v.","辞职；放弃；顺从；辞去；听任"],
+["resolution","n.","决心；决议；解决；分辨率；坚定；分解"],
+["resource","n.","资源；办法；智谋；消遣；资产；应变能力"],
+["respond","v.","回答；响应；反应；回应；作答；有反应"],
+["responsible","adj.","负责的；有责任的；可靠的；责任重大的"],
+["restless","adj.","焦躁不安的；静不下来的；永不满足的"],
+["restrict","vt.","限制；限定；约束；管束；节制"],
+["retain","vt.","保持；保留；记住；聘请；容纳；付定金"],
+["retreat","v./n.","撤退；退却；退缩；静居处；放弃"],
+["reveal","vt.","揭示；透露；展现；暴露；泄露；显示"],
+["revise","v.","修订；修改；复习；校订；改变"],
+["reward","n./v.","奖励；报酬；奖赏；酬谢；值得"],
+["ribbon","n.","丝带；缎带；带状物；勋表"],
+["rid","vt.","使摆脱；清除；除去；使去掉"],
+["ridiculous","adj.","荒谬的；可笑的；荒唐的；滑稽的"],
+["ring","n./v.","戒指；环；铃声；打电话；包围；鸣响"],
+["rise","v./n.","上升；升起；上涨；起身；起源；加薪"],
+["river","n.","河；江；河流；巨流；水道"],
+["roast","v./n.","烤；烘焙；烘烤；烤得发烫；严厉批评"],
+["rock","n./v.","岩石；礁石；摇滚乐；摇动；震动；摇摆"],
+["role","n.","角色；作用；任务；职能；地位"],
+["roof","n.","屋顶；车顶；顶部；最高点；家"],
+["rope","n.","绳子；绳索；缆绳；一串；绞刑"],
+["rough","adj.","粗糙的；粗略的；粗暴的；汹涌的；艰难的"],
+["routine","n./adj.","常规；惯例；例行公事；日常的；平淡的"],
+["rub","v./n.","摩擦；擦；揉；搓；摩擦处；困难"],
+["rude","adj.","粗鲁的；无礼的；突然的；简陋的；原始的"],
+["rule","n./v.","规则；统治；惯例；裁定；支配；尺"],
+["rural","adj.","农村的；乡村的；田园的；农业的"],
+["sacrifice","n./v.","牺牲；献祭；牺牲品；亏本出售；献出"],
+["safe","adj./n.","安全的；平安的；保险箱；保险柜；谨慎的"],
+["sailor","n.","水手；海员；船员；乘船者"],
+["salad","n.","沙拉；色拉；凉拌菜；生菜"],
+["salt","n./adj.","盐；食盐；趣味；盐的；含盐的；辛辣的"],
+["sand","n.","沙；沙子；沙滩；沙色；时刻"],
+["satisfaction","n.","满意；满足；乐事；赔偿；确信"],
+["Saturday","n.","星期六；周六"],
+["saw","n./v.","锯子；谚语；格言；锯；看见(过去式)"],
+["scan","v./n.","扫描；浏览；审视；细看；扫掠；扫描图"],
+["scatter","v.","散开；散布；撒播；驱散；零散"],
+["schedule","n./v.","时间表；日程；计划表；安排；预定；目录"],
+["scholarship","n.","奖学金；学问；学识；学术成就"],
+["scientist","n.","科学家；科研人员；科学工作者"],
+["score","n./v.","得分；分数；二十；乐谱；刻痕；记分"],
+["screw","n./v.","螺丝；螺丝钉；拧；拧紧；压榨；扭歪"],
+["sea","n.","海；海洋；大量；茫茫一片；海浪"],
+["season","n./v.","季节；旺季；调味；使适应；风干"],
+["secondary","adj.","次要的；中等的；继发性的；第二位的"],
+["section","n.","部分；章节；部门；路段；剖面；截面"],
+["security","n.","安全；保安；证券；抵押品；安全感"],
+["seek","v.","寻找；寻求；谋求；试图；请求；自然移动"],
+["seldom","adv.","很少；不常；难得；罕见"],
+["self","n.","自我；自己；本身；私心；本人"],
+["semester","n.","学期；半学年；半年"],
+["senator","n.","参议员；上议员；评议员"],
+["sense","n./v.","感觉；意识；道理；意义；察觉；感知"],
+["sentence","n./v.","句子；判决；宣判；命题；警句"],
+["series","n.","系列；连续；丛书；级数；串联；辑"],
+["serve","v.","服务；服役；供应；招待；适合；发球"],
+["setting","n.","环境；背景；布景；镶嵌；设定；安装"],
+["seven","num.","七；七个；七岁"],
+["sex","n.","性；性别；性行为；性感；生殖"],
+["shake","v./n.","摇动；震动；握手；颤抖；动摇；握手"],
+["shame","n./v.","羞耻；羞愧；遗憾的事；使蒙羞；使难为情"],
+["sharp","adj.","锋利的；尖锐的；急剧的；敏锐的；整点的"],
+["shed","v./n.","流出；脱落；散发；棚屋；车库；分水岭"],
+["shelf","n.","架子；搁板；大陆架；搁板状物"],
+["shift","v./n.","转移；改变；轮班；Shift键；变速；推脱"],
+["shock","n./v.","震惊；震动；电击；休克；使震惊；冲突"],
+["shop","n./v.","商店；店铺；车间；购物；选购；拘留"],
+["shortage","n.","短缺；不足；缺少；缺陷；亏损额"],
+["shot","n.","射击；投篮；镜头；子弹；尝试；注射"],
+["shout","v./n.","呼喊；喊叫；大声说；呼叫"],
+["shrink","v.","收缩；缩小；退缩；萎缩；回避"],
+["sick","adj.","生病的；恶心的；厌倦的；焦急的；毛骨悚然的"],
+["sigh","v./n.","叹息；叹气；惋惜；呼啸；叹息声"],
+["sign","n./v.","标志；符号；迹象；签名；示意；签署"],
+["significant","adj.","重要的；显著的；有意义的；意味深长的"],
+["silk","n.","丝绸；丝；绸缎；丝织物；皇家法律顾问"],
+["similar","adj.","相似的；类似的；相像的；同类的"],
+["simplicity","n.","简单；朴素；单纯；率直；简朴"],
+["since","conj./prep.","自从；因为；既然；自…以来；此后"],
+["singer","n.","歌手；歌唱家；鸣禽"],
+["sir","n.","先生；阁下；爵士；老师"],
+["site","n./v.","地点；场所；网站；选址；使位于"],
+["size","n./v.","大小；尺寸；规模；尺码；估量；按大小分类"],
+["skill","n.","技能；技巧；熟练；本领；手艺"],
+["skin","n./v.","皮肤；皮；外皮；外壳；剥皮；擦伤"],
+["slam","v./n.","砰地关上；猛击；抨击；猛烈关闭"],
+["sleepy","adj.","困倦的；想睡的；寂静的；催眠的"],
+["slice","n./v.","薄片；切片；部分；切；割；削球"],
+["slim","adj./v.","苗条的；微薄的；细小的；减肥；缩小"],
+["slow","adj./v.","慢的；迟钝的；缓慢地；减速；变慢"],
+["smell","v./n.","闻；气味；嗅觉；臭味；察觉到；散发气味"],
+["smooth","adj./v.","光滑的；平稳的；顺利的；使平滑；缓和"],
+["so","adv./conj.","如此；那么；所以；因此；非常；这样"],
+["soccer","n.","足球；英式足球；足球运动"],
+["sociology","n.","社会学；群体生态学"],
+["soft","adj.","软的；柔和的；温柔的；松软的；轻的"],
+["solar","adj.","太阳的；日光的；利用太阳光的；与太阳相关"],
+["solution","n.","解决办法；解答；溶液；溶解；答案"],
+["somebody","pron.","某人；有人；重要人物；大人物"],
+["something","pron.","某事；某物；重要东西；大约；几分"],
+["somewhere","adv.","某处；在某处；大约；到某处"],
+["soon","adv.","很快；不久；早；宁愿；马上"],
+["sorry","adj.","抱歉的；遗憾的；难过的；可怜的；对不起"],
+["sound","n./v./adj.","声音；听起来；健全的；合理的；酣睡的"],
+["south","n./adj.","南；南方；南部；向南的；南方的"],
+["spacecraft","n.","航天器；宇宙飞船；太空船"],
+["spare","adj./v.","备用的；多余的；抽出；饶恕；吝惜；节约"],
+["special","adj.","特别的；特殊的；专门的；额外的；特约的"],
+["species","n.","物种；种；类；形式；外形"],
+["specimen","n.","标本；样本；样品；实例；怪人"],
+["speed","n./v.","速度；速率；快；加速；促进；超速"],
+["spend","v.","花费；度过；消耗；用尽；花钱"],
+["spill","v./n.","溢出；溅出；泄露；摔下；溢出物；小塞子"],
+["spiritual","adj.","精神的；心灵的；宗教的；超自然的；圣的"],
+["split","v./n.","分裂；分开；裂开；分歧；裂口；分头行动"],
+["sponge","n./v.","海绵；海绵状物；白吃；用海绵擦拭"],
+["sport","n.","运动；体育；运动会；娱乐；玩笑；风度"],
+["spray","v./n.","喷雾；喷射；浪花；小树枝；喷雾剂；喷涂"],
+["square","n./adj.","正方形；广场；平方；直角的；结清的；公平的"],
+["stack","n./v.","堆；叠；大量；堆放；洗牌作弊；排烟"],
+["stage","n./v.","舞台；阶段；时期；上演；举办；筹划"],
+["stand","v./n.","站立；忍受；位于；立场；摊位；看台；台子"],
+["stare","v./n.","凝视；盯着看；注视；显眼；盯视"],
+["starve","v.","挨饿；饿死；渴望；使挨饿；迫使"],
+["static","adj.","静态的；静止的；静电的；固定的；静力的"],
+["statue","n.","雕像；塑像；铸像"],
+["steady","adj.","稳定的；稳固的；沉着的；持续的；可靠的"],
+["steep","adj.","陡峭的；急剧的；过分的；浸泡；浸透"],
+["step","n./v.","步；步骤；台阶；脚步；踩；踏；采取"],
+["stiff","adj.","僵硬的；生硬的；艰难的；强烈的；昂贵的"],
+["sting","v./n.","刺；叮；刺痛；刺激；讥笑；剧痛"],
+["stocking","n.","长袜；袜；长筒袜"],
+["stoop","v./n.","弯腰；俯身；屈服；堕落；门廊"],
+["store","n./v.","商店；仓库；储备；贮藏；存储；装满"],
+["stove","n.","炉子；火炉；窑；加热器"],
+["strange","adj.","奇怪的；陌生的；外地的；不习惯的；不自在的"],
+["strategy","n.","战略；策略；计谋；行动计划；兵法"],
+["street","n.","街道；马路；街区；…街"],
+["stress","n./v.","压力；强调；重音；紧张；着重；加压于"],
+["strike","v./n.","打；击；罢工；突然想到；袭击；发现；钟鸣"],
+["stripe","n.","条纹；狭长地带；军阶袖条；类型"],
+["structure","n./v.","结构；构造；建筑物；组织；构造；安排"],
+["studio","n.","工作室；演播室；录音室；摄影棚；画室"],
+["stupid","adj.","愚蠢的；笨的；迟钝的；无聊的；恼人的"],
+["submit","v.","提交；服从；屈服；忍受；主张；建议"],
+["substantial","adj.","大量的；实质的；坚固的；富裕的；基本的"],
+["successful","adj.","成功的；有成就的；发迹的；结果圆满的"],
+["sudden","adj.","突然的；意外的；快速的；急促的"],
+["sufficient","adj.","足够的；充分的；充足的；有能力的"],
+["suggestion","n.","建议；意见；暗示；示意；微量；联想"],
+["suitable","adj.","合适的；适宜的；相配的；适当的"],
+["summarize","v.","概括；总结；概述；摘要；汇总"],
+["summit","n.","顶峰；最高点；最高级会议；顶点"],
+["sunny","adj.","阳光充足的；快活的；晴朗的；向阳的"],
+["sunshine","n.","阳光；日照；欢乐；光明；朋友"],
+["superior","adj./n.","上级的；较好的；优越的；上司；优胜者"],
+["suppose","v.","假设；认为；猜想；应该；假定需要"],
+["surface","n./adj.","表面；水面；外观；表面的；肤浅的"],
+["surround","v.","包围；环绕；围绕；四周都是；围绕"],
+["survive","v.","幸存；生还；比…活得长；挺过；残存"],
+["suspend","v.","暂停；悬挂；中止；使停职；悬浮"],
+["swallow","v./n.","吞下；咽下；忍受；轻信；燕子；一次吞咽"],
+["sweater","n.","毛衣；运动衫；针织套衫；发汗剂"],
+["swell","v./n.","肿胀；膨胀；增强；壮大；海浪；增大"],
+["switch","n./v.","开关；转换；转变；交换；鞭打；调换"],
+["sympathy","n.","同情；同情心；赞同；慰问；和谐"],
+["table","n./v.","桌子；表格；表；目录；搁置；餐食"],
+["tail","n./v.","尾巴；后部；末尾；跟踪；结尾部分"],
+["talent","n.","天才；才能；人才；天资；塔兰特"],
+["tame","adj./v.","驯服的；温顺的；平淡的；驯服；驯化"],
+["tape","n./v.","带子；胶带；磁带；录音；用磁带录；系"],
+["tax","n./v.","税；税款；负担；征税；使负重担；指责"],
+["teach","v.","教；讲授；教导；教育；教训；教书"],
+["tear","n./v.","眼泪；撕；撕裂；撕开；飞奔；破坏"],
+["technique","n.","技术；技巧；方法；技艺；技能"],
+["telephone","n./v.","电话；电话机；打电话；用电话告知"],
+["tell","v.","告诉；讲述；吩咐；辨别；显示；认出"],
+["temple","n.","庙；寺；神殿；太阳穴；圣殿"],
+["temptation","n.","诱惑；引诱；诱惑物；勾引；吸引力"],
+["tend","v.","倾向于；往往会；照料；看护；走向"],
+["tense","adj./n./v.","紧张的；拉紧的；时态；使紧张；变得紧张"],
+["term","n./v.","学期；术语；期限；条款；把…称为"],
+["territory","n.","领土；领地；地区；范围；领域；地盘"],
+["text","n.","文本；课文；正文；原文；短信；主题"],
+["than","conj./prep.","比；比较；除…外；与其；多于"],
+["the","art.","这；那；这些；那些；用于特指"],
+["theirs","pron.","他们的东西；他们的家属；他们的"],
+["themselves","pron.","他们自己；他们亲自；他们正常状态"],
+["therefore","adv.","因此；所以；因而；为此"],
+["they","pron.","他们；她们；它们；人们；当局"],
+["thin","adj.","薄的；细的；瘦的；稀的；淡的；微弱的"],
+["thinking","n./adj.","思考；思想；见解；有思考力的；好思索的"],
+["thirteen","num.","十三；十三个；十三岁"],
+["thorough","adj.","彻底的；完全的；详尽的；细心的；十足的"],
+["thought","n.","思想；想法；思考；念头；关怀；打算"],
+["thread","n./v.","线；线索；思路；穿过；穿线于；缕缕"],
+["three","num.","三；三个；三岁；三个人"],
+["throw","v./n.","投；扔；抛；摔倒；举行；冒险；投掷"],
+["thus","adv.","因此；于是；这样；如此；到这程度"],
+["tide","n.","潮；潮汐；潮流；趋势；时期；潮水"],
+["tiger","n.","老虎；凶暴的人；劲敌；凶狠的人"],
+["timber","n.","木材；木料；林木；横梁；素质"],
+["tin","n.","锡；罐头；听；马口铁；一听"],
+["tire","v./n.","疲劳；厌倦；轮胎；使疲倦；费劲儿"],
+["title","n.","标题；题目；头衔；称号；冠军；权利"],
+["tobacco","n.","烟草；烟叶；抽烟；烟草制品"],
+["toilet","n.","厕所；盥洗室；马桶；梳妆；梳妆打扮"],
+["tomato","n.","番茄；西红柿；番茄树"],
+["ton","n.","吨；大量；许多；重量单位；每小时"],
+["tonight","adv./n.","今晚；今夜；今晚的节目"],
+["tooth","n.","牙齿；齿；齿状物；嗜好；要害"],
+["torch","n.","手电筒；火把；火炬；喷灯；启发之物"],
+["total","adj./n./v.","总的；全部的；总数；总计；共计；破坏"],
+["tour","n./v.","旅行；游览；巡回；参观；巡演；周游"],
+["towards","prep.","朝；向；将近；关于；为…的目的"],
+["toy","n./adj.","玩具；玩物；小装饰品；玩具的；玩耍的"],
+["trade","n./v.","贸易；商业；行业；交易；买卖；交换"],
+["traffic","n.","交通；往来；运输；交易量；通信量；贸易"],
+["train","n./v.","火车；列车；队列；训练；培养；瞄准"],
+["transform","v.","改变；转变；改造；变换；变形；改造"],
+["translate","v.","翻译；解释；转化；调动；转变为"],
+["transparent","adj.","透明的；明显的；易懂的；坦率的；透彻的"],
+["trap","n./v.","陷阱；圈套；捕捉；使陷入；拦住；存水弯"],
+["treasure","n./v.","珍宝；财富；珍品；珍视；珍藏；珍爱"],
+["tree","n.","树；乔木；树状结构；家谱；圣诞树"],
+["trend","n./v.","趋势；倾向；时尚；走向；流行"],
+["trick","n./v.","诡计；花招；戏法；骗局；戏弄；欺骗"],
+["troop","n./v.","军队；部队；一群；一队；成群结队地走"],
+["troublesome","adj.","令人烦恼的；麻烦的；困难的；讨厌的"],
+["true","adj.","真实的；正确的；忠实的；纯种的；准确的"],
+["trust","v./n.","信任；信赖；托管；盼望；责任；信托"],
+["T-shirt","n.","T恤衫；短袖汗衫；圆领衫"],
+["turn","v./n.","转动；转向；转弯；变成；轮流；拐角；圈"],
+["twice","adv.","两次；两倍；两遍；两次地"],
+["two","num.","二；两个；两点钟；二人"],
+["typical","adj.","典型的；有代表性的；特有的；平常的"],
+["ugly","adj.","丑陋的；难看的；讨厌的；恶劣的；不祥的"],
+["unable","adj.","不能的；无法的；不会的；无能力的"],
+["uncover","vt.","揭开；揭露；发现；暴露；移去覆盖物"],
+["undergraduate","n.","大学本科生；大学肄业生；大学肄业"],
+["understanding","n./adj.","理解；理解力；谅解；融洽；通情达理的"],
+["uneasy","adj.","不安的；忧虑的；不自在的；不稳定的"],
+["unexpected","adj.","意外的；突然的；想不到的；出乎意料的"],
+["unhappy","adj.","不快乐的；不幸的；不满意的；愁苦的"],
+["unique","adj.","唯一的；独特的；独一无二的；罕见的；珍奇的"],
+["unity","n.","团结；统一；一致；整体；和谐；单一性"],
+["university","n.","大学；综合性大学；大学当局"],
+["unlikely","adj.","不太可能的；未必会发生的；不像真的"],
+["unusual","adj.","不寻常的；罕见的；独特的；奇怪的"],
+["upon","prep.","在…之上；一…就；关于；根据；即将"],
+["upward","adj./adv.","向上的；上升的；向上；以上；趋向上升"],
+["urgent","adj.","紧急的；急迫的；紧要的；催促的；强求的"],
+["used","adj.","习惯的；用过的；旧的；二手的；习惯于"],
+["user","n.","用户；使用者；瘾君子；用法者"],
+["utility","n.","公用事业；实用；效用；有用；实用程序"],
+["vacation","n./v.","假期；休假；腾出；度假；辞去"],
+["vain","adj.","徒劳的；虚荣的；自负的；愚蠢的；没用的"],
+["valuable","adj./n.","贵重的；有价值的；重要的；贵重物品"],
+["vapor","n.","蒸汽；水汽；烟雾；幻想；无实质之物"],
+["vast","adj.","广阔的；巨大的；浩瀚的；大量的；非常的"],
+["venture","n./v.","冒险；投机；冒险事业；敢于；大胆表示"],
+["version","n.","版本；译本；说法；形式；改写本"],
+["vessel","n.","船；飞船；容器；血管；导管；器皿"],
+["vibrate","v.","振动；颤动；摇摆；激动；颤抖"],
+["victory","n.","胜利；战胜；成功；征服；获胜"],
+["viewpoint","n.","观点；看法；视角；立足点；观察点"],
+["violent","adj.","暴力的；猛烈的；激烈的；极端的；歪曲的"],
+["virtual","adj.","虚拟的；实质上的；事实上的；虚像的"],
+["vision","n.","视力；视觉；想象力；愿景；幻象；目光"],
+["visual","adj.","视觉的；视力的；看得见的；形象化的"],
+["vocabulary","n.","词汇；词汇量；语汇；专业词汇；词汇表"],
+["volleyball","n.","排球；排球运动；排球赛"],
+["volunteer","n./v.","志愿者；志愿兵；自愿提供；参军；主动做"],
+["wage","n./v.","工资；报酬；开展；进行；发动；在…中奋斗"],
+["waiter","n.","侍者；服务员；托盘；等候者"],
+["wall","n.","墙；墙壁；围墙；屏障；壁；隔阂"],
+["war","n.","战争；斗争；对抗；战术；战争状态"],
+["warn","v.","警告；告诫；提醒；预先通知；威胁"],
+["waste","v./n./adj.","浪费；废物；损耗；荒废的；多余的；废料"],
+["waterproof","adj./n.","防水的；不透水的；雨衣；防水衣物"],
+["wax","n./v.","蜡；蜡状物；满月；增大；打蜡；渐渐变化"],
+["weak","adj.","弱的；虚弱的；淡的；不擅长的；疲软的"],
+["wealthy","adj.","富有的；丰富的；充裕的；有钱的"],
+["weather","n./v.","天气；气象；处境；经受住；侵蚀；褪色"],
+["wedding","n.","婚礼；结婚纪念日；结合；交融"],
+["weekend","n.","周末；周末休假；周末聚会"],
+["weigh","v.","称重；权衡；考虑；有分量；重压；掂量"],
+["weld","v./n.","焊接；熔接；使结合；焊接点；焊缝"],
+["west","n./adj.","西；西方；西部；向西的；西方的"],
+["whale","n.","鲸；巨大的人或物；殴打；猛揍"],
+["wheat","n.","小麦；麦子；小麦色；朴实的人"],
+["whenever","conj.","每当；无论何时；随时；每当"],
+["whether","conj.","是否；不管；无论；是…还是"],
+["while","conj./n.","当…时；然而；虽然；一会儿；一段时间"],
+["who","pron.","谁；…的人；他；她；他们"],
+["whom","pron.","谁(宾格)；那(些)人；关系代词宾格"],
+["wide","adj./adv.","宽的；广泛的；广阔的；充分地；张得很大"],
+["widespread","adj.","普遍的；广泛流传的；分布广的；蔓延的"],
+["wild","adj./n.","野生的；野蛮的；狂热的；荒野；失控"],
+["win","v./n.","获胜；赢得；获得；争取；胜利；赢"],
+["wine","n.","葡萄酒；酒；果酒；深红色；请客喝酒"],
+["winter","n.","冬天；冬季；萧条期；晚年；过冬"],
+["wisdom","n.","智慧；明智；至理名言；学问；古人的话"],
+["with","prep.","和；用；具有；带有；关于；随着；由于"],
+["without","prep./adv.","没有；不；无；在外面；如果没有；外面"],
+["wolf","n.","狼；色狼；残忍的人；贪婪者"],
+["wonderful","adj.","极好的；精彩的；奇妙的；惊人的；美妙的"],
+["wool","n.","羊毛；毛线；绒线；毛织品；羊绒"],
+["worker","n.","工人；工作者；劳动者；工作人员；工蜂"],
+["world","n.","世界；地球；世人；领域；界；大量"],
+["worry","v./n.","担心；发愁；烦恼；焦虑；骚扰；困扰"],
+["worship","n./v.","崇拜；敬仰；礼拜；爱慕；信奉"],
+["worthy","adj.","值得的；有价值的；可尊敬的；相称的"],
+["wrap","v./n.","包；裹；卷；覆盖；包起来；外套；围巾"],
+["wretched","adj.","不幸的；可怜的；糟糕的；难受的；卑劣的"],
+["writing","n.","书写；写作；著作；笔迹；文件；书法"],
+["year","n.","年；年度；年份；岁；学年；年代"],
+["yesterday","adv./n.","昨天；昨日；最近；前些日子；从前"],
+["you","pron.","你；你们；您；人们；任何人"],
+["zone","n.","地带；区域；地区；时区；范围；分区"],
+
+];
+
+(function(){
+  'use strict';
+  var WKEY='miaodaCet4Wrong', PKEY='miaodaCet4Prog';
+  var state={mode:'e2z',size:10,onlyWrong:false,deck:[],idx:0,ok:0,total:0,cur:null,answered:false};
+  var wrongBook=loadJSON(WKEY,[]);
+  var prog=loadJSON(PKEY,{seen:{},n:0,ok:0});
+
+  function loadJSON(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d;}catch(e){return d;}}
+  function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function $(id){return document.getElementById(id);}
+  function rnd(n){return Math.floor(Math.random()*n);}
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=rnd(i+1);var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+  function wordObj(w){
+    for(var i=0;i<WORDS.length;i++)if(WORDS[i][0]===w)return {w:WORDS[i][0],pos:WORDS[i][1],mean:WORDS[i][2]};
+    return null;
+  }
+
+  // ===== 进度展示 =====
+  function renderStats(){
+    var seenN=Object.keys(prog.seen).length;
+    $('sTotal').textContent=WORDS.length;
+    $('sSeen').textContent=seenN;
+    $('sAcc').textContent=prog.n?Math.round(prog.ok/prog.n*100)+'%':'0%';
+    $('sWrong').textContent=wrongBook.length;
+    $('wrongN').textContent=wrongBook.length;
+    $('wrongChip').classList.toggle('dis',wrongBook.length===0);
+  }
+
+  // ===== 开始 =====
+  function start(){
+    var pool;
+    if(state.onlyWrong){
+      pool=wrongBook.map(wordObj).filter(Boolean);
+      if(!pool.length){alert('错词本是空的');return;}
+    }else{
+      pool=WORDS.map(function(w){return {w:w[0],pos:w[1],mean:w[2]};});
+    }
+    shuffle(pool);
+    state.deck=pool.slice(0,Math.min(state.size,pool.length));
+    state.idx=0;state.ok=0;state.total=state.deck.length;
+    $('setup').style.display='none';
+    $('result').classList.remove('on');
+    $('quiz').classList.add('on');
+    $('qMode').textContent=state.onlyWrong?'错词复习':({e2z:'英译中',z2e:'中译英',spell:'拼写'}[state.mode]);
+    if(window.SFX)SFX.start();
+    showQ();
+  }
+
+  function distractors(list,correct,n,field){
+    var seen={};seen[correct]=1;var out=[];
+    var guard=0;
+    while(out.length<n&&guard++<500){
+      var c=list[rnd(list.length)];var key=c[field];
+      if(!seen[key]){seen[key]=1;out.push(c);}
+    }
+    return out;
+  }
+
+  function showQ(){
+    state.answered=false;
+    var item=state.deck[state.idx];
+    state.cur=item;
+    $('qProg').textContent=(state.idx+1)+'/'+state.total;
+    $('fb').classList.remove('on','ok','bad');
+    $('nxtBtn').classList.remove('on');
+    var isSpell=state.mode==='spell';
+    $('spellRow').style.display=isSpell?'flex':'none';
+    $('opts').innerHTML='';
+    if(isSpell){
+      $('qPrompt').textContent=item.mean;
+      $('qHint').textContent='拼写：'+item.pos;
+      var si=$('spellInput');si.value='';si.focus();
+    }else if(state.mode==='e2z'){
+      $('qPrompt').textContent=item.w;
+      $('qHint').textContent=item.pos;
+      var opts=[item];
+      var d=distractors(WORDS,item.w,8,0).filter(function(w){return w[1]+' '+w[2]!==item.pos+' '+item.mean;});
+      for(var di=0;di<3&&di<d.length;di++){opts.push({w:d[di][0],pos:d[di][1],mean:d[di][2]});}
+      shuffle(opts);
+      opts.forEach(function(o){
+        var b=document.createElement('button');
+        b.className='opt';b.textContent=o.pos+' '+o.mean;
+        b.onclick=function(){judge(b,o.mean===item.mean&&o.w===item.w);};
+        $('opts').appendChild(b);
+      });
+    }else{ // z2e
+      $('qPrompt').textContent=item.mean;
+      $('qHint').textContent=item.pos;
+      var opts2=[item];
+      distractors(WORDS,item.mean,3,2).forEach(function(w){opts2.push({w:w[0],pos:w[1],mean:w[2]});});
+      shuffle(opts2);
+      opts2.forEach(function(o){
+        var b=document.createElement('button');
+        b.className='opt';b.textContent=o.w;
+        b.onclick=function(){judge(b,o.w===item.w);};
+        $('opts').appendChild(b);
+      });
+    }
+  }
+
+  function addWrong(w){
+    if(wrongBook.indexOf(w)<0){wrongBook.push(w);saveJSON(WKEY,wrongBook);}
+  }
+  function removeWrong(w){
+    var i=wrongBook.indexOf(w);if(i>=0){wrongBook.splice(i,1);saveJSON(WKEY,wrongBook);}
+  }
+
+  function judge(btn,right){
+    if(state.answered)return;
+    state.answered=true;
+    var item=state.cur;
+    prog.n++;prog.seen[item.w]=1;
+    if(right){
+      state.ok++;prog.ok++;
+      removeWrong(item.w);
+      if(btn)btn.classList.add('right');
+      if(window.SFX)SFX.pop();
+      showFb(true,item);
+    }else{
+      addWrong(item.w);
+      if(btn)btn.classList.add('wrong');
+      if(window.SFX)SFX.error();
+      // 标出正确答案
+      Array.prototype.forEach.call($('opts').children,function(b){
+        if(b.textContent.indexOf(item.mean)>=0&&state.mode==='e2z')b.classList.add('right');
+        if(b.textContent===item.w&&state.mode==='z2e')b.classList.add('right');
+      });
+      showFb(false,item);
+    }
+    Array.prototype.forEach.call($('opts').children,function(b){b.disabled=true;});
+    saveJSON(PKEY,prog);renderStats();
+    $('nxtBtn').classList.add('on');
+  }
+
+  function showFb(right,item){
+    var f=$('fb');
+    f.classList.add('on',right?'ok':'bad');
+    f.classList.remove(right?'bad':'ok');
+    f.textContent=(right?'回答正确 ｜ ':'正确答案：')+item.w+'  '+(item.pos||'')+'  '+item.mean;
+  }
+
+  function submitSpell(){
+    if(state.answered)return;
+    var v=$('spellInput').value.trim().toLowerCase();
+    if(!v)return;
+    judge(null,v===state.cur.w.toLowerCase());
+  }
+  $('spellBtn').addEventListener('click',submitSpell);
+  $('spellInput').addEventListener('keydown',function(e){if(e.key==='Enter')submitSpell();});
+
+  $('nxtBtn').addEventListener('click',function(){
+    state.idx++;
+    if(state.idx>=state.total){settle();}else{showQ();}
+  });
+
+  function settle(){
+    $('quiz').classList.remove('on');
+    var acc=state.total?Math.round(state.ok/state.total*100):0;
+    $('rAcc').textContent=acc+'%';
+    $('rOk').textContent=state.ok;
+    $('rTotal').textContent=state.total;
+    $('rMsg').textContent=acc>=80?'状态出色，继续保持！':acc>=60?'错词已收入复习本，记得常回来刷。':'错题已进复习本，先去错词本巩固一下。';
+    $('result').classList.add('on');
+    if(window.SFX){acc>=80?SFX.win():SFX.lose();}
+  }
+
+  $('againBtn').addEventListener('click',start);
+  $('backBtn').addEventListener('click',function(){
+    $('result').classList.remove('on');
+    $('setup').style.display='block';
+  });
+  $('startBtn').addEventListener('click',start);
+
+  $('modeChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip');if(!b)return;
+    if(b.id==='wrongChip'){
+      if(wrongBook.length===0)return;
+      state.onlyWrong=true;
+      this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+      b.classList.add('on');
+      return;
+    }
+    state.onlyWrong=false;
+    this.querySelectorAll('.chip').forEach(function(c){if(c.id!=='wrongChip')c.classList.remove('on');});
+    b.classList.add('on');
+    state.mode=b.dataset.m;
+  });
+  $('sizeChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip');if(!b)return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    state.size=parseInt(b.dataset.s,10);
+  });
+
+  renderStats();
+})();
+</script>
+<script>
+// 源码保护
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var key = e.key.toLowerCase();
+    if (key === 'f12') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 'u') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); return; }
+  });
+  document.addEventListener('selectstart', function(e){
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+
+<script src="sounds.js"></script>
+</body>
+</html>

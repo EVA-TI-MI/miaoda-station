@@ -49,7 +49,11 @@ jobs:
             --add-data "whitenoise.html;." --add-data "backup.html;." `
             --add-data "chess-hub.html;." --add-data "puzzle-hub.html;." `
             --add-data "casual-hub.html;." --add-data "tools-hub.html;." `
-            --add-data "account.html;." --add-data "sounds.js;." --add-data "rank.js;." --add-data "novels_data.js;." `
+            --add-data "cards-hub.html;." --add-data "klondike.html;." --add-data "spider.html;." --add-data "doudizhu.html;." `
+            --add-data "uno.html;." --add-data "learn-hub.html;." --add-data "arithmetic.html;." --add-data "cet4.html;." `
+            --add-data "typing.html;." --add-data "audio-hub.html;." --add-data "eartraining.html;." --add-data "metronome.html;." `
+            --add-data "musicbox.html;." --add-data "rhythm.html;." --add-data "create-hub.html;." --add-data "pixelart.html;." `
+            --add-data "pet.html;." --add-data "account.html;." --add-data "sounds.js;." --add-data "rank.js;." --add-data "novels_data.js;." `
             --add-data "sw.js;." --add-data "manifest.json;." `
             --add-data "icon-192.png;." --add-data "icon-512.png;." snake_launcher.py
 

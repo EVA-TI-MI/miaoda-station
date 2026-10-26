@@ -635,7 +635,7 @@
   </div>
 
   <div class="top-bar">
-    <button class="top-btn" id="homeBtn">← 首页</button>
+    <button class="top-btn" id="homeBtn">← 返回休闲</button>
     <div class="game-title">TENG SHE</div>
     <div style="display:flex;gap:6px;align-items:center;">
       <div class="user-info" id="userInfo" style="display:none;">
@@ -2216,7 +2216,7 @@
   // 首页按钮：游戏中先回到开始界面，在开始界面才回选择页
   document.getElementById('homeBtn').addEventListener('click', () => {
     if (gameState === 'start' && !isModalOpen()) {
-      location.href = 'index.html';
+      location.href = 'casual-hub.html';
     } else {
       if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
       pausedForModal = false;

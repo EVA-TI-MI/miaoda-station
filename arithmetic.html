@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f0d08">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>口算 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0f0d08; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b; --c:#5b9bf5; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:26px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(91,155,245,.13) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(212,168,75,.09) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:680px;display:flex;justify-content:flex-start;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(212,168,75,.08);border:1px solid rgba(212,168,75,.3);color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{color:var(--gold);border-color:var(--gold);}
+  .head{text-align:center;margin:4px 0 6px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:34px;letter-spacing:8px;
+    background:linear-gradient(135deg,#8abaff,#5b9bf5 50%,#c4ddff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:3px;margin-top:6px;}
+  .panel{width:100%;max-width:680px;padding:18px;border-radius:14px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);margin-bottom:14px;}
+  .panel h3{font-size:15px;color:var(--c);letter-spacing:2px;margin-bottom:12px;font-family:"STKaiti","KaiTi",serif;}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;}
+  .chip{padding:11px 14px;border-radius:9px;background:#1b1810;border:1px solid #33291a;color:var(--sub);
+    font-size:13.5px;cursor:pointer;min-height:44px;min-width:44px;transition:.2s;line-height:1.3;}
+  .chip.on{background:color-mix(in srgb,var(--c) 20%,transparent);border-color:var(--c);color:var(--c);font-weight:600;}
+  .custom{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.12);}
+  .custom.show{display:block;}
+  .crow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px;color:var(--sub);font-size:13.5px;}
+  .crow input[type=number]{width:80px;padding:10px;border-radius:8px;background:#16130c;border:1px solid #33291a;
+    color:var(--txt);font-size:16px;outline:none;min-height:44px;}
+  .crow input:focus{border-color:var(--c);}
+  .crow label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;min-height:44px;padding:4px 6px;}
+  .crow input[type=checkbox]{width:20px;height:20px;accent-color:var(--c);}
+  .btn{padding:12px 26px;border-radius:10px;font-size:15px;letter-spacing:3px;cursor:pointer;transition:.2s;min-height:48px;
+    background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid var(--c);color:var(--c);font-weight:600;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn.ghost{background:transparent;border:1px solid #33291a;color:var(--sub);font-weight:400;}
+  .btn.big{width:100%;margin-top:6px;}
+  .stats{width:100%;max-width:680px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    margin-bottom:14px;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);color:var(--sub);font-size:13px;}
+  .stats b{color:var(--c);font-size:16px;font-variant-numeric:tabular-nums;}
+  .quiz{width:100%;max-width:680px;display:none;flex-direction:column;align-items:center;}
+  .quiz.on{display:flex;}
+  .qbox{width:100%;min-height:150px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,#1c2333,#151a26);border:1px solid color-mix(in srgb,var(--c) 40%,transparent);
+    font-size:44px;font-weight:bold;letter-spacing:3px;padding:20px 14px;text-align:center;}
+  .qbox.ok{border-color:#46d39a;box-shadow:0 0 24px rgba(70,211,154,.35);}
+  .qbox.bad{border-color:#e8453c;box-shadow:0 0 24px rgba(232,69,60,.35);}
+  .ans{margin-top:14px;width:100%;max-width:340px;min-height:64px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:#16130c;border:1px dashed #3a3020;font-size:32px;letter-spacing:4px;color:var(--gold);font-variant-numeric:tabular-nums;}
+  .pad{margin-top:16px;width:100%;max-width:340px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .pad button{min-height:54px;border-radius:10px;background:#1b1810;border:1px solid #33291a;color:var(--txt);
+    font-size:22px;cursor:pointer;transition:.15s;font-variant-numeric:tabular-nums;}
+  .pad button:active{background:color-mix(in srgb,var(--c) 25%,transparent);}
+  .pad .ok{color:#46d39a;border-color:#2f6b52;font-size:17px;}
+  .pad .del{color:#e8453c;border-color:#7a2f2a;font-size:16px;}
+  .timerbar{width:100%;max-width:680px;height:6px;border-radius:3px;background:#241d10;margin:12px 0 4px;overflow:hidden;display:none;}
+  .timerbar.on{display:block;}
+  .timerbar i{display:block;height:100%;width:100%;background:var(--c);transition:width .2s linear;}
+  .result{width:100%;max-width:680px;display:none;padding:26px 20px;border-radius:16px;text-align:center;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 12%,#14110b),#14110b 75%);
+    border:1px solid color-mix(in srgb,var(--c) 45%,transparent);}
+  .result.on{display:block;}
+  .result h2{font-family:"STKaiti","KaiTi",serif;font-size:30px;color:var(--c);letter-spacing:4px;margin-bottom:14px;}
+  .result .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0;}
+  .result .cell{background:rgba(0,0,0,.25);border-radius:10px;padding:12px 8px;}
+  .result .cell b{display:block;font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums;}
+  .result .cell span{font-size:12px;color:var(--sub);}
+  .wronglist{width:100%;max-width:680px;display:none;margin-top:14px;}
+  .wronglist.on{display:block;}
+  .wronglist table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13.5px;}
+  .wronglist th{width:33.3%;padding:8px;color:var(--sub);font-weight:400;border-bottom:1px solid #33291a;text-align:center;}
+  .wronglist td{padding:10px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);color:var(--txt);font-variant-numeric:tabular-nums;}
+  .wronglist td.wrong{color:#e8453c;}
+  .wronglist td.right{color:#46d39a;}
+  .rule{margin-top:14px;font-size:12.5px;line-height:2;color:var(--sub);}
+  .rule b{color:var(--c);}
+  .foot{margin-top:24px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){
+    .head h1{font-size:27px;letter-spacing:5px;}
+    .qbox{font-size:34px;min-height:120px;}
+  }
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="learn-hub.html">← 返回学习</a></div>
+  <div class="head">
+    <h1>口算</h1>
+    <p>MENTAL MATH · 分级口算与限时挑战</p>
+  </div>
+
+  <!-- ===== 设置面板 ===== -->
+  <div class="panel" id="setup">
+    <h3>难度选择</h3>
+    <div class="chips" id="diffChips">
+      <button class="chip on" data-d="1">① 个位加减</button>
+      <button class="chip" data-d="2">② 乘法表</button>
+      <button class="chip" data-d="3">③ 两位数加减</button>
+      <button class="chip" data-d="4">④ 四则混合</button>
+      <button class="chip" data-d="0">自定义</button>
+    </div>
+    <div class="custom" id="customPanel">
+      <div class="crow">
+        <span>运算符：</span>
+        <label><input type="checkbox" class="opcb" value="+" checked> 加</label>
+        <label><input type="checkbox" class="opcb" value="-" checked> 减</label>
+        <label><input type="checkbox" class="opcb" value="×"> 乘</label>
+        <label><input type="checkbox" class="opcb" value="÷"> 除</label>
+      </div>
+      <div class="crow">
+        <span>数值范围：</span>
+        <input type="number" id="rMin" value="1" min="0" max="999">
+        <span>~</span>
+        <input type="number" id="rMax" value="20" min="1" max="999">
+      </div>
+      <div class="crow">
+        <label><input type="checkbox" id="negOk"> 允许负数结果</label>
+        <label><input type="checkbox" id="parenOk"> 带括号</label>
+      </div>
+    </div>
+    <h3 style="margin-top:16px;">练习模式</h3>
+    <div class="chips" id="modeChips">
+      <button class="chip on" data-m="free">自由练习</button>
+      <button class="chip" data-m="timed">60 秒挑战</button>
+    </div>
+    <button class="btn big" id="startBtn">开始练习 →</button>
+    <div class="rule">
+      <b>规则：</b>数字键或屏幕键盘输入答案，回车确认；答对自动出下一题。限时挑战中连续答对有连击加分（连击 ×2 分递增），答错中断连击。错题自动收进下方回顾列表，本局结束后可一键重练。最佳纪录保存在本机。
+    </div>
+  </div>
+
+  <!-- ===== 统计条 ===== -->
+  <div class="stats" id="stats" style="display:none;">
+    <span>题目 <b id="sQ">0</b></span>
+    <span>答对 <b id="sOk">0</b></span>
+    <span>连击 <b id="sCombo">0</b></span>
+    <span>得分 <b id="sScore">0</b></span>
+    <span id="timeWrap" style="display:none;">剩余 <b id="sTime">60</b>s</span>
+  </div>
+  <div class="timerbar" id="timerbar"><i id="timerfill"></i></div>
+
+  <!-- ===== 答题区 ===== -->
+  <div class="quiz" id="quiz">
+    <div class="qbox" id="qbox">—</div>
+    <div class="ans" id="ans">0</div>
+    <div class="pad">
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="-">-</button><button data-k="0">0</button><button data-k="back" class="del">删</button>
+      <button class="ok" id="padOk" style="grid-column:1 / span 3;">确 认</button>
+    </div>
+    <div style="margin-top:12px;"><button class="btn ghost" id="endBtn">结束并结算</button></div>
+  </div>
+
+  <!-- ===== 结算 ===== -->
+  <div class="result" id="result">
+    <h2 id="rTitle">练习完成</h2>
+    <div class="grid">
+      <div class="cell"><b id="rScore">0</b><span>得分</span></div>
+      <div class="cell"><b id="rAcc">0%</b><span>正确率</span></div>
+      <div class="cell"><b id="rCombo">0</b><span>最高连击</span></div>
+      <div class="cell"><b id="rBest">0</b><span>本地最佳</span></div>
+    </div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:16px;" id="rMsg"></div>
+    <button class="btn" id="againBtn">再来一局</button>
+    <button class="btn ghost" id="reviewBtn" style="display:none;margin-left:10px;">重练错题</button>
+  </div>
+
+  <!-- ===== 错题回顾 ===== -->
+  <div class="wronglist panel" id="wrongPanel">
+    <h3>本局错题回顾（<span id="wCount">0</span>）</h3>
+    <table>
+      <colgroup><col style="width:34%"><col style="width:33%"><col style="width:33%"></colgroup>
+      <thead><tr><th>题目</th><th>你的答案</th><th>正确答案</th></tr></thead>
+      <tbody id="wBody"></tbody>
+    </table>
+  </div>
+
+  <div class="foot">妙搭小站 · 学习 · 口算训练</div>
+
+<script>
+(function(){
+  'use strict';
+  var LS_KEY='miaodaArith';
+  var state={diff:1,mode:'free',input:'',cur:null,answers:0,ok:0,combo:0,bestCombo:0,score:0,
+    wrong:[],timer:null,left:60,reviewOnly:false,reviewQueue:[]};
+  var best=loadBest();
+
+  function loadBest(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{};}catch(e){return{};}}
+  function diffKey(){return 'd'+state.diff+'_'+state.mode;}
+
+  function $(id){return document.getElementById(id);}
+  function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+  // ===== 出题 =====
+  function gen(){
+    var d=state.diff;
+    if(state.reviewOnly){return state.reviewQueue.shift();}
+    if(d===0){return genCustom();}
+    var a,b,op,q;
+    if(d===1){
+      a=rnd(1,9);b=rnd(1,9);
+      if(Math.random()<0.5&&a>=b){return {t:a+' + '+b,v:a+b};}
+      return {t:Math.max(a,b)+' - '+Math.min(a,b),v:Math.max(a,b)-Math.min(a,b)};
+    }
+    if(d===2){
+      a=rnd(1,9);b=rnd(1,9);return {t:a+' × '+b,v:a*b};
+    }
+    if(d===3){
+      a=rnd(10,99);b=rnd(10,99);
+      if(Math.random()<0.5&&a>=b){return {t:a+' + '+b,v:a+b};}
+      return {t:Math.max(a,b)+' - '+Math.min(a,b),v:Math.max(a,b)-Math.min(a,b)};
+    }
+    // d===4 四则混合
+    var ops=['+','-','×'];
+    a=rnd(2,19);b=rnd(2,19);
+    if(Math.random()<0.3){ // 除法用整除
+      b=rnd(2,9);q=rnd(2,9);a=b*q;
+      return {t:a+' ÷ '+b,v:q};
+    }
+    op=pick(ops);
+    if(op==='-'){var mn=Math.max(a,b);b=Math.min(a,b);a=mn;}
+    var c=rnd(2,19);
+    var ans=calc(a,op,b)+c;
+    return {t:a+' '+op+' '+b+' + '+c,v:ans};
+  }
+  function calc(x,op,y){
+    x=Number(x);y=Number(y);
+    if(op==='+')return x+y;if(op==='-')return x-y;if(op==='×')return x*y;return Math.round(x/y);
+  }
+  function genCustom(){
+    var ops=[];document.querySelectorAll('.opcb').forEach(function(cb){if(cb.checked)ops.push(cb.value);});
+    if(!ops.length)ops=['+'];
+    var lo=Math.max(0,parseInt($('rMin').value,10)||1),hi=Math.max(lo+1,parseInt($('rMax').value,10)||20);
+    var neg=$('negOk').checked,par=$('parenOk').checked;
+    var a=rnd(lo,hi),b=rnd(lo,hi),op=pick(ops);
+    if(op==='÷'){b=rnd(1,9);var q=rnd(lo<=9?lo:2,hi<=81?hi:9);a=b*q;return {t:a+' ÷ '+b,v:q};}
+    if(op==='-'){
+      if(!neg&&a<b){var t=a;a=b;b=t;}
+    }
+    if(par){
+      var op2=pick(ops);var c=rnd(lo,hi);
+      if(op2==='÷'){c=rnd(1,9);var q2=rnd(2,9);b=b*q2;}
+      var v=calc(a,op,b);
+      v=op2==='×'?v*c:op2==='-'?(neg?v-c:Math.max(v-c,0)):v+c;
+      return {t:'('+a+' '+op+' '+b+') '+op2+' '+c,v:v};
+    }
+    return {t:a+' '+op+' '+b,v:calc(a,op,b)};
+  }
+
+  // ===== 流程 =====
+  function start(){
+    state.answers=0;state.ok=0;state.combo=0;state.bestCombo=0;state.score=0;state.wrong=[];
+    state.input='';
+    $('setup').style.display='none';
+    $('result').classList.remove('on');
+    $('wrongPanel').classList.remove('on');
+    $('stats').style.display='flex';
+    $('quiz').classList.add('on');
+    $('timeWrap').style.display=state.mode==='timed'?'':'none';
+    $('timerbar').classList.toggle('on',state.mode==='timed');
+    if(state.mode==='timed'){
+      state.left=60;updateTimer();
+      state.timer=setInterval(function(){
+        state.left--;updateTimer();
+        if(state.left===10&&window.SFX)SFX.tick();
+        if(state.left<=0){stopTimer();settle();}
+      },1000);
+    }
+    if(window.SFX)SFX.start();
+    nextQ();
+  }
+  function updateTimer(){
+    $('sTime').textContent=state.left;
+    $('timerfill').style.width=(state.left/60*100)+'%';
+  }
+  function nextQ(){
+    state.cur=gen();
+    state.input='';
+    $('qbox').textContent=state.cur.t+' = ?';
+    $('ans').textContent='';
+    $('qbox').classList.remove('ok','bad');
+    $('sQ').textContent=state.answers;
+  }
+  function submit(){
+    if(!state.cur)return;
+    var v=state.input;
+    if(v==='')return;
+    var ans=parseInt(v,10);
+    state.answers++;
+    if(ans===state.cur.v){
+      state.ok++;state.combo++;
+      state.bestCombo=Math.max(state.bestCombo,state.combo);
+      var gain=state.mode==='timed'?10+state.combo*2:1;
+      state.score+=gain;
+      $('qbox').classList.add('ok');
+      if(window.SFX)SFX.pop();
+      setTimeout(nextQ,260);
+    }else{
+      state.wrong.push({t:state.cur.t,y:v,c:String(state.cur.v)});
+      state.combo=0;
+      $('qbox').classList.add('bad');
+      $('qbox').textContent=state.cur.t+' = '+state.cur.v;
+      if(window.SFX)SFX.error();
+      setTimeout(nextQ,900);
+    }
+    refreshStats();
+  }
+  function refreshStats(){
+    $('sOk').textContent=state.ok;
+    $('sCombo').textContent=state.combo;
+    $('sScore').textContent=state.score;
+  }
+  function stopTimer(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
+  function settle(){
+    stopTimer();
+    $('quiz').classList.remove('on');
+    $('stats').style.display='none';
+    $('timerbar').classList.remove('on');
+    var acc=state.answers?Math.round(state.ok/state.answers*100):0;
+    $('rScore').textContent=state.score;
+    $('rAcc').textContent=acc+'%';
+    $('rCombo').textContent=state.bestCombo;
+    var k=diffKey();
+    var isBest=false;
+    if(state.mode==='timed'&&(!best[k]||state.score>best[k])){best[k]=state.score;isBest=true;saveBest();}
+    $('rBest').textContent=best[k]||0;
+    $('rMsg').textContent='共答 '+state.answers+' 题，答对 '+state.ok+' 题'+(isBest?'，刷新本地最佳！':'');
+    if(state.wrong.length){
+      $('reviewBtn').style.display='';
+      renderWrong();
+    }else{$('reviewBtn').style.display='none';}
+    $('result').classList.add('on');
+    if(window.SFX){acc>=80?SFX.win():SFX.lose();}
+  }
+  function saveBest(){try{localStorage.setItem(LS_KEY,JSON.stringify(best));}catch(e){}}
+  function renderWrong(){
+    var html='';
+    state.wrong.forEach(function(w){
+      html+='<tr><td>'+w.t+'</td><td class="wrong">'+w.y+'</td><td class="right">'+w.c+'</td></tr>';
+    });
+    $('wBody').innerHTML=html;
+    $('wCount').textContent=state.wrong.length;
+    $('wrongPanel').classList.add('on');
+  }
+
+  // ===== 输入 =====
+  function press(k){
+    if(!$('quiz').classList.contains('on'))return;
+    if(k==='back'){state.input=state.input.slice(0,-1);}
+    else if(k==='-'){if(state.input==='')state.input='-';}
+    else{if(state.input.replace('-','').length>=6)return;state.input+=k;}
+    $('ans').textContent=state.input||'0';
+  }
+  document.querySelectorAll('.pad button[data-k]').forEach(function(b){
+    b.addEventListener('click',function(){press(b.dataset.k);});
+  });
+  $('padOk').addEventListener('click',submit);
+  document.addEventListener('keydown',function(e){
+    if(!$('quiz').classList.contains('on'))return;
+    if(e.target.tagName==='INPUT')return;
+    if(/^[0-9]$/.test(e.key))press(e.key);
+    else if(e.key==='Backspace')press('back');
+    else if(e.key==='-')press('-');
+    else if(e.key==='Enter')submit();
+  });
+
+  // ===== 设置交互 =====
+  $('diffChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip');if(!b)return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    state.diff=parseInt(b.dataset.d,10);
+    $('customPanel').classList.toggle('show',state.diff===0);
+  });
+  $('modeChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip');if(!b)return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    state.mode=b.dataset.m;
+  });
+  $('startBtn').addEventListener('click',function(){state.reviewOnly=false;start();});
+  $('endBtn').addEventListener('click',function(){stopTimer();settle();});
+  $('againBtn').addEventListener('click',function(){
+    state.reviewOnly=false;
+    $('setup').style.display='block';
+    $('result').classList.remove('on');
+    $('wrongPanel').classList.remove('on');
+  });
+  $('reviewBtn').addEventListener('click',function(){
+    if(!state.wrong.length)return;
+    state.reviewQueue=state.wrong.slice();
+    state.reviewOnly=true;
+    start();
+  });
+})();
+</script>
+<script>
+// 源码保护
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var key = e.key.toLowerCase();
+    if (key === 'f12') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 'u') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); return; }
+  });
+  document.addEventListener('selectstart', function(e){
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+
+<script src="sounds.js"></script>
+</body>
+</html>

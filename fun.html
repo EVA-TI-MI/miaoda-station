@@ -3,365 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="creative-medium" content="other">
+<meta http-equiv="refresh" content="3;url=index.html">
 <meta name="theme-color" content="#111520">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>更多玩法 · 选择 — 妙搭小站</title>
+<title>页面升级 · 妙搭小站</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  :root{
-    --bg:#111520; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a;
-  }
+  :root{ --bg:#111520; --txt:#e9eef7; --sub:#8b97b0; --gold:#e8c77a; }
   html,body{background:var(--bg);}
   body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
-    display:flex;flex-direction:column;align-items:center;padding:40px 20px 30px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;
     background:
       radial-gradient(ellipse at 12% 0%,rgba(232,69,60,.12) 0%,transparent 50%),
       radial-gradient(ellipse at 88% 4%,rgba(91,155,245,.12) 0%,transparent 50%),
       radial-gradient(ellipse at 50% 100%,rgba(67,184,100,.10) 0%,transparent 52%),var(--bg);}
-  .top{width:100%;max-width:1180px;display:flex;justify-content:flex-start;margin-bottom:26px;}
-  .back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;text-decoration:none;
-    background:rgba(33,41,62,.85);border:1px solid #2c3650;color:var(--sub);font-size:13px;transition:.2s;}
-  .back:hover{background:rgba(232,199,122,.12);border-color:var(--gold);color:var(--gold);}
-  .head{text-align:center;margin-bottom:34px;}
-  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:40px;letter-spacing:8px;margin-bottom:12px;
+  h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:34px;letter-spacing:6px;margin-bottom:18px;
     background:linear-gradient(135deg,#e8c77a,#f2c537 50%,#fff0c0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-  .head p{color:var(--sub);font-size:14px;letter-spacing:2px;line-height:1.9;}
-  .head.sub{margin-top:34px;margin-bottom:24px;}
-  .head.sub h1{font-size:26px;letter-spacing:4px;margin-bottom:10px;}
-  .pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;width:100%;max-width:1180px;}
-  .game-card{--c:#e8453c;position:relative;overflow:hidden;border-radius:16px;text-decoration:none;min-height:380px;
-    border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
-    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 12%,#151b29) 0%,#151b29 72%);
-    padding:30px;display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s,border-color .3s;}
-  .game-card:hover{transform:translateY(-6px);box-shadow:0 18px 48px color-mix(in srgb,var(--c) 28%,transparent);border-color:var(--c);}
-  .game-card::before{content:"";position:absolute;top:-26%;right:-20%;width:260px;height:260px;border-radius:50%;
-    background:radial-gradient(circle,color-mix(in srgb,var(--c) 32%,transparent) 0%,transparent 70%);opacity:.55;}
-  .ico{width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:18px;color:var(--c);
-    background:color-mix(in srgb,var(--c) 14%,transparent);border:2px solid color-mix(in srgb,var(--c) 42%,transparent);
-    box-shadow:0 0 26px color-mix(in srgb,var(--c) 18%,transparent);font-family:"STKaiti","KaiTi",serif;}
-  .gt{font-family:"STKaiti","KaiTi",serif;color:var(--c);font-size:27px;letter-spacing:3px;margin-bottom:6px;}
-  .gen{font-size:11px;letter-spacing:2px;color:var(--sub);text-transform:uppercase;margin-bottom:14px;}
-  .gd{font-size:13.5px;line-height:1.9;color:rgba(255,255,255,.66);margin-bottom:16px;flex:1;}
-  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
-  .tag{padding:3px 10px;border-radius:5px;font-size:11.5px;color:var(--c);
-    background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);}
-  .go{align-self:flex-start;padding:11px 22px;border-radius:8px;font-size:14.5px;letter-spacing:2px;color:var(--c);
-    background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid var(--c);transition:.2s;}
-  .game-card:hover .go{background:var(--c);color:#111520;}
-  .foot{margin-top:40px;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;line-height:1.9;}
-  @media (max-width:680px){.head h1{font-size:30px;letter-spacing:4px;}.game-card{min-height:0;}}
-  @media (max-width:980px){.pick.qiyuan{grid-template-columns:repeat(2,1fr);}}
-  @media (max-width:480px){.pick.qiyuan{grid-template-columns:1fr;}}
+  p{color:var(--sub);font-size:14.5px;letter-spacing:2px;line-height:2;}
+  .go{display:inline-block;margin-top:28px;padding:12px 30px;border-radius:8px;font-size:15px;letter-spacing:3px;
+    color:var(--gold);text-decoration:none;border:1px solid var(--gold);background:rgba(232,199,122,.1);transition:.2s;}
+  .go:hover{background:var(--gold);color:#111520;}
+  .foot{position:fixed;bottom:18px;left:0;right:0;color:#566079;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:480px){ h1{font-size:26px;letter-spacing:4px;} }
 </style>
 </head>
 <body>
-  <div class="top"><a class="back" href="index.html">← 返回首页</a></div>
+  <h1>妙搭小站已升级</h1>
+  <p>游戏已迁入首页八大板块，内容更多、分类更清晰。<br>3 秒后自动跳转，如未跳转请点击下方按钮。</p>
+  <a class="go" href="index.html">点此进入首页 →</a>
+  <div class="foot">妙搭小站</div>
 
-  <div class="head">
-    <h1>更多玩法</h1>
-    <p>黑白棋 · 跳棋 · 军棋 · 斗兽棋 · 飞行棋 · 华容道 · 数独 · 数织 · 数回 · 24 点 · 猜数字 · 推箱子 · 2048 · 扫雷 · 跳一跳 · 俄罗斯方块 · 打砖块 · 记忆翻牌 · 打地鼠 · 小恐龙快跑 · 乒乓球<br>棋院对弈、数字推理、效率工具与各类休闲街机，全部离线可玩</p>
-  </div>
-
-  <div class="pick">
-    <a class="game-card" style="--c:#e8453c" href="airplane.html">
-      <div class="ico">飞</div>
-      <div class="gt">飞行棋</div>
-      <div class="gen">AEROPLANE CHESS · 2-4 PLAYERS</div>
-      <p class="gd">四色十六机，掷 6 起飞，同色格连跳、箭头格沿虚线飞跃；撞下敌机即再投一次，终点须精确到达、多退少补。支持 2/3/4 人、人机对战与同屏热座，电脑对手贪心决策，全程动画演出。</p>
-      <div class="tags"><span class="tag">2-4 人同屏</span><span class="tag">人机对战</span><span class="tag">跳格/虚线飞</span><span class="tag">撞机连投</span></div>
-      <span class="go">开始飞行 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#d98a3d" href="hrd.html">
-      <div class="ico">将</div>
-      <div class="gt">华容道</div>
-      <div class="gen">KLOTSKI · BFS SOLVER</div>
-      <p class="gd">三国滑块，横刀立马、指挥若定、将拥曹营等九道经典布局，移动诸将护送曹操从底部出口出关。支持拖拽滑动、点选移动、撤销与步数计时；内置广度优先求解器，可单步提示最优走法，也可一键自动演示最少步数通关。</p>
-      <div class="tags"><span class="tag">9 道布局</span><span class="tag">最优解提示</span><span class="tag">自动演示</span><span class="tag">最佳记录</span></div>
-      <span class="go">横刀立马 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#5b9bf5" href="sudoku.html">
-      <div class="ico">9</div>
-      <div class="gt">数独</div>
-      <div class="gen">SUDOKU · LOGIC PUZZLE</div>
-      <p class="gd">随机回溯生成保证唯一解的标准 9×9 盘面，简单/中等/困难/专家四档挖洞。数字键盘、候选笔记、即时检查、同数与行列宫高亮、剩余计数、撤销、擦除与三次提示，计时暂停、自动续玩与最佳成绩一应俱全。</p>
-      <div class="tags"><span class="tag">唯一解保证</span><span class="tag">四档难度</span><span class="tag">候选笔记</span><span class="tag">自动续玩</span></div>
-      <span class="go">推数字 →</span>
-    </a>
-  </div>
-
-  <div class="head sub">
-    <h1>棋院</h1>
-    <p>黑白棋 · 跳棋 · 军棋 · 斗兽棋</p>
-  </div>
-
-  <div class="pick qiyuan">
-    <a class="game-card" style="--c:#f2f2f2" href="reversi.html">
-      <div class="ico">弈</div>
-      <div class="gt">黑白棋</div>
-      <div class="gen">OTHELLO REVERSI · AI BATTLE</div>
-      <p class="gd">八向夹子翻转黑白子的经典棋类。点选高亮格落子，夹住对方棋子即翻为已色；人机对弈内置六层极小化极大与位置权重，无子可落自动跳过，终局子多者胜，支持双人同屏与悔棋。</p>
-      <div class="tags"><span class="tag">人机AI</span><span class="tag">双人同屏</span><span class="tag">悔棋</span><span class="tag">最佳纪录</span></div>
-      <span class="go">执黑落子 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#e8453c" href="checkers.html">
-      <div class="ico">珠</div>
-      <div class="gt">跳棋</div>
-      <div class="gen">CHINESE CHECKERS · STAR</div>
-      <p class="gd">六角星棋盘波子棋，隔子连跳直入对家星角。支持 2/3 人同屏与人机对战，一步一格、隔子可跳、连跳不限，先把十枚棋子全部归位者胜，AI 懂得已入角者不再乱动。</p>
-      <div class="tags"><span class="tag">2/3 人同屏</span><span class="tag">人机对战</span><span class="tag">隔子连跳</span><span class="tag">步数纪录</span></div>
-      <span class="go">星移连跳 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#4a8458" href="junqi.html">
-      <div class="ico">军</div>
-      <div class="gt">军棋 · 翻棋</div>
-      <div class="gen">JUNQI · HIDDEN CHESS</div>
-      <p class="gd">暗棋翻棋简化版，五列十行布阵五十子。先翻一子定阵营，司令至工兵九级相克、同级同归；工兵可挖地雷、炸弹同归于尽，夺对方军旗即胜，走棋吃子皆可请 AI 出谋划策。</p>
-      <div class="tags"><span class="tag">暗棋翻棋</span><span class="tag">大小相克</span><span class="tag">工兵挖雷</span><span class="tag">AI建议</span></div>
-      <span class="go">翻子定营 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#4a8aa0" href="animals.html">
-      <div class="ico">兽</div>
-      <div class="gt">斗兽棋</div>
-      <div class="gen">JUNGLE · ANIMAL CHESS</div>
-      <p class="gd">七列九行八兽相争，象狮虎豹狼狗猫鼠按级吃子。鼠可吃象、可下水，水中鼠唯鼠可捉；狮虎能跳河，入陷阱任敌宰割，抢先占住对方兽穴者胜。</p>
-      <div class="tags"><span class="tag">八兽对弈</span><span class="tag">鼠吃象</span><span class="tag">狮虎跳河</span><span class="tag">陷阱兽穴</span></div>
-      <span class="go">八兽争渡 →</span>
-    </a>
-  </div>
-
-  <div class="head sub">
-    <h1>数字推理</h1>
-    <p>数织 · 数回 · 24 点 · 猜数字</p>
-  </div>
-
-  <div class="pick">
-    <a class="game-card" style="--c:#46c39a" href="nonogram.html">
-      <div class="ico">织</div>
-      <div class="gt">数织</div>
-      <div class="gen">NONOGRAM · GRID LOGIC</div>
-      <p class="gd">行列提示标出连续涂黑段数，按提示逐格推理还原隐藏图案。5/8/10/15 路四档尺寸与图案库随机发题，支持涂色与打 × 两种标记，涂错即时标红抖动提醒，按尺寸保存最快用时。</p>
-      <div class="tags"><span class="tag">行列推理</span><span class="tag">四档尺寸</span><span class="tag">图案库</span><span class="tag">错误标红</span></div>
-      <span class="go">织出图案 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#4ad6c1" href="slitherlink.html">
-      <div class="ico">回</div>
-      <div class="gt">数回</div>
-      <div class="gen">SLITHERLINK · LOOP LOGIC</div>
-      <p class="gd">网格中的数字标明其周围四条边应划线的数量，把所有线段连成一条不自交的闭合回路即胜。5×5 至 10×10 三档尺寸、三档线索密度，完成校验同时检查数字、顶点度数与全图连通。</p>
-      <div class="tags"><span class="tag">单回路</span><span class="tag">三档尺寸</span><span class="tag">线索密度</span><span class="tag">自动校验</span></div>
-      <span class="go">一圈定乾坤 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#f0b72a" href="calc24.html">
-      <div class="ico">24</div>
-      <div class="gt">24 点</div>
-      <div class="gen">CALC 24 · MENTAL MATH</div>
-      <p class="gd">四张牌各用一次，通过加减乘除与任意括号算出 24。内置穷举求解器保证每局必有解，输入算式实时校验数字使用与结果，连对纪录持续累积，卡壳可一键查看解法示例。</p>
-      <div class="tags"><span class="tag">保证有解</span><span class="tag">实时校验</span><span class="tag">一键提示</span><span class="tag">连对纪录</span></div>
-      <span class="go">心算挑战 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#7ce06b" href="guessnum.html">
-      <div class="ico">猜</div>
-      <div class="gt">猜数字</div>
-      <div class="gen">BULLS &amp; COWS · DEDUCTION</div>
-      <p class="gd">电脑藏一组不重复数字，你猜数字得到 Bull（数字与位置都对）与 Cow（数字对位置错）提示，步步逼近真相。3/4/5 位三档难度，历史猜测逐条陈列，按位数记录最少次数。</p>
-      <div class="tags"><span class="tag">数字推理</span><span class="tag">三档位数</span><span class="tag">猜测记录</span><span class="tag">最少次数</span></div>
-      <span class="go">来猜一猜 →</span>
-    </a>
-  </div>
-
-  <div class="head sub">
-    <h1>效率工具</h1>
-    <p>番茄钟 · 随机抽签 · 单位换算 · 密码生成器 · 单词卡</p>
-  </div>
-
-  <div class="pick">
-    <a class="game-card" style="--c:#e8453c" href="pomodoro.html">
-      <div class="ico">钟</div>
-      <div class="gt">番茄钟</div>
-      <div class="gen">POMODORO · FOCUS TIMER</div>
-      <p class="gd">经典番茄工作法：工作、短休、长休自动循环，环形进度一目了然。语音播报提醒开始与结束，时长自由调节，今日番茄数与累计数本地存档。</p>
-      <div class="tags"><span class="tag">专注循环</span><span class="tag">语音播报</span><span class="tag">自定义时长</span><span class="tag">今日统计</span></div>
-      <span class="go">开始专注 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#b98cff" href="tool-random.html">
-      <div class="ico">签</div>
-      <div class="gt">随机抽签 · 决策器</div>
-      <div class="gen">RANDOM PICKER · DECISION</div>
-      <p class="gd">选择困难一键交给命运：抽签支持放回与不放回、彩色转盘旋转定胜负、还有骰子与抛硬币应急。选项来自同一份清单，随时同步。</p>
-      <div class="tags"><span class="tag">抽签</span><span class="tag">幸运转盘</span><span class="tag">掷骰</span><span class="tag">抛硬币</span></div>
-      <span class="go">交给命运 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#5aa9f0" href="tool-convert.html">
-      <div class="ico">换</div>
-      <div class="gt">单位换算</div>
-      <div class="gen">UNIT CONVERTER</div>
-      <p class="gd">长度、重量、面积、体积、温度、时间、数据、速度八大类单位即时互转，温度走专用公式。点击任意结果行自动反算，日常学习办公顺手就来。</p>
-      <div class="tags"><span class="tag">八大类</span><span class="tag">即时互转</span><span class="tag">点击反算</span><span class="tag">温度公式</span></div>
-      <span class="go">换算一下 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#46c39a" href="tool-password.html">
-      <div class="ico">密</div>
-      <div class="gt">密码生成器</div>
-      <div class="gen">PASSWORD GENERATOR</div>
-      <p class="gd">以浏览器加密级随机数生成密码，长度与字符集自由定制、可排除易混字符，熵值与强度实时评估。一次生成多枚并一键复制，纯本地、绝不联网。</p>
-      <div class="tags"><span class="tag">强随机</span><span class="tag">强度评估</span><span class="tag">批量生成</span><span class="tag">一键复制</span></div>
-      <span class="go">生成密码 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#ff7a59" href="wordcard.html">
-      <div class="ico">词</div>
-      <div class="gt">单词卡 · 背诵</div>
-      <div class="gen">WORD CARDS · MEMORY</div>
-      <p class="gd">内置四级高频词库，点卡翻转看释义；认识的进词库、不认识的进错词本循环复习。可添加自定义生词，学习进度与复习范围本地保存，键盘空格与方向键也能操作。</p>
-      <div class="tags"><span class="tag">四级词库</span><span class="tag">错词本复习</span><span class="tag">自定义生词</span><span class="tag">本地进度</span></div>
-      <span class="go">背单词 →</span>
-    </a>
-  </div>
-
-  <div class="head sub">
-    <h1>站内系统</h1>
-    <p>成就 · 排行榜 · 每日挑战</p>
-  </div>
-
-  <div class="pick">
-    <a class="game-card" style="--c:#ffd76a" href="stats.html">
-      <div class="ico">榜</div>
-      <div class="gt">成就 · 排行榜</div>
-      <div class="gen">STATS &amp; LEADERBOARD</div>
-      <p class="gd">全站最佳成绩一页总览：棋院对弈胜率、益智最快用时、街机最高分、腾蛇玩家本地排行与墨渊阁阅读统计。所有数据来自本地浏览器，不联网、不泄露。</p>
-      <div class="tags"><span class="tag">成绩总览</span><span class="tag">腾蛇排行</span><span class="tag">阅读统计</span><span class="tag">纯本地</span></div>
-      <span class="go">查看成就 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#ff9c5b" href="daily.html">
-      <div class="ico">日</div>
-      <div class="gt">每日挑战</div>
-      <div class="gen">DAILY CHALLENGE</div>
-      <p class="gd">以日期为种子固定生成：每天一局相同题面的数独与一关「横刀立马」华容道，人人同题、隔空比拼。华容道以 URL 参数直连每日关卡，完成即记录成绩。</p>
-      <div class="tags"><span class="tag">每日数独</span><span class="tag">每日华容道</span><span class="tag">按日期固定</span><span class="tag">隔空比拼</span></div>
-      <span class="go">开始今日挑战 →</span>
-    </a>
-  </div>
-
-  <div class="head sub">
-    <h1>经典休闲</h1>
-    <p>推箱子 · 2048 · 扫雷 · 跳一跳</p>
-  </div>
-
-  <div class="pick">
-    <a class="game-card" style="--c:#e0a44b" href="sokoban.html">
-      <div class="ico">箱</div>
-      <div class="gt">推箱子</div>
-      <div class="gen">SOKOBAN · PUZZLE</div>
-      <p class="gd">经典仓库搬运谜题，7 道精选关卡由易到难。方向键 / WASD 或屏幕滑动推动木箱，把箱子全部归位到目标点即过关，支持撤销、重置与每关最佳步数记录。</p>
-      <div class="tags"><span class="tag">7 道关卡</span><span class="tag">滑动操作</span><span class="tag">撤销/重置</span><span class="tag">最佳记录</span></div>
-      <span class="go">推箱入位 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#f0b72a" href="2048.html">
-      <div class="ico">2</div>
-      <div class="gt">2048</div>
-      <div class="gen">2048 · MERGE PUZZLE</div>
-      <p class="gd">滑动方块让相同数字合二为一，2 与 2 成 4、4 与 4 成 8……一路合成 2048。方向键 / WASD 或手指滑动，实时得分与本地最佳，合成后仍可继续冲击更高分。</p>
-      <div class="tags"><span class="tag">合并数字</span><span class="tag">触屏滑动</span><span class="tag">本地最佳</span><span class="tag">无限挑战</span></div>
-      <span class="go">合并数字 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#63a1e0" href="minesweeper.html">
-      <div class="ico">雷</div>
-      <div class="gt">扫雷</div>
-      <div class="gen">MINESWEEPER · LOGIC</div>
-      <p class="gd">经典排雷三档难度（9×9 / 16×16 / 30×16）。左键挖开、右键或长按插旗、双击数字快速翻开四周，首步必安全，计时与剩余旗数一目了然，本地记录各难度最佳用时。</p>
-      <div class="tags"><span class="tag">三档难度</span><span class="tag">插旗/双击</span><span class="tag">首步安全</span><span class="tag">最佳用时</span></div>
-      <span class="go">进入雷区 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#46d39a" href="jump.html">
-      <div class="ico">跳</div>
-      <div class="gt">跳一跳</div>
-      <div class="gen">JUMP MASTER · SKILL</div>
-      <p class="gd">按住蓄力、松手起跳，力度决定远近。落在下一方块的落点即可得分，命中中心 +2 并累计连击，落入空隙则结束。可点按亦可长按空格，随时刷新本地最佳。</p>
-      <div class="tags"><span class="tag">蓄力跳跃</span><span class="tag">落点计分</span><span class="tag">连击加成</span><span class="tag">本地最佳</span></div>
-      <span class="go">蓄力一跳 →</span>
-    </a>
-  </div>
-
-  <div class="head sub">
-    <h1>街机休闲</h1>
-    <p>俄罗斯方块 · 打砖块 · 记忆翻牌 · 打地鼠 · 小恐龙快跑 · 乒乓球</p>
-  </div>
-
-  <div class="pick">
-    <a class="game-card" style="--c:#5aa9f0" href="tetris.html">
-      <div class="ico">块</div>
-      <div class="gt">俄罗斯方块</div>
-      <div class="gen">TETRIS · BLOCK PUZZLE</div>
-      <p class="gd">七种方块随机下落，旋转与平移拼出完整横排即可整行消除。方向键 / WASD 移动旋转、空格一键硬降，分数随等级提速，下一块提前预览，本地记录最高分。</p>
-      <div class="tags"><span class="tag">7 种方块</span><span class="tag">旋转移动</span><span class="tag">逐级加速</span><span class="tag">本地最高分</span></div>
-      <span class="go">拼满一行 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#ff7a59" href="breakout.html">
-      <div class="ico">砖</div>
-      <div class="gt">打砖块</div>
-      <div class="gen">BREAKOUT · ARCADE</div>
-      <p class="gd">移动挡板反射小球，击碎全部砖块进入下一关。球落点不同反射角度不同，得分随关卡翻倍；三命用完即结束，看你能闯到第几关。</p>
-      <div class="tags"><span class="tag">反弹物理</span><span class="tag">多关连击</span><span class="tag">三命挑战</span><span class="tag">本地最高分</span></div>
-      <span class="go">击碎砖块 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#b98cff" href="memory.html">
-      <div class="ico">忆</div>
-      <div class="gt">记忆翻牌</div>
-      <div class="gen">MEMORY · MATCH PAIRS</div>
-      <p class="gd">翻开卡片记住位置，两张相同即可配对消除，翻错自动盖回。4×4 与 6×4 两种尺寸，比拼谁的步数更少，最佳成绩按牌数分别保存。</p>
-      <div class="tags"><span class="tag">配对记忆</span><span class="tag">4×4 / 6×4</span><span class="tag">最少步数</span><span class="tag">最佳成绩</span></div>
-      <span class="go">翻开配对 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#ffb547" href="mole.html">
-      <div class="ico">鼠</div>
-      <div class="gt">打地鼠</div>
-      <div class="gen">WHACK-A-MOLE · REFLEX</div>
-      <p class="gd">地鼠从九宫格随机冒出，眼疾手快点按敲打，30 秒内越快越准分越高。点空不扣分，还有快速连击加成，比拼你的反应极限。</p>
-      <div class="tags"><span class="tag">30 秒竞速</span><span class="tag">眼疾手快</span><span class="tag">随机出洞</span><span class="tag">本地最高分</span></div>
-      <span class="go">敲一下 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#7ce06b" href="dino.html">
-      <div class="ico">跑</div>
-      <div class="gt">小恐龙快跑</div>
-      <div class="gen">DINO RUNNER · ENDLESS</div>
-      <p class="gd">点按或空格让小恐龙跃起，翻越不断逼近的仙人掌。奔跑越远速度越快，一分神的间隙就可能撞上，本地记录你的最远距离。</p>
-      <div class="tags"><span class="tag">无尽跑酷</span><span class="tag">点按跳跃</span><span class="tag">逐渐提速</span><span class="tag">最远距离</span></div>
-      <span class="go">起跳开跑 →</span>
-    </a>
-
-    <a class="game-card" style="--c:#4ad6c1" href="pong.html">
-      <div class="ico">乒</div>
-      <div class="gt">乒乓球</div>
-      <div class="gen">PONG · TABLE TENNIS</div>
-      <p class="gd">移动左挡板与 AI 右挡板对打，先得 7 分获胜。球速随回合加快，挡板不同位置回击角度不同，挑战自己最长的连胜纪录。</p>
-      <div class="tags"><span class="tag">人机对战</span><span class="tag">先得 7 分</span><span class="tag">回击角度</span><span class="tag">连胜纪录</span></div>
-      <span class="go">发球对决 →</span>
-    </a>
-  </div>
-
-  <div class="foot">动则飞，静则思<br>妙搭小站 V4.6.0</div>
-
+<script>
+setTimeout(function(){ location.replace('index.html'); }, 3000);
+</script>
 <script>
 (function(){
   document.addEventListener('contextmenu',function(e){e.preventDefault();});

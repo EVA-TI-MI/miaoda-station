@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f0d08">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f0d08'/%3E%3Ctext x='50' y='69' font-size='56' text-anchor='middle' fill='%234ad6c1' font-family='serif'%3E%E8%80%B3%3C/text%3E%3C/svg%3E">
+<title>听音训练 - 妙搭小站</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#0f0d08;--paper:#16130c;--txt:#e8dcc8;--sub:#9a8868;--gold:#d4a84b;--c:#4ad6c1;}
+  html,body{background:var(--bg);}
+  body{min-height:100vh;color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:18px 12px 30px;
+    background:radial-gradient(ellipse at 15% 0%,color-mix(in srgb,var(--c) 12%,transparent) 0%,transparent 50%),var(--bg);}
+  .wrap{width:100%;max-width:680px;}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;text-decoration:none;
+    background:rgba(212,168,75,.08);border:1px solid rgba(212,168,75,.3);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{color:var(--gold);border-color:var(--gold);}
+  .head{text-align:center;margin-bottom:16px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:30px;letter-spacing:6px;
+    background:linear-gradient(135deg,#8ef0dd,#4ad6c1 45%,#b8fff0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12px;letter-spacing:4px;margin-top:6px;}
+  .panel{background:var(--paper);border:1px solid color-mix(in srgb,var(--c) 26%,transparent);
+    border-radius:14px;padding:16px;margin-bottom:14px;}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .seg{display:flex;border:1px solid color-mix(in srgb,var(--c) 40%,transparent);border-radius:9px;overflow:hidden;}
+  .seg button{flex:1;min-width:0;min-height:44px;padding:0 14px;background:transparent;color:var(--sub);
+    border:none;font-size:14px;cursor:pointer;transition:.15s;}
+  .seg button.on{background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c);}
+  .lab{font-size:12px;color:var(--sub);margin:14px 0 8px;letter-spacing:2px;}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--txt);min-height:44px;cursor:pointer;}
+  .chk input{width:20px;height:20px;accent-color:var(--c);}
+  .stats{display:flex;justify-content:space-between;gap:8px;text-align:center;margin-bottom:12px;}
+  .stats div{flex:1;min-width:0;background:rgba(255,255,255,.03);border-radius:10px;padding:10px 4px;}
+  .stats b{display:block;font-size:20px;color:var(--c);font-variant-numeric:tabular-nums;}
+  .stats span{font-size:11px;color:var(--sub);letter-spacing:1px;}
+  .bigbtn{width:100%;min-height:56px;border-radius:12px;border:1px solid var(--c);font-size:17px;letter-spacing:3px;
+    background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c);cursor:pointer;transition:.15s;margin-bottom:10px;}
+  .bigbtn:active{transform:scale(.98);}
+  .mini{min-height:44px;padding:0 14px;border-radius:9px;border:1px solid rgba(212,168,75,.4);
+    background:transparent;color:var(--gold);font-size:13px;cursor:pointer;}
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px;}
+  .opt{min-height:48px;border-radius:10px;border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    background:rgba(255,255,255,.03);color:var(--txt);font-size:15px;cursor:pointer;transition:.12s;}
+  .opt:disabled{cursor:default;opacity:.85;}
+  .opt.right{background:rgba(70,195,120,.25);border-color:#46c39a;color:#9df0c8;}
+  .opt.wrong{background:rgba(232,69,60,.25);border-color:#e8453c;color:#ff9a93;}
+  .fb{min-height:28px;text-align:center;font-size:15px;letter-spacing:2px;margin-top:8px;}
+  .fb.ok{color:#46c39a;} .fb.no{color:#e8453c;}
+  .hidden{display:none !important;}
+  .setlist{font-size:12px;color:var(--sub);line-height:1.9;}
+  .setlist b{color:var(--txt);}
+  .foot{margin-top:20px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (min-width:600px){ .opts{grid-template-columns:repeat(3,1fr);} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="audio-hub.html">← 返回音乐</a>
+  </div>
+  <div class="head">
+    <h1>听音训练</h1>
+    <p>EAR TRAINING · 单音 · 音程 · 和弦</p>
+  </div>
+
+  <!-- 设置面板 -->
+  <div class="panel" id="panelSet">
+    <div class="lab">训练模式</div>
+    <div class="seg" id="modeSeg">
+      <button data-m="single" class="on">单音</button>
+      <button data-m="interval">音程</button>
+      <button data-m="chord">和弦</button>
+    </div>
+    <div class="lab">难度</div>
+    <div class="seg" id="diffSeg">
+      <button data-d="easy" class="on">初级</button>
+      <button data-d="hard">高级</button>
+    </div>
+
+    <div id="optSingle">
+      <div class="lab">选项数量</div>
+      <div class="seg" id="countSeg">
+        <button data-c="8" class="on">8 选 1</button>
+        <button data-c="12">12 选 1</button>
+      </div>
+    </div>
+    <div id="optInterval" class="hidden">
+      <div class="lab">答题方式</div>
+      <div class="seg" id="kindSeg">
+        <button data-k="named" class="on">度数+性质</button>
+        <button data-k="degree">仅度数</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="chkRoot"> 先播根音，再播目标音（和声→旋律）</label>
+    </div>
+    <div id="optChord" class="hidden">
+      <label class="chk"><input type="checkbox" id="chkArp"> 以分解和弦方式播放（非同时发声）</label>
+    </div>
+
+    <div class="lab">最佳纪录</div>
+    <div class="setlist" id="bestLine">最佳连击 0 · 最佳正确率 0%</div>
+    <div style="height:12px"></div>
+    <button class="bigbtn" id="btnStart">开始训练</button>
+  </div>
+
+  <!-- 训练面板 -->
+  <div class="panel hidden" id="panelPlay">
+    <div class="stats">
+      <div><b id="stQ">0/10</b><span>题目</span></div>
+      <div><b id="stCombo">0</b><span>连击</span></div>
+      <div><b id="stScore">0</b><span>答对</span></div>
+    </div>
+    <button class="bigbtn" id="btnPlay">播放题目</button>
+    <div style="text-align:center"><button class="mini" id="btnReplay">重听一遍</button></div>
+    <div class="opts" id="opts"></div>
+    <div class="fb" id="fb"></div>
+  </div>
+
+  <!-- 结算面板 -->
+  <div class="panel hidden" id="panelEnd" style="text-align:center">
+    <div class="lab" style="margin-top:4px">本轮结算</div>
+    <div style="font-family:'STKaiti','KaiTi',serif;font-size:40px;color:var(--c);letter-spacing:4px" id="endRate">0%</div>
+    <div style="font-size:14px;color:var(--sub);margin:8px 0 18px" id="endDetail">答对 0 / 10 · 最高连击 0</div>
+    <button class="bigbtn" id="btnAgain">再来一轮</button>
+    <button class="mini" id="btnBackSet">返回设置</button>
+  </div>
+
+  <div class="foot">妙搭小站 · 音乐听觉 · 听音与律动</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  // ===== 基础常量 =====
+  var NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  function freq(m){ return 440*Math.pow(2,(m-69)/12); }
+  var WHITE8=[60,62,64,65,67,69,71,72];          // C4..C5 白键 8 个
+  var ALL12=[]; for(var i=0;i<12;i++) ALL12.push(60+i); // C4..B4 十二音
+  var IV=[
+    {n:1,label:'小二度',deg:2},{n:2,label:'大二度',deg:2},
+    {n:3,label:'小三度',deg:3},{n:4,label:'大三度',deg:3},
+    {n:5,label:'纯四度',deg:4},{n:6,label:'增四度',deg:4},
+    {n:7,label:'纯五度',deg:5},{n:8,label:'小六度',deg:5},
+    {n:9,label:'大六度',deg:6},{n:10,label:'小七度',deg:6},
+    {n:11,label:'大七度',deg:7},{n:12,label:'纯八度',deg:8}
+  ];
+  var IV_EASY=IV.filter(function(x){return x.n===5||x.n===7||x.n===12;});
+  var CHORDS={
+    maj:{iv:[0,4,7],label:'大三和弦'},
+    min:{iv:[0,3,7],label:'小三和弦'},
+    dim:{iv:[0,3,6],label:'减三和弦'},
+    aug:{iv:[0,4,8],label:'增三和弦'},
+    dom7:{iv:[0,4,7,10],label:'属七和弦'}
+  };
+  var CH_EASY=['maj','min'];
+
+  // ===== 状态 =====
+  var S={mode:'single',diff:'easy',count:8,kind:'named',rootFirst:false,arp:false,
+    inRound:false,q:0,total:10,combo:0,bestCombo:0,score:0,cur:null,answered:false};
+  var best={combo:0,acc:0};
+  try{ var b=JSON.parse(localStorage.getItem('miaodaEar')||'{}'); best.combo=b.combo||0; best.acc=b.acc||0; }catch(e){}
+
+  // ===== 音频 =====
+  var ctx=null,master=null;
+  function ac(){
+    if(ctx) return ctx;
+    var AC=window.AudioContext||window.webkitAudioContext;
+    ctx=new AC(); master=ctx.createGain(); master.gain.value=.8; master.connect(ctx.destination);
+    return ctx;
+  }
+  function note(m,delay,dur,vol,type){
+    var c=ac(); if(!c) return;
+    if(c.state==='suspended') c.resume();
+    var t0=c.currentTime+delay;
+    var o=c.createOscillator(),g=c.createGain();
+    o.type=type||'triangle'; o.frequency.value=freq(m);
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol||.35,t0+.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0+dur+.05);
+  }
+  function playQuestion(){
+    var q=S.cur; if(!q) return;
+    if(q.kind==='single'){
+      note(q.m,0,.9,.45,'triangle');
+    }else if(q.kind==='interval'){
+      if(S.rootFirst){
+        note(q.root,0,.7,.4,'sine');
+        note(q.root+q.n,.9,.9,.4,'sine');
+      }else{
+        note(q.root,0,.8,.35,'sine');
+        note(q.root,.55,.8,.35,'sine');
+      }
+    }else{ // chord
+      var iv=CHORDS[q.type].iv;
+      for(var i=0;i<iv.length;i++){
+        note(q.root+iv[i], S.arp? i*.18 : 0, 1.1, .28, 'sine');
+      }
+    }
+  }
+
+  // ===== 出题 =====
+  function rand(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function genQuestion(){
+    var q={};
+    if(S.mode==='single'){
+      var pool = (S.diff==='hard') ? ALL12 : (S.count===12?ALL12:WHITE8);
+      q.kind='single'; q.m=pick(pool);
+      q.options = pool.map(function(x){ return NAMES[x%12]+(Math.floor(x/12)-1); });
+    }else if(S.mode==='interval'){
+      var poolI = S.diff==='hard'?IV:IV_EASY;
+      var item=pick(poolI);
+      q.kind='interval'; q.root=rand(60,67); q.n=item.n; q.label=item.label; q.deg=item.deg;
+      if(S.kind==='named'){ q.options=poolI.map(function(x){return x.label;}); q.answer=item.label; }
+      else{
+        var degs=[]; poolI.forEach(function(x){ if(degs.indexOf(x.deg)<0) degs.push(x.deg); });
+        q.options=degs.map(function(d){ return ['','一度','二度','三度','四度','五度','六度','七度','八度'][d]; });
+        q.answer=['','一度','二度','三度','四度','五度','六度','七度','八度'][item.deg];
+      }
+    }else{
+      var poolC = S.diff==='hard'?Object.keys(CHORDS):CH_EASY;
+      var type=pick(poolC);
+      q.kind='chord'; q.root=rand(60,67); q.type=type; q.answer=CHORDS[type].label;
+      q.options=poolC.map(function(t){return CHORDS[t].label;});
+    }
+    return q;
+  }
+  function answerOf(q){
+    if(q.kind==='single') return NAMES[q.m%12]+(Math.floor(q.m/12)-1);
+    return q.answer;
+  }
+
+  // ===== DOM =====
+  function $(id){ return document.getElementById(id); }
+  function renderBest(){ $('bestLine').textContent='最佳连击 '+best.combo+' · 最佳正确率 '+best.acc+'%'; }
+  renderBest();
+
+  function showPanel(name){
+    $('panelSet').classList.toggle('hidden', name!=='set');
+    $('panelPlay').classList.toggle('hidden', name!=='play');
+    $('panelEnd').classList.toggle('hidden', name!=='end');
+  }
+
+  function startRound(){
+    ac(); if(ctx.state==='suspended') ctx.resume();
+    S.inRound=true; S.q=0; S.combo=0; S.score=0;
+    if(window.SFX&&SFX.start()){} 
+    nextQuestion(); showPanel('play');
+  }
+  function nextQuestion(){
+    S.q++; S.answered=false;
+    S.cur=genQuestion();
+    $('stQ').textContent=S.q+'/'+S.total;
+    $('stCombo').textContent=S.combo;
+    $('stScore').textContent=S.score;
+    $('fb').textContent=''; $('fb').className='fb';
+    // 渲染选项
+    var box=$('opts'); box.innerHTML='';
+    var opts=S.cur.options;
+    opts.forEach(function(o){
+      var b=document.createElement('button');
+      b.className='opt'; b.textContent=o;
+      b.onclick=function(){ answer(b,o); };
+      box.appendChild(b);
+    });
+    setTimeout(playQuestion,350);
+  }
+
+  function answer(btn,val){
+    if(S.answered) return;
+    S.answered=true;
+    var right=answerOf(S.cur);
+    var ok=(val===right);
+    var btns=$('opts').querySelectorAll('.opt');
+    btns.forEach(function(b){ b.disabled=true; if(b.textContent===right) b.classList.add('right'); });
+    if(ok){
+      S.combo++; S.score++;
+      $('fb').textContent='答对了！连击 '+S.combo; $('fb').className='fb ok';
+      if(window.SFX) SFX.level();
+    }else{
+      S.combo=0;
+      btn.classList.add('wrong');
+      $('fb').textContent='正确答案：'+right; $('fb').className='fb no';
+      if(window.SFX) SFX.error();
+    }
+    $('stCombo').textContent=S.combo;
+    $('stScore').textContent=S.score;
+    if(S.combo>best.combo) best.combo=S.combo;
+    setTimeout(function(){
+      if(S.q>=S.total) endRound(); else nextQuestion();
+    },1100);
+  }
+
+  function endRound(){
+    S.inRound=false;
+    var rate=Math.round(S.score/S.total*100);
+    if(rate>best.acc) best.acc=rate;
+    try{ localStorage.setItem('miaodaEar',JSON.stringify({combo:best.combo,acc:best.acc})); }catch(e){}
+    $('endRate').textContent=rate+'%';
+    $('endDetail').textContent='答对 '+S.score+' / '+S.total+' · 最高连击 '+(S.combo>best.combo?S.combo:best.combo);
+    renderBest();
+    showPanel('end');
+  }
+
+  // ===== 设置交互 =====
+  function segBind(id,attr,cb){
+    $(id).addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      $(id).querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on'); cb(b.dataset[attr]);
+    });
+  }
+  segBind('modeSeg','m',function(m){
+    S.mode=m;
+    $('optSingle').classList.toggle('hidden',m!=='single');
+    $('optInterval').classList.toggle('hidden',m!=='interval');
+    $('optChord').classList.toggle('hidden',m!=='chord');
+  });
+  segBind('diffSeg','d',function(d){
+    S.diff=d;
+    if(d==='hard'){
+      $('countSeg').querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x.dataset.c==='12');});
+      S.count=12;
+    }
+  });
+  segBind('countSeg','c',function(c){ S.count=+c; });
+  segBind('kindSeg','k',function(k){ S.kind=k; });
+  $('chkRoot').addEventListener('change',function(){ S.rootFirst=this.checked; });
+  $('chkArp').addEventListener('change',function(){ S.arp=this.checked; });
+
+  $('btnStart').onclick=startRound;
+  $('btnAgain').onclick=startRound;
+  $('btnBackSet').onclick=function(){ showPanel('set'); };
+  $('btnPlay').onclick=playQuestion;
+  $('btnReplay').onclick=playQuestion;
+})();
+</script>
+<script>
+// 源码保护
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var key = e.key.toLowerCase();
+    if (key === 'f12') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 'u') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); return; }
+  });
+  document.addEventListener('selectstart', function(e){
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+
+<script src="sounds.js"></script>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#16130c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2316130c'/%3E%3Ctext x='32' y='44' font-size='30' text-anchor='middle' fill='%23e0794a'%3EU%3C/text%3E%3C/svg%3E">
+<title>UNO - 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0f0d08; --paper:#16130c; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b; --c:#e0794a; }
+  html,body{ background:var(--bg); }
+  body{ min-height:100vh; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--txt);
+    display:flex; flex-direction:column; align-items:center; padding:12px 10px 24px;
+    background: radial-gradient(ellipse at 15% 0%, rgba(224,121,74,.14) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 90%, rgba(212,168,75,.08) 0%, transparent 50%), var(--bg); }
+  .wrap{ width:100%; max-width:900px; min-width:0; }
+  .top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .back{ display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:8px; text-decoration:none;
+    background:rgba(224,121,74,.08); border:1px solid rgba(224,121,74,.35); color:var(--sub); font-size:13px; min-height:44px; }
+  .back:hover{ color:var(--c); border-color:var(--c); }
+  .ttl{ font-family:"STKaiti","KaiTi","楷体",serif; font-size:20px; letter-spacing:6px; color:var(--c); }
+  .hdrbtns{ display:flex; gap:8px; }
+  .hbtn{ min-height:44px; padding:8px 12px; border-radius:8px; background:rgba(224,121,74,.08);
+    border:1px solid rgba(224,121,74,.35); color:var(--sub); font-size:13px; cursor:pointer; }
+  .stats{ font-size:12px; color:var(--sub); letter-spacing:1px; text-align:right; line-height:1.7; }
+  .stats b{ color:var(--c); font-size:15px; }
+
+  .opps{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
+  .opp{ background:var(--paper); border:1px solid rgba(224,121,74,.22); border-radius:12px; padding:10px 12px; }
+  .opp .nm{ font-size:14px; color:var(--txt); }
+  .opp .meta{ font-size:12px; color:var(--sub); margin-top:4px; }
+  .opp .meta b{ color:var(--gold); }
+  .backs{ display:flex; margin-top:6px; }
+  .bkc{ width:16px; height:23px; border-radius:3px; background:linear-gradient(160deg,#3a2418,#241510);
+    border:1px solid rgba(224,121,74,.4); margin-left:-7px; }
+  .active{ outline:2px solid var(--c); }
+
+  .desk{ margin-top:10px; background:var(--paper); border:1px solid rgba(224,121,74,.18); border-radius:14px;
+    padding:12px 10px; display:flex; justify-content:center; align-items:center; gap:26px; min-height:150px; }
+  .pilezone{ text-align:center; }
+  .pilezone .lb{ font-size:11px; color:var(--sub); margin-bottom:5px; }
+  .bigcard{ width:64px; height:92px; border-radius:9px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; font-weight:bold; font-size:22px; color:#fff; box-shadow:0 3px 8px rgba(0,0,0,.5); }
+  .bigcard.tiny{ width:52px; height:74px; font-size:17px; }
+  .bigcard .sub{ font-size:10px; font-weight:normal; opacity:.85; }
+  .drawpile{ background:repeating-linear-gradient(45deg,#5b2a1a,#5b2a1a 6px,#3f1d12 6px,#3f1d12 12px);
+    border:1px solid rgba(224,121,74,.5); cursor:pointer; }
+  .c-R{ background:linear-gradient(160deg,#d63b30,#a0231a); }
+  .c-Y{ background:linear-gradient(160deg,#e8b93a,#b08a1e); color:#2a1c00; }
+  .c-G{ background:linear-gradient(160deg,#37b87e,#1f7a52); }
+  .c-B{ background:linear-gradient(160deg,#3b7fd4,#23548f); }
+  .c-W{ background:linear-gradient(160deg,#333,#111); border:1px solid #888; }
+
+  .say{ min-height:30px; text-align:center; font-size:14px; color:var(--gold); letter-spacing:1px; padding:6px 4px; }
+  .say.err{ color:#ff6a5e; }
+  .dir{ text-align:center; font-size:12px; color:var(--sub); }
+
+  .handzone{ margin-top:8px; }
+  .hand{ display:flex; justify-content:center; flex-wrap:wrap; min-height:84px; padding:6px 2px 0; }
+  .uc{ width:50px; height:72px; border-radius:8px; margin-left:-18px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; cursor:pointer; user-select:none; transition:transform .12s; font-weight:bold; color:#fff;
+    font-size:18px; box-shadow:0 2px 5px rgba(0,0,0,.5); position:relative; }
+  .uc:first-child{ margin-left:0; }
+  .uc .sub{ font-size:9px; font-weight:normal; opacity:.85; }
+  .uc.sel{ transform:translateY(-14px); outline:3px solid #fff; }
+  .uc.dim{ opacity:.35; cursor:not-allowed; }
+
+  .acts{ display:flex; justify-content:center; gap:12px; margin-top:10px; flex-wrap:wrap; }
+  .btn{ min-width:96px; min-height:48px; padding:10px 20px; border-radius:10px; font-size:16px; letter-spacing:3px;
+    font-family:"STKaiti","KaiTi",serif; cursor:pointer; border:1px solid var(--c); }
+  .btn.pri{ background:var(--c); color:#16130c; }
+  .btn.ghost{ background:transparent; color:var(--c); }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+  .unoBanner{ position:fixed; top:20%; left:50%; transform:translateX(-50%); z-index:60; pointer-events:none;
+    font-family:"STKaiti","KaiTi",serif; font-size:52px; color:#e8453c; letter-spacing:8px;
+    text-shadow:0 0 18px rgba(232,69,60,.6); display:none; }
+  .unoBanner.show{ display:block; animation:blink .5s ease 3; }
+  @keyframes blink{ 50%{opacity:.2;} }
+
+  .mask{ position:fixed; inset:0; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .panel{ background:var(--paper); border:1px solid rgba(224,121,74,.4); border-radius:16px; padding:22px; width:100%; max-width:420px; max-height:86vh; overflow-y:auto; }
+  .panel h2{ font-family:"STKaiti","KaiTi",serif; color:var(--c); letter-spacing:3px; font-size:22px; text-align:center; margin-bottom:12px; }
+  .panel p{ font-size:13px; line-height:1.9; color:var(--txt); margin-bottom:8px; }
+  .panel .row{ display:flex; gap:12px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+  .panel table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:12.5px; margin-top:6px; }
+  .panel th,.panel td{ border:1px solid rgba(224,121,74,.25); padding:5px 6px; text-align:left; color:var(--sub); }
+  .panel th{ color:var(--c); }
+  .colorpick{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px; }
+  .cp{ height:56px; border-radius:10px; cursor:pointer; border:2px solid transparent; min-width:0; }
+  .cp:active{ border-color:#fff; }
+  .hidden{ display:none !important; }
+  .foot{ margin-top:18px; color:#6a5a3e; font-size:11px; letter-spacing:2px; text-align:center; }
+  @media (min-width:768px){
+    .ttl{ font-size:24px; }
+    .uc{ width:56px; height:80px; margin-left:-20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="cards-hub.html">← 返回卡牌</a>
+    <div class="ttl">UNO</div>
+    <div class="hdrbtns">
+      <button class="hbtn" id="btnRules">规则</button>
+      <button class="hbtn" id="btnNew">新局</button>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+
+  <div class="opps">
+    <div class="opp" id="opp1"></div>
+    <div class="opp" id="opp2"></div>
+    <div class="opp" id="opp3" style="grid-column:1 / -1"></div>
+  </div>
+
+  <div class="desk">
+    <div class="pilezone">
+      <div class="lb">抽牌堆</div>
+      <div class="bigcard drawpile" id="drawPile" title="抽一张">+1</div>
+    </div>
+    <div class="pilezone">
+      <div class="lb">出牌堆（当前颜色 <span id="curColor">红</span>）</div>
+      <div class="bigcard" id="topCard"></div>
+    </div>
+  </div>
+  <div class="dir" id="dirTag">方向：顺时针</div>
+  <div class="say" id="say">发牌中…</div>
+
+  <div class="handzone">
+    <div class="hand" id="hand"></div>
+    <div class="acts">
+      <button class="btn ghost" id="btnDraw" disabled>抽一张</button>
+      <button class="btn pri" id="btnPlay" disabled>出牌</button>
+    </div>
+  </div>
+
+  <div class="foot">妙搭小站 · 卡牌 · UNO</div>
+</div>
+
+<div class="unoBanner" id="unoBanner">UNO !</div>
+
+<!-- 选色 -->
+<div class="mask hidden" id="colorMask">
+  <div class="panel">
+    <h2>选择颜色</h2>
+    <div class="colorpick">
+      <div class="cp c-R" data-c="R"></div>
+      <div class="cp c-Y" data-c="Y"></div>
+      <div class="cp c-G" data-c="G"></div>
+      <div class="cp c-B" data-c="B"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 结算 -->
+<div class="mask hidden" id="endMask">
+  <div class="panel" id="endPanel"></div>
+</div>
+
+<!-- 规则 -->
+<div class="mask hidden" id="ruleMask">
+  <div class="panel">
+    <h2>UNO 规则</h2>
+    <p><b style="color:var(--c)">牌库</b>：108 张。红/黄/绿/蓝四色，每色 0 一张、1~9 各两张，跳过、反转、+2 各两张；另有万能（变色）4 张、万能+4 共 4 张。</p>
+    <p><b style="color:var(--c)">基本玩法</b>：四人各 7 张。轮流出牌，出牌须与牌顶<b>同色或同数字/同符号</b>；万能牌任意时候可出。无牌可出则抽 1 张，抽到能出的可选择出，否则跳过。先清空手牌者本局获胜。</p>
+    <p><b style="color:var(--c)">功能牌</b>：跳过——下家回合跳过；反转——出牌方向反转；+2——下家抽 2 张并跳过；万能——你指定下一颜色；万能+4——指定颜色且下家抽 4 张并跳过。</p>
+    <p><b style="color:var(--c)">简化说明</b>：本页不实现「+2/+4 叠出」「未喊 UNO 罚牌」等复杂规则；当任一玩家只剩 1 张时自动显示 UNO! 提示。</p>
+    <p><b style="color:var(--c)">计分</b>：本局胜者获得其余三人剩余手牌分——数字牌=面值，跳过/反转/+2=20 分，万能/万能+4=50 分。多局累计总分，胜场数记录在本地。</p>
+    <div class="row"><button class="btn pri" id="btnRuleClose">知道了</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ===== 常量 ===== */
+var COLORS={R:{n:'红',cls:'c-R'},Y:{n:'黄',cls:'c-Y'},G:{n:'绿',cls:'c-G'},B:{n:'蓝',cls:'c-B'},W:{n:'万能',cls:'c-W'}};
+var SYMBOL={S:'跳过',R:'反转',D:'+2',W:'变色',W4:'+4'};
+var G=null;
+
+function newDeck(){
+  var d=[]; var id=0;
+  var cols=['R','Y','G','B'];
+  cols.forEach(function(c){
+    d.push({color:c,type:0,id:id++});
+    for(var n=1;n<=9;n++){ d.push({color:c,type:n,id:id++}); d.push({color:c,type:n,id:id++}); }
+    ['S','R','D'].forEach(function(t){ d.push({color:c,type:t,id:id++}); d.push({color:c,type:t,id:id++}); });
+  });
+  for(var i=0;i<4;i++) d.push({color:'W',type:'W',id:id++});
+  for(var j=0;j<4;j++) d.push({color:'W',type:'W4',id:id++});
+  for(var k=d.length-1;k>0;k--){ var m=Math.floor(Math.random()*(k+1)); var t2=d[k]; d[k]=d[m]; d[m]=t2; }
+  return d;
+}
+function label(c){
+  return c.color==='W' ? SYMBOL[c.type] : (COLORS[c.color].n+(typeof c.type==='number'?c.type:SYMBOL[c.type]));
+}
+function cardScore(c){
+  if(typeof c.type==='number') return c.type;
+  if(c.type==='S'||c.type==='R'||c.type==='D') return 20;
+  return 50;
+}
+
+/* ===== 开局 ===== */
+function newGame(){
+  var deck=newDeck();
+  G={ players:[
+        {hand:deck.splice(0,7), name:'你', isAI:false, sel:{}},
+        {hand:deck.splice(0,7), name:'上家', isAI:true, sel:{}},
+        {hand:deck.splice(0,7), name:'对家', isAI:true, sel:{}},
+        {hand:deck.splice(0,7), name:'下家', isAI:true, sel:{}} ],
+      draw:deck, dir:1, turn:0, sel:{}, pendingDraw:null, over:false, choosing:null };
+  // 翻出首张（不能是 W4）
+  var top;
+  do{ top=G.draw.pop(); }while(top.type==='W4');
+  G.discard=[top];
+  G.topColor = (top.color==='W')? 'R' : top.color;
+  // 若是功能牌，从玩家 0 开始补效果
+  render();
+  sayMsg('轮到你出牌');
+  scheduleAI();
+}
+
+function topCard(){ return G.discard[G.discard.length-1]; }
+
+function playable(card){
+  var t=topCard();
+  if(card.color==='W') return true;
+  return card.color===G.topColor || card.type===t.type;
+}
+
+/* ===== 流程 ===== */
+function drawFromDeck(n){
+  var got=[];
+  for(var i=0;i<n;i++){
+    if(!G.draw.length){
+      // 重洗弃牌堆
+      var keep=G.discard.pop();
+      G.draw=G.discard; G.discard=[keep];
+      for(var k=G.draw.length-1;k>0;k--){ var j=Math.floor(Math.random()*(k+1)); var t=G.draw[k]; G.draw[k]=G.draw[j]; G.draw[j]=t; }
+    }
+    if(G.draw.length) got.push(G.draw.pop());
+  }
+  return got;
+}
+
+function nextTurn(steps){
+  steps=steps||1;
+  G.turn=(G.turn + G.dir*steps + 40)%4;
+}
+
+function applyEffect(card, who){
+  var t=card.type;
+  if(t==='S'){ nextTurn(2); return 'skip'; }
+  if(t==='R'){ G.dir*=-1; nextTurn(1); return 'rev'; }
+  if(t==='D'){
+    var nx=(G.turn+G.dir+40)%4;
+    var gs=drawFromDeck(2);
+    G.players[nx].hand=G.players[nx].hand.concat(gs);
+    nextTurn(2); return 'draw2';
+  }
+  if(t==='W'){ return 'pick'; }
+  if(t==='W4'){
+    var nx2=(G.turn+G.dir+40)%4;
+    var gs2=drawFromDeck(4);
+    G.players[nx2].hand=G.players[nx2].hand.concat(gs2);
+    return 'pick';
+  }
+  nextTurn(1); return 'normal';
+}
+
+function playCard(who, card, chosenColor){
+  var p=G.players[who];
+  p.hand=p.hand.filter(function(c){return c.id!==card.id;});
+  G.discard.push(card);
+  if(card.color==='W'){ G.topColor=chosenColor; }
+  else if(card.type!=='W'){ G.topColor=card.color; }
+  if(window.SFX)SFX.pop();
+  sayMsg(p.name+' 打出 '+label(card));
+  if(p.hand.length===1) showUno(p.name);
+  render();
+  if(p.hand.length===0){ endGame(who); return; }
+  applyEffect(card, who);
+  scheduleAI();
+}
+
+function humanDraw(){
+  if(!G || G.turn!==0 || G.over) return;
+  var got=drawFromDeck(1);
+  if(!got.length){ sayMsg('抽牌堆已空'); return; }
+  var c=got[0];
+  G.players[0].hand.push(c);
+  G.pendingDraw=c;
+  if(window.SFX)SFX.flip();
+  sayMsg('你抽到 '+label(c)+(playable(c)?'，可打出':''));
+  render();
+  if(playable(c)){
+    // 高亮这张
+    G.players[0].sel={};
+    G.players[0].sel[c.id]=true;
+    document.getElementById('btnPlay').disabled=false;
+  } else {
+    sayMsg('你抽到 '+label(c)+'，不能出，跳过');
+    G.pendingDraw=null;
+    setTimeout(function(){ if(!G.over){ nextTurn(1); render(); scheduleAI(); } }, 800);
+  }
+}
+
+/* ===== AI ===== */
+function aiPickColor(i){
+  var cnt={R:0,Y:0,G:0,B:0};
+  G.players[i].hand.forEach(function(c){ if(c.color!=='W') cnt[c.color]++; });
+  var best='R', bn=-1;
+  Object.keys(cnt).forEach(function(k){ if(cnt[k]>bn){bn=cnt[k];best=k;} });
+  return best;
+}
+function aiAct(i){
+  var p=G.players[i];
+  var playableCards=p.hand.filter(playable);
+  if(!playableCards.length){
+    var got=drawFromDeck(1);
+    p.hand=p.hand.concat(got);
+    sayMsg(p.name+' 抽了一张牌');
+    if(got.length && playable(got[0])){
+      // 抽到能出的：若不是万能就出
+      if(got[0].color!=='W'){ playCard(i, got[0]); return; }
+    }
+    render();
+    setTimeout(function(){ if(!G.over){ nextTurn(1); render(); scheduleAI(); } }, 500);
+    return;
+  }
+  // 策略：优先同色普通牌，小功能牌次之，万能留最后
+  var colored=playableCards.filter(function(c){return c.color!=='W';});
+  colored.sort(function(a,b){ return scoreC(a)-scoreC(b); });
+  var card;
+  if(colored.length){
+    // 数字牌优先；功能牌只有数字牌快打完或被逼时才用——简单：数字牌优先
+    var nums=colored.filter(function(c){return typeof c.type==='number';});
+    card = nums.length ? nums[0] : colored[0];
+  } else {
+    card = playableCards.find(function(c){return c.type==='W';}) || playableCards[0];
+  }
+  var chosen = card.color==='W' ? aiPickColor(i) : null;
+  playCard(i, card, chosen);
+}
+function scoreC(c){
+  if(typeof c.type==='number') return c.type;
+  return 100; // 功能牌靠后
+}
+
+/* ===== 结束 ===== */
+function endGame(winner){
+  G.over=true;
+  var win=G.players[winner];
+  var gain=0;
+  var rows=G.players.map(function(p,i){
+    var s=p.hand.reduce(function(a,c){return a+cardScore(c);},0);
+    if(i!==winner) gain+=s;
+    return '<tr><td>'+p.name+(i===winner?'（胜者）':'')+'</td><td>'+p.hand.length+' 张</td><td>'+s+'</td></tr>';
+  }).join('');
+  var st=loadStats();
+  st.score+=gain;
+  var humanWin = winner===0;
+  if(humanWin){ st.wins++; }
+  else { st.losses=(st.losses||0)+1; }
+  saveStats(st);
+  document.getElementById('endPanel').innerHTML=
+    '<h2 class="'+(humanWin?'win':'lose')+'" style="color:'+(humanWin?'#46c39a':'#ff6a5e')+'">'+(humanWin?'你赢了':'你输了')+'</h2>'+
+    '<p style="text-align:center">'+win.name+'先出完手牌，本局 +'+gain+' 分；累计总分 <b style="color:var(--gold)">'+st.score+'</b></p>'+
+    '<table><colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup>'+
+    '<tr><th>玩家</th><th>剩余</th><th>罚分</th></tr>'+rows+'</table>'+
+    '<div class="row"><button class="btn pri" onclick="newGame()">下一局</button></div>';
+  document.getElementById('endMask').classList.remove('hidden');
+  renderStats();
+}
+function loadStats(){ try{ return JSON.parse(localStorage.getItem('miaodaUno'))||{wins:0,losses:0,score:0}; }catch(e){ return {wins:0,losses:0,score:0}; } }
+function saveStats(s){ try{ localStorage.setItem('miaodaUno', JSON.stringify(s)); }catch(e){} }
+function renderStats(){
+  var st=loadStats();
+  document.getElementById('stats').innerHTML='胜 <b>'+st.wins+'</b> · 负 '+st.losses+' · 累计分 <b>'+st.score+'</b>';
+}
+
+/* ===== UNO! 提示 ===== */
+function showUno(name){
+  var b=document.getElementById('unoBanner');
+  b.textContent = name+' UNO!';
+  b.classList.add('show');
+  setTimeout(function(){ b.classList.remove('show'); }, 1600);
+}
+
+/* ===== 渲染 ===== */
+function sayMsg(t, isErr){
+  var el=document.getElementById('say');
+  el.textContent=t; el.className='say'+(isErr?' err':'');
+}
+function render(){
+  if(!G) return;
+  renderStats();
+  document.getElementById('curColor').textContent=COLORS[G.topColor].n;
+  document.getElementById('dirTag').textContent='方向：'+(G.dir===1?'顺时针':'逆时针');
+  // 对手
+  for(var i=1;i<=3;i++){
+    var p=G.players[i];
+    var box=document.getElementById('opp'+i);
+    var backs='';
+    for(var k=0;k<Math.min(p.hand.length,9);k++) backs+='<div class="bkc"></div>';
+    box.className='opp'+(G.turn===i&&!G.over?' active':'');
+    box.innerHTML='<div class="nm">'+p.name+(G.turn===i?'（行动中）':'')+'</div>'+
+      '<div class="meta">剩余 <b>'+p.hand.length+'</b> 张'+(p.hand.length===1?' · UNO!':'')+'</div>'+
+      '<div class="backs">'+backs+'</div>';
+  }
+  // 牌顶
+  var t=topCard();
+  var tc=document.getElementById('topCard');
+  tc.className='bigcard '+COLORS[t.color].cls;
+  var mainTxt = t.color==='W' ? (t.type==='W4'?'+4':'变色') : (typeof t.type==='number' ? t.type : SYMBOL[t.type]);
+  var subTxt = t.color==='W' ? '万能' : COLORS[t.color].n;
+  tc.innerHTML = mainTxt + '<div class="sub">'+subTxt+'</div>';
+  // 手牌
+  var hand=document.getElementById('hand');
+  hand.innerHTML='';
+  G.players[0].hand.forEach(function(c){
+    var el=document.createElement('div');
+    el.className='uc '+COLORS[c.color].cls;
+    var cm = c.color==='W' ? (c.type==='W4'?'+4':'变色') : (typeof c.type==='number'?c.type:SYMBOL[c.type]);
+    var cs = c.color==='W' ? '万能' : COLORS[c.color].n;
+    el.innerHTML=cm+'<div class="sub">'+cs+'</div>';
+    if(G.players[0].sel[c.id]) el.classList.add('sel');
+    el.addEventListener('click',function(){
+      if(G.turn!==0||G.over) return;
+      G.players[0].sel[c.id]=!G.players[0].sel[c.id];
+      if(window.SFX)SFX.tick();
+      render();
+    });
+    hand.appendChild(el);
+  });
+  var myTurn=(G.turn===0 && !G.over);
+  document.getElementById('btnDraw').disabled=!myTurn;
+  document.getElementById('btnPlay').disabled=!myTurn;
+}
+
+/* ===== 人类出牌 ===== */
+document.getElementById('btnPlay').addEventListener('click', function(){
+  if(!G||G.turn!==0||G.over) return;
+  var p=G.players[0];
+  var chosen=p.hand.filter(function(c){return p.sel[c.id];});
+  if(chosen.length!==1){ sayMsg('请点选 1 张手牌', true); if(window.SFX)SFX.error(); return; }
+  var c=chosen[0];
+  if(!playable(c)){ sayMsg('这张牌不能出：须同色或同数字/符号', true); if(window.SFX)SFX.error(); return; }
+  p.sel={};
+  G.pendingDraw=null;
+  if(c.color==='W'){
+    G.choosing=c;
+    document.getElementById('colorMask').classList.remove('hidden');
+  } else {
+    playCard(0, c);
+  }
+});
+document.getElementById('btnDraw').addEventListener('click', humanDraw);
+document.getElementById('drawPile').addEventListener('click', humanDraw);
+Array.prototype.forEach.call(document.querySelectorAll('.cp'), function(el){
+  el.addEventListener('click', function(){
+    var col=el.getAttribute('data-c');
+    document.getElementById('colorMask').classList.add('hidden');
+    if(G.choosing){ var c=G.choosing; G.choosing=null; playCard(0,c,col); }
+  });
+});
+document.getElementById('btnNew').addEventListener('click', function(){ newGame(); });
+document.getElementById('btnRules').addEventListener('click', function(){ document.getElementById('ruleMask').classList.remove('hidden'); });
+document.getElementById('btnRuleClose').addEventListener('click', function(){ document.getElementById('ruleMask').classList.add('hidden'); });
+
+function scheduleAI(){
+  if(G.over) return;
+  render();
+  if(G.players[G.turn].isAI){
+    setTimeout(function(){ aiAct(G.turn); }, 800);
+  } else {
+    sayMsg('轮到你出牌');
+  }
+}
+
+newGame();
+</script>
+<script src="sounds.js"></script>
+</body>
+</html>

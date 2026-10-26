@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#b98cff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>蜘蛛纸牌 - 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#0f0d08; --paper:#16130c; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b;
+    --ac:#b98cff;
+    --cw:32px; --ch:46px;
+  }
+  html,body{background:var(--bg);}
+  body{
+    min-height:100vh; color:var(--txt);
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    background: radial-gradient(ellipse at 80% 0%, rgba(185,140,255,.10) 0%, transparent 55%), var(--bg);
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px 6px 30px;
+    -webkit-user-select:none; user-select:none;
+  }
+  .topbar{width:100%;max-width:860px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .back{display:inline-flex;align-items:center;padding:10px 14px;border-radius:8px;text-decoration:none;
+    background:rgba(212,168,75,.08);border:1px solid rgba(212,168,75,.3);color:var(--sub);font-size:13px;min-height:44px;}
+  .back:active{color:var(--gold);}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{min-height:44px;padding:0 14px;border-radius:8px;border:1px solid color-mix(in srgb,var(--ac) 45%,transparent);
+    background:color-mix(in srgb,var(--ac) 12%,transparent);color:var(--txt);font-size:13px;cursor:pointer;font-family:inherit;}
+  .btn:active{background:color-mix(in srgb,var(--ac) 30%,transparent);}
+  .stats{width:100%;max-width:860px;display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+  .stat{flex:1;min-width:80px;background:var(--paper);border:1px solid rgba(212,168,75,.18);border-radius:10px;
+    padding:8px 6px;text-align:center;}
+  .stat .lbl{font-size:10px;color:var(--sub);letter-spacing:1px;}
+  .stat .val{font-size:15px;color:var(--gold);font-weight:bold;margin-top:2px;}
+  .board{width:100%;max-width:860px;}
+  .top-row{display:flex;justify-content:space-between;align-items:flex-end;gap:6px;margin-bottom:12px;}
+  .pile{width:var(--cw);height:var(--ch);border-radius:6px;border:1px dashed rgba(154,136,104,.4);position:relative;flex:0 0 auto;}
+  .card{position:absolute;left:0;width:var(--cw);height:var(--ch);border-radius:5px;
+    background:#f2e8d2;border:1px solid #c9b489;display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:bold;line-height:1;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .card.red{color:#c62f24;}
+  .card.black{color:#26221c;}
+  .card.down{background:repeating-linear-gradient(45deg,#3d2a5e 0 4px,#4d3673 4px 8px);border-color:#241a3d;}
+  .card.sel{outline:2px solid var(--gold);outline-offset:1px;}
+  .cols{display:flex;gap:4px;justify-content:space-between;}
+  .col{position:relative;flex:0 0 var(--cw);min-width:0;}
+  .pile .cnt{position:absolute;right:2px;bottom:2px;font-size:10px;color:var(--sub);}
+  .foot-note{margin-top:26px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;}
+  details{width:100%;max-width:860px;margin-top:18px;background:var(--paper);border:1px solid rgba(212,168,75,.18);border-radius:10px;padding:0 14px;}
+  summary{cursor:pointer;padding:12px 0;font-size:14px;color:var(--gold);letter-spacing:2px;min-height:44px;display:flex;align-items:center;}
+  details .body{padding:0 2px 14px;font-size:13px;line-height:1.9;color:rgba(232,220,200,.75);}
+  .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);
+    background:#2a2114;border:1px solid var(--gold);color:var(--txt);padding:10px 18px;border-radius:20px;
+    font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--paper);border:1px solid var(--gold);border-radius:14px;padding:28px 26px;max-width:320px;width:100%;text-align:center;}
+  .modal h2{font-family:"STKaiti","KaiTi",serif;color:var(--gold);font-size:26px;letter-spacing:4px;margin-bottom:14px;}
+  .modal p{font-size:14px;color:var(--txt);line-height:2;}
+  .modal .btn{margin-top:16px;width:100%;}
+  @media (min-width:768px){
+    :root{ --cw:56px; --ch:80px; }
+    body{padding:20px 16px 40px;}
+    .card{font-size:14px;border-radius:6px;}
+    .cols{gap:8px;}
+    .top-row{gap:10px;}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="cards-hub.html">← 返回卡牌</a>
+    <div class="btns">
+      <button class="btn" id="btnUndo">撤销</button>
+      <button class="btn" id="btnNew">新局</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="lbl">得分</div><div class="val" id="stScore">0</div></div>
+    <div class="stat"><div class="lbl">已收序列</div><div class="val" id="stDone">0 / 8</div></div>
+    <div class="stat"><div class="lbl">最佳分</div><div class="val" id="stBest">—</div></div>
+  </div>
+  <div class="board">
+    <div class="top-row">
+      <div class="pile" id="stock"></div>
+      <div class="pile" id="donePile"></div>
+    </div>
+    <div class="cols" id="cols"></div>
+  </div>
+  <details>
+    <summary>规则说明</summary>
+    <div class="body">
+      · 两副牌共 104 张，排成 10 列；目标是凑齐 8 组从 K 到 A 的同花色序列。<br>
+      · 列内降序叠放（如 10 上放 J）；只有同一花色、连续降序的序列才能整段移动。<br>
+      · 单张牌可随意落到相邻点数上；空列可放任意牌（或任意合法序列）。<br>
+      · 左上角牌堆点击发牌：给每列各发 1 张；若场上有空列则禁止发牌。<br>
+      · 完整同花色 K→A 序列会自动收起。<br>
+      · 计分：每次移动 +1，收起一组序列 +100，每次发牌 -10；得分越高越好。<br>
+      · 操作：点选牌（或同花色序列），再点目标列放置；支持撤销。
+    </div>
+  </details>
+  <div class="foot-note">妙搭小站 · 卡牌 · 蜘蛛纸牌</div>
+  <div class="toast" id="toast"></div>
+  <div class="overlay win" id="winOv">
+    <div class="modal">
+      <h2>织网完成</h2>
+      <p id="winInfo"></p>
+      <button class="btn" id="btnAgain">再来一局</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  var SUITS=['♠','♥','♦','♣'];
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } }
+
+  var state, sel, score, history;
+
+  function newGame(){
+    var deck=[];
+    for(var d=0;d<2;d++) for(var s=0;s<4;s++) for(var r=1;r<=13;r++) deck.push({r:r,s:s,up:false});
+    shuffle(deck);
+    state={ stock:deck.slice(54), tab:[[],[],[],[],[],[],[],[],[],[]], done:0 };
+    for(var c=0;c<10;c++){
+      var n=(c<4)?6:5;
+      for(var k=0;k<n;k++){
+        var card=deck.pop();
+        card.up=(k===n-1);
+        state.tab[c].push(card);
+      }
+    }
+    sel=null; history=[]; score=0;
+    document.getElementById('winOv').classList.remove('show');
+    render();
+  }
+
+  function snap(){
+    return JSON.parse(JSON.stringify({stock:state.stock,tab:state.tab,done:state.done,score:score}));
+  }
+  function pushHist(){ history.push(snap()); if(history.length>500) history.shift(); }
+  function undo(){
+    if(!history.length){ toast('没有可撤销的步'); return; }
+    var s=history.pop();
+    state.stock=s.stock; state.tab=s.tab; state.done=s.done; score=s.score;
+    sel=null;
+    render();
+    if(window.SFX) SFX.click();
+  }
+
+  // 该 idx 到列尾是否为同花色连续降序序列
+  function runOk(col,idx){
+    if(!col[idx].up) return false;
+    for(var k=idx;k<col.length-1;k++){
+      if(!col[k+1].up) return false;
+      if(col[k].s!==col[k+1].s) return false;
+      if(col[k].r!==col[k+1].r+1) return false;
+    }
+    return true;
+  }
+  function canToCol(col,cards){
+    if(col.length===0) return true;
+    var t=col[col.length-1];
+    return t.r===cards[0].r+1;
+  }
+
+  function collect(){
+    var got=0;
+    for(var i=0;i<10;i++){
+      var col=state.tab[i];
+      if(col.length===0 || !col[col.length-1].up) continue;
+      var len=1, k=col.length-1;
+      while(k>0 && col[k-1].up && col[k-1].s===col[k].s && col[k-1].r===col[k].r+1){ len++; k--; }
+      if(col[col.length-1].r===1 && len>=13){
+        col.splice(col.length-13,13);
+        state.done++; score+=100; got++;
+        if(col.length && !col[col.length-1].up) col[col.length-1].up=true;
+      }
+    }
+    return got;
+  }
+
+  function actStock(){
+    for(var i=0;i<10;i++){ if(state.tab[i].length===0){ toast('有空列时不能发牌'); if(window.SFX) SFX.error(); return; } }
+    if(state.stock.length===0) return;
+    pushHist();
+    for(var c=0;c<10;c++){
+      var card=state.stock.pop(); card.up=true;
+      state.tab[c].push(card);
+    }
+    score-=10; sel=null;
+    if(window.SFX) SFX.flip();
+    collect();
+    render();
+    checkWin();
+  }
+
+  function actCol(ci, picked){
+    var col=state.tab[ci];
+    if(!sel){
+      if(col.length===0 || picked<0) return;
+      if(!col[picked].up){ toast('先翻开压着的牌'); return; }
+      if(!runOk(col,picked)){ toast('只能移动同花色连续降序序列'); if(window.SFX) SFX.error(); return; }
+      sel={col:ci, idx:picked};
+      if(window.SFX) SFX.click();
+      render(); return;
+    }
+    if(sel.col===ci){ sel=null; render(); return; }
+    var sc=state.tab[sel.col];
+    if(!runOk(sc,sel.idx)){ sel=null; render(); toast('只能移动同花色连续降序序列'); return; }
+    var cards=sc.slice(sel.idx);
+    if(!canToCol(col,cards)){ toast('列内需降序叠放（点数大一号在上面）'); if(window.SFX) SFX.error(); return; }
+    pushHist();
+    sc.splice(sel.idx);
+    for(var i=0;i<cards.length;i++) col.push(cards[i]);
+    if(sc.length && !sc[sc.length-1].up) sc[sc.length-1].up=true;
+    score+=1; sel=null;
+    if(window.SFX) SFX.move();
+    collect();
+    render();
+    checkWin();
+  }
+
+  function checkWin(){
+    if(state.done>=8){
+      var best=loadBest();
+      var isBest=!best || score>best;
+      if(isBest){ try{ localStorage.setItem('miaodaSpiderBest',String(score)); }catch(e){} }
+      document.getElementById('winInfo').innerHTML=
+        '最终得分：'+score+' 分<br>共收起 8 组 K→A 序列<br>'+(isBest?'新纪录！':'最佳分：'+best+' 分');
+      document.getElementById('winOv').classList.add('show');
+      saveBestDisplay();
+    }
+  }
+  function loadBest(){
+    try{ var b=parseInt(localStorage.getItem('miaodaSpiderBest'),10); if(b) return b; }catch(e){}
+    return null;
+  }
+  function saveBestDisplay(){
+    var b=loadBest();
+    document.getElementById('stBest').textContent=b? (b+' 分') : '—';
+  }
+
+  function cardEl(card){
+    var d=document.createElement('div');
+    d.className='card '+(card.up? '':'down');
+    if(card.up){ d.textContent=RANKS[card.r-1]+SUITS[card.s]; }
+    return d;
+  }
+  function render(){
+    document.getElementById('stScore').textContent=score;
+    document.getElementById('stDone').textContent=state.done+' / 8';
+    saveBestDisplay();
+    var st=document.getElementById('stock'); st.innerHTML='';
+    if(state.stock.length){
+      var bk=cardEl({r:0,s:0,up:false}); st.appendChild(bk);
+      var c=document.createElement('span'); c.className='cnt'; c.textContent=state.stock.length; st.appendChild(c);
+    } else {
+      var ph=document.createElement('div');
+      ph.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(154,136,104,.5);font-size:9px;';
+      ph.textContent='空'; st.appendChild(ph);
+    }
+    var dp=document.getElementById('donePile'); dp.innerHTML='';
+    var dEl=document.createElement('div');
+    dEl.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(154,136,104,.6);font-size:10px;';
+    dEl.textContent='已收 '+state.done; dp.appendChild(dEl);
+
+    var box=document.getElementById('cols'); box.innerHTML='';
+    for(var c=0;c<10;c++){
+      var col=state.tab[c];
+      var cd=document.createElement('div'); cd.className='col';
+      var y=0;
+      for(var k=0;k<col.length;k++){
+        var el=cardEl(col[k]);
+        el.style.top=y+'px'; el.style.zIndex=k; el.setAttribute('data-k',k);
+        if(sel && sel.col===c && k>=sel.idx) el.classList.add('sel');
+        cd.appendChild(el);
+        y+=col[k].up ? 16 : 10;
+      }
+      cd.style.height='calc('+y+'px + var(--ch))';
+      box.appendChild(cd);
+    }
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove('show'); },1400);
+  }
+
+  document.getElementById('stock').addEventListener('click',actStock);
+  document.getElementById('cols').addEventListener('click',function(e){
+    var colDiv=e.target.closest('.col'); if(!colDiv) return;
+    var cols=document.getElementById('cols').children;
+    var ci=Array.prototype.indexOf.call(cols,colDiv);
+    var cardDiv=e.target.closest('.card');
+    var k=cardDiv? parseInt(cardDiv.getAttribute('data-k'),10) : -1;
+    actCol(ci,k);
+  });
+  document.getElementById('btnUndo').addEventListener('click',undo);
+  document.getElementById('btnNew').addEventListener('click',function(){ newGame(); toast('新局已发牌'); });
+  document.getElementById('btnAgain').addEventListener('click',function(){ newGame(); });
+
+  newGame();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+<script>
+// 源码保护：禁用右键、开发者工具快捷键、查看源码、保存页面
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var key = e.key.toLowerCase();
+    if (key === 'f12') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 'u') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); return; }
+  });
+})();
+</script>
+<script src="sounds.js"></script>
+</body>
+</html>

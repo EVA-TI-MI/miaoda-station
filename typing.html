@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f0d08">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>打字练习 · 妙搭小站</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{ --bg:#0f0d08; --txt:#e8dcc8; --sub:#9a8868; --gold:#d4a84b; --c:#4ad6c1; }
+  html,body{background:var(--bg);}
+  body{min-height:100vh;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);
+    display:flex;flex-direction:column;align-items:center;padding:26px 14px 34px;
+    background:radial-gradient(ellipse at 12% 0%,rgba(74,214,193,.13) 0%,transparent 52%),
+      radial-gradient(ellipse at 88% 6%,rgba(212,168,75,.09) 0%,transparent 50%),var(--bg);}
+  .top{width:100%;max-width:680px;display:flex;justify-content:flex-start;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;
+    background:rgba(212,168,75,.08);border:1px solid rgba(212,168,75,.3);color:var(--sub);font-size:13.5px;transition:.2s;min-height:44px;}
+  .back:hover{color:var(--gold);border-color:var(--gold);}
+  .head{text-align:center;margin:4px 0 6px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:34px;letter-spacing:8px;
+    background:linear-gradient(135deg,#8fe8d8,#4ad6c1 50%,#c4f5ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:12.5px;letter-spacing:3px;margin-top:6px;}
+  .stats{width:100%;max-width:680px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    margin-bottom:14px;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);color:var(--sub);font-size:13px;}
+  .stats b{color:var(--c);font-size:16px;}
+  .panel{width:100%;max-width:680px;padding:18px;border-radius:14px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);margin-bottom:14px;}
+  .panel h3{font-size:15px;color:var(--c);letter-spacing:2px;margin-bottom:12px;font-family:"STKaiti","KaiTi",serif;}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;}
+  .chip{padding:11px 14px;border-radius:9px;background:#1b1810;border:1px solid #33291a;color:var(--sub);
+    font-size:13.5px;cursor:pointer;min-height:44px;transition:.2s;line-height:1.3;}
+  .chip.on{background:color-mix(in srgb,var(--c) 20%,transparent);border-color:var(--c);color:var(--c);font-weight:600;}
+  .btn{padding:12px 26px;border-radius:10px;font-size:15px;letter-spacing:3px;cursor:pointer;transition:.2s;min-height:48px;
+    background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid var(--c);color:var(--c);font-weight:600;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn.ghost{background:transparent;border:1px solid #33291a;color:var(--sub);font-weight:400;}
+  .btn.big{width:100%;margin-top:14px;}
+  .test{width:100%;max-width:680px;display:none;flex-direction:column;}
+  .test.on{display:flex;}
+  .tstats{display:flex;justify-content:space-between;color:var(--sub);font-size:13px;margin-bottom:10px;}
+  .tstats b{color:var(--c);font-size:16px;font-variant-numeric:tabular-nums;}
+  .target{border-radius:16px;padding:22px 18px;min-height:150px;background:#16130c;
+    border:1px solid color-mix(in srgb,var(--c) 35%,transparent);
+    font-size:19px;line-height:2;color:var(--sub);word-break:break-word;user-select:none;}
+  .target span{border-radius:3px;padding:0 1px;}
+  .target .ok{color:#7ae0b8;background:rgba(74,214,193,.08);}
+  .target .bad{color:#ff9c95;background:rgba(232,69,60,.2);text-decoration:underline;}
+  .target .cur{border-bottom:2px solid var(--c);}
+  .pytip{text-align:center;margin-top:14px;}
+  .pytip .hz{font-size:40px;letter-spacing:8px;color:var(--txt);}
+  .pytip .py{font-size:17px;color:var(--c);margin-top:8px;letter-spacing:2px;}
+  .tinput{margin-top:14px;width:100%;padding:14px;border-radius:11px;background:#0f0d08;
+    border:1px solid var(--c);color:var(--txt);font-size:18px;outline:none;min-height:56px;letter-spacing:1px;text-align:center;}
+  .tinput::placeholder{color:#5a4d33;}
+  .result{width:100%;max-width:680px;display:none;padding:26px 20px;border-radius:16px;text-align:center;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 12%,#14110b),#14110b 75%);
+    border:1px solid color-mix(in srgb,var(--c) 45%,transparent);}
+  .result.on{display:block;}
+  .result h2{font-family:"STKaiti","KaiTi",serif;font-size:30px;color:var(--c);letter-spacing:4px;margin-bottom:14px;}
+  .result .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;}
+  .result .cell{background:rgba(0,0,0,.25);border-radius:10px;padding:12px 6px;}
+  .result .cell b{display:block;font-size:22px;color:var(--gold);}
+  .result .cell span{font-size:12px;color:var(--sub);}
+  .rule{margin-top:14px;font-size:12.5px;line-height:2;color:var(--sub);}
+  .rule b{color:var(--c);}
+  .foot{margin-top:24px;color:#6a5a3e;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){.head h1{font-size:27px;letter-spacing:5px;}.target{font-size:17px;}.pytip .hz{font-size:32px;letter-spacing:5px;}}
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="learn-hub.html">← 返回学习</a></div>
+  <div class="head">
+    <h1>打字练习</h1>
+    <p>TYPING · 键指如飞，速度与准确率</p>
+  </div>
+
+  <div class="stats">
+    <span>单词最佳 <b id="bWord">—</b></span>
+    <span>段落最佳 <b id="bPara">—</b></span>
+    <span>拼音最佳 <b id="bPy">—</b></span>
+  </div>
+
+  <!-- ===== 设置 ===== -->
+  <div class="panel" id="setup">
+    <h3>练习模式</h3>
+    <div class="chips" id="modeChips">
+      <button class="chip on" data-m="word">英文单词</button>
+      <button class="chip" data-m="para">英文段落</button>
+      <button class="chip" data-m="py">中文拼音</button>
+    </div>
+    <div id="diffWrap" style="margin-top:14px;">
+      <h3 style="margin-top:16px;">单词难度</h3>
+      <div class="chips" id="diffChips">
+        <button class="chip on" data-d="mix">混合</button>
+        <button class="chip" data-d="s">短词 3-4</button>
+        <button class="chip" data-d="m">中词 5-6</button>
+        <button class="chip" data-d="l">长词 7+</button>
+      </div>
+    </div>
+    <button class="btn big" id="startBtn">开始练习 →</button>
+    <div class="rule">
+      <b>规则：</b>从按下第一个键开始计时；英文按词/分钟计速度，拼音按汉字/分钟计速度。打错的字符实时标红，退格可修正；打完一段自动结算。每模式最佳速度与准确率保存在本机。
+    </div>
+  </div>
+
+  <!-- ===== 测试 ===== -->
+  <div class="test" id="test">
+    <div class="tstats">
+      <span>用时 <b id="tTime">0s</b></span>
+      <span id="tWpmWrap">速度 <b id="tWpm">0</b> <span id="tWpmUnit">wpm</span></span>
+      <span>准确率 <b id="tAcc">100%</b></span>
+      <span id="tProg">0%</span>
+    </div>
+    <div class="target" id="target"></div>
+    <div class="pytip" id="pyTip" style="display:none;">
+      <div class="hz" id="pyHz"></div>
+      <div class="py" id="pyPy"></div>
+    </div>
+    <input class="tinput" id="tinput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="从这里开始输入…">
+  </div>
+
+  <!-- ===== 结算 ===== -->
+  <div class="result" id="result">
+    <h2>本段完成</h2>
+    <div class="grid">
+      <div class="cell"><b id="rWpm">0</b><span id="rWpmUnit">速度</span></div>
+      <div class="cell"><b id="rAcc">0%</b><span>准确率</span></div>
+      <div class="cell"><b id="rBest">—</b><span>本模式最佳</span></div>
+    </div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:16px;" id="rMsg"></div>
+    <button class="btn" id="againBtn">再来一段</button>
+    <button class="btn ghost" id="backBtn" style="margin-left:10px;">返回设置</button>
+  </div>
+
+  <div class="foot">妙搭小站 · 学习 · 键指如飞</div>
+
+<script>
+(function(){
+  'use strict';
+  var LS='miaodaTyping';
+  var best=load();
+  var state={mode:'word',diff:'mix',target:'',input:'',start:null,timer:null,
+    totalKeys:0,errKeys:0,done:false,pyList:[],pyIdx:0,pyDoneChars:0};
+
+  // ===== 内置语料 =====
+  var WORDS_S=['cat','dog','sun','run','book','time','make','look','good','work','life','hand','part','child','point','water','house','world','stand','night','room','father','problem','education','market','school','family','system','develop','between','however','community','activity','experience','important','different','computer','knowledge','understand','together','question','government','information','environment','opportunity'];
+  var WORDS_M=['able','acid','also','area','baby','back','ball','band','bank','base','bear','beat','beer','before','being','best','bird','black','blow','blue','body','bold','boss','both','box','bread','break','brief','bright','brown','build','busy','buy','call','calm','came','camp','can','care','carry','case','cause','change','check','child','city','class','clean','clear','close','cloud','coast','color','come','cook','cool','copy','corn','could','count','course','cover','cry','cup','cut','dance','dark','data','day','dead','deal','dear','deep','degree','desk','devil','die','difference','dinner','direct','dirty','do','does','dog','door','down','draw','dream','dress','drink','drive','drop','dry','due','during','each','early','east','easy','eat','edge','egg','eight','either','end','energy','enjoy','enough','enter','even','evening','ever','every','eye','face','fact','fall','family','far','farm','fast','father','fear','feed','feel','few','field','fight','fill','film','find','fine','fire','first','fish','fit','five','fix','fly','fold','food','foot','for','force','form','forty','four','free','fresh','friend','from','front','full','fun','game','garden','gas','get','girl','give','glad','glass','go','god','gold','good','got','grand','grass','gray','great','green','ground','group','grow','gun','had','half','hand','hang','happy','hard','has','hat','have','he','head','hear','heart','heavy','hello','help','her','here','high','him','his','hold','home','hope','horse','hospital','hot','hotel','hour','house','how','hundred','husband','ice','idea','if','in','into','is','it','its','job','joy','judge','jump','just','keep','key','kill','kind','king','kiss','knee','knife','know','land','large','last','late','laugh','law','lay','lead','learn','least','leave','left','leg','lend','length','less','let','letter','life','light','like','line','list','listen','little','live','long','look','lose','lot','love','low','luck','lunch','made','main','make','man','many','map','mark','matter','may','me','mean','meat','meet','member','men','might','mile','milk','mind','mine','miss','money','month','moon','more','morning','most','mother','move','much','must','my','name','near','need','never','new','next','nice','night','no','none','nor','north','not','nothing','now','number','of','off','often','oil','old','on','once','one','only','open','or','order','other','our','out','over','own','page','pain','paint','pair','paper','parent','park','part','pass','past','path','pay','peace','pen','people','per','person','pick','picture','piece','pig','pin','place','plan','plant','play','please','point','poor','port','position','possible','post','pot','practice','press','pretty','price','pride','print','private','problem','process','produce','program','project','prove','public','pull','push','put','queen','quick','quite','rain','raise','read','real','reason','receive','red','remember','report','rest','rich','ride','right','ring','rise','road','rock','role','room','round','rule','run','sad','safe','said','sail','sale','same','say','school','science','sea','second','see','seem','self','sell','send','sense','sentence','serve','set','seven','sew','sex','shake','shall','she','sheep','shine','ship','shirt','shock','shoe','shoot','shop','short','should','show','shut','sick','side','signal','silver','simple','since','sing','sink','sit','six','size','skin','sky','sleep','slip','slow','small','smell','smile','smoke','snow','so','soft','soil','soldier','some','son','song','soon','sore','sort','sound','south','space','speak','special','speed','spell','spend','spin','spirit','spit','spite','split','spoil','spoke','sport','spot','spread','spring','spy','square','stand','star','start','state','stay','steal','steam','steel','step','stick','still','stone','stood','stop','store','storm','story','stove','straight','strange','street','strong','struck','study','stuff','stupid','such','sugar','suit','summer','sun','support','sure','surface','surprise','swam','swear','sweet','swam','swim','swing','switch','sword','symbol','system','table','take','talk','tall','teach','team','tell','ten','test','than','that','the','them','then','there','these','they','thick','thin','thing','think','third','this','those','three','threw','throat','through','throw','thumb','thus','time','to','today','told','tomorrow','tone','tongue','tonight','too','tool','tooth','top','total','touch','toward','town','toy','trade','train','travel','tree','trial','tribe','trick','trip','trouble','truck','true','trust','try','turn','twelve','twenty','twice','two','type','under','unit','until','up','upon','us','use','usual','very','voice','wait','walk','wall','want','war','warm','was','wash','waste','watch','water','wave','way','we','wealth','wear','well','went','were','what','when','where','which','while','white','who','why','wide','wife','wild','will','win','wind','winter','wire','wise','with','within','without','wolf','woman','wood','wool','word','work','world','worry','worth','would','write','wrong','year','yellow','yes','yesterday','yet','you','young','your'];
+  var PARA=[
+    'The quick brown fox jumps over the lazy dog. Every morning the sun rises slowly over the quiet hills and the world seems new.',
+    'Learning a language takes time and patience. You do not have to be perfect at the start; you only need to keep going day by day.',
+    'Technology changes fast, but good ideas stay simple. A clear plan, steady hands and a calm mind will beat every tricky problem.',
+    'Books open doors to places we have never seen. Through stories we meet people from distant lands and learn to see the world with new eyes.',
+    'Exercise keeps both body and mind strong. Even a short walk in the park can clear the head and bring back a good mood.',
+    'The best way to master typing is practice. Keep your eyes on the screen, relax your shoulders, and let your fingers remember the way.'
+  ];
+  var PYW=[
+    ['你好','nihao'],['世界','shijie'],['学习','xuexi'],['朋友','pengyou'],['时间','shijian'],['生活','shenghuo'],
+    ['工作','gongzuo'],['快乐','kuaile'],['梦想','mengxiang'],['努力','nuli'],['勇敢','yonggan'],['微笑','weixiao'],
+    ['春天','chuntian'],['阳光','yangguang'],['大海','dahai'],['高山','gaoshan'],['星空','xingkong'],['月亮','yueliang'],
+    ['学校','xuexiao'],['老师','laoshi'],['同学','tongxue'],['知识','zhishi'],['读书','dushu'],['写字','xiezi'],
+    ['音乐','yinyue'],['电影','dianying'],['旅行','lvxing'],['风景','fengjing'],['早晨','zaochen'],['夜晚','yewan'],
+    ['家庭','jiating'],['温暖','wennuan'],['安全','anquan'],['健康','jiankang'],['运动','yundong'],['跑步','paobu'],
+    ['耐心','naixin'],['坚持','jianchi'],['成功','chenggong'],['未来','weilai'],['希望','xiwang'],['自由','ziyou']
+  ];
+
+  function load(){try{return JSON.parse(localStorage.getItem(LS))||{};}catch(e){return{};}}
+  function save(){try{localStorage.setItem(LS,JSON.stringify(best));}catch(e){}}
+  function $(id){return document.getElementById(id);}
+  function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+  function renderBest(){
+    function fmt(k){var b=best[k];return b?(b.wpm+' '+(k==='py'?'字/分':'wpm')+' · '+b.acc+'%'):'—';}
+    $('bWord').textContent=fmt('word');$('bPara').textContent=fmt('para');$('bPy').textContent=fmt('py');
+  }
+
+  function buildTarget(){
+    if(state.mode==='word'){
+      var pool=WORDS_M;
+      if(state.diff==='s')pool=WORDS_S.concat(['and','the','for','are','but','not','you','all','can','had','her','was','one','our','out','day','get','has','him','his','how','man','new','now','old','see','two','way','who','boy','did','its','let','put','say','she','too','use']);
+      else if(state.diff==='l')pool=WORDS_S.concat(['computer','important','different','education','experience','information','environment','opportunity','understanding','development','communication','organization','investigation','responsibility']);
+      var ws=[];for(var i=0;i<30;i++)ws.push(pick(pool));
+      return ws.join(' ');
+    }
+    if(state.mode==='para')return pick(PARA);
+    // pinyin
+    state.pyList=PYW.slice();
+    for(var i=state.pyList.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=state.pyList[i];state.pyList[i]=state.pyList[j];state.pyList[j]=t;}
+    state.pyList=state.pyList.slice(0,20);
+    state.pyIdx=0;state.pyDoneChars=0;
+    return ''; // pinyin 走单词卡片流
+  }
+
+  function start(){
+    state.input='';state.totalKeys=0;state.errKeys=0;state.done=false;state.start=null;
+    $('setup').style.display='none';
+    $('result').classList.remove('on');
+    $('test').classList.add('on');
+    $('target').innerHTML='';
+    $('pyTip').style.display='none';
+    if(window.SFX)SFX.start();
+    if(state.mode==='py'){
+      state.target='';
+      showPyWord();
+    }else{
+      state.target=buildTarget();
+      renderTarget();
+    }
+    $('tinput').value='';
+    $('tinput').focus();
+    if(state.timer)clearInterval(state.timer);
+    state.timer=setInterval(tick,250);
+  }
+
+  function tick(){
+    if(!state.start||state.done)return;
+    var sec=((Date.now()-state.start)/1000).toFixed(0);
+    $('tTime').textContent=sec+'s';
+    updateLive();
+  }
+
+  function renderTarget(){
+    var html='';
+    for(var i=0;i<state.target.length;i++){
+      var cls='';
+      if(i<state.input.length){cls=state.input[i]===state.target[i]?'ok':'bad';}
+      else if(i===state.input.length){cls='cur';}
+      var ch=state.target[i]===' '?'&nbsp;':state.target[i];
+      html+='<span class="'+cls+'">'+ch+'</span>';
+    }
+    $('target').innerHTML=html;
+    var prog=state.target.length?Math.round(state.input.length/state.target.length*100):0;
+    $('tProg').textContent=prog+'%';
+  }
+
+  function showPyWord(){
+    if(state.pyIdx>=state.pyList.length){settle();return;}
+    var w=state.pyList[state.pyIdx];
+    $('pyHz').textContent=w[0];
+    $('pyPy').textContent=w[1].replace(/([a-z])([a-z]*)/g,function(m,a,b){return a.toUpperCase()+b;});
+    $('tProg').textContent=(state.pyIdx+1)+'/'+state.pyList.length;
+    $('target').innerHTML='<span style="color:var(--sub)">拼音打字：看汉字与提示拼音，敲完整个拼音自动跳下一词</span>';
+  }
+
+  function updateLive(){
+    if(!state.start)return;
+    var mins=(Date.now()-state.start)/60000;
+    var acc=state.totalKeys?Math.max(0,Math.round((state.totalKeys-state.errKeys)/state.totalKeys*100)):100;
+    $('tAcc').textContent=acc+'%';
+    if(state.mode==='py'){
+      $('tWpm').textContent=state.pyDoneChars?Math.round(state.pyDoneChars/mins):0;
+      $('tWpmUnit').textContent='字/分';
+    }else{
+      var good=(state.input.length-state.errKeys);
+      $('tWpm').textContent=mins>0?Math.max(0,Math.round(good/5/mins)):0;
+      $('tWpmUnit').textContent='wpm';
+    }
+  }
+
+  function onInput(e){
+    if(state.done)return;
+    if(!state.start){state.start=Date.now();}
+    var v=$('tinput').value;
+    if(state.mode==='py'){
+      // 只保留小写字母
+      v=v.toLowerCase().replace(/[^a-z]/g,'');
+      $('tinput').value=v;
+    }
+    // 统计按键：比较长度差
+    if(v.length>state.input.length){state.totalKeys+=(v.length-state.input.length);}
+    var oldLen=state.input.length;
+    if(state.mode==='py'){
+      var w=state.pyList[state.pyIdx];
+      // 逐键对错判定
+      for(var i=oldLen;i<v.length;i++){
+        if(v[i]!==w[1][i])state.errKeys++;
+      }
+      if(v===w[1]){
+        state.pyDoneChars+=w[0].length;
+        state.pyIdx++;
+        $('tinput').value='';
+        if(window.SFX)SFX.pop();
+        showPyWord();
+      }
+    }else{
+      for(var i=oldLen;i<v.length;i++){
+        if(v[i]!==state.target[i])state.errKeys++;
+      }
+      state.input=v;
+      renderTarget();
+      if(v.length>=state.target.length){state.input=state.target;renderTarget();settle();}
+    }
+    updateLive();
+  }
+  $('tinput').addEventListener('input',onInput);
+  $('tinput').addEventListener('keydown',function(e){if(e.key==='Enter'&&state.done){start();}});
+
+  function settle(){
+    if(state.done)return;
+    state.done=true;
+    if(state.timer)clearInterval(state.timer);
+    $('test').classList.remove('on');
+    var mins=(Date.now()-state.start)/60000||1/60000;
+    var acc=state.totalKeys?Math.round((state.totalKeys-state.errKeys)/state.totalKeys*100):100;
+    var spd;
+    if(state.mode==='py'){spd=Math.round(state.pyDoneChars/mins);$('rWpmUnit').textContent='字/分';}
+    else{var good=state.target.length-state.errKeys;spd=Math.max(0,Math.round(good/5/mins));$('rWpmUnit').textContent='wpm';}
+    $('rWpm').textContent=spd;
+    $('rAcc').textContent=acc+'%';
+    var k=state.mode;
+    var isBest=!best[k]||spd>best[k].wpm;
+    if(isBest){best[k]={wpm:spd,acc:acc};save();}
+    $('rBest').textContent=best[k]?best[k].wpm+' '+$('rWpmUnit').textContent:'—';
+    $('rMsg').textContent=isBest?'新纪录！继续保持手速。':'再接再厉，准确率和速度都还能再提。';
+    $('result').classList.add('on');
+    if(window.SFX){acc>=90?SFX.win():SFX.lose();}
+    renderBest();
+  }
+
+  $('againBtn').addEventListener('click',start);
+  $('backBtn').addEventListener('click',function(){
+    $('result').classList.remove('on');
+    $('setup').style.display='block';
+  });
+  $('startBtn').addEventListener('click',start);
+
+  $('modeChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip');if(!b)return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    state.mode=b.dataset.m;
+    $('diffWrap').style.display=state.mode==='word'?'':'none';
+  });
+  $('diffChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip');if(!b)return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    state.diff=b.dataset.d;
+  });
+
+  renderBest();
+})();
+</script>
+<script>
+// 源码保护
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var key = e.key.toLowerCase();
+    if (key === 'f12') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 'u') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); return; }
+  });
+  document.addEventListener('selectstart', function(e){
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+
+<script src="sounds.js"></script>
+</body>
+</html>
