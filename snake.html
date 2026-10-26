@@ -1317,6 +1317,7 @@
     finalScoreEl.textContent = '最终得分：' + score;
     finalLengthEl.textContent = '蛇身长度：' + snake.length + '　食物：' + foodEaten + '　用时：' + fmtTime(elapsedSec);
     const isNew = saveHighScore();
+    if(window.RANK)RANK.report('snake', score);
     newHighScoreEl.style.display = isNew ? 'block' : 'none';
     if (score > 0) addToLeaderboard(score);
     showOverlay(gameOverOverlay);
@@ -2567,5 +2568,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

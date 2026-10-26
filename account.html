@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>账号与排行榜 - 妙搭小站</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23ffb020'/%3E%3Ctext x='12' y='17' font-size='13' text-anchor='middle' fill='%23000' font-family='sans-serif'%3E榜%3C/text%3E%3C/svg%3E">
+<script src="rank.js"></script>
+<script src="sounds.js"></script>
+<style>
+  :root{ --bg:#0b0f14; --card:#121a23; --card2:#0f1620; --line:#1e2a38; --txt:#e6edf3;
+         --dim:#8b98a5; --ac:#ffb020; --ac2:#4ad6c1; --red:#ff5c5c; --green:#3fb950; }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ background:var(--bg); color:var(--txt); font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+        min-height:100vh; }
+  .wrap{ max-width:640px; margin:0 auto; padding:18px 16px 40px; }
+  .top{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .back{ color:var(--dim); text-decoration:none; font-size:15px; padding:6px 10px; border-radius:8px; }
+  .back:hover{ color:var(--txt); background:var(--card2); }
+  h1{ font-size:20px; font-weight:700; }
+  .status{ margin-left:auto; font-size:12px; color:var(--dim); padding:4px 10px; border:1px solid var(--line); border-radius:99px; }
+  .status.on{ color:var(--green); border-color:rgba(63,185,80,.5); }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .tab{ flex:1; text-align:center; padding:11px 0; border-radius:10px; background:var(--card2);
+        border:1px solid var(--line); color:var(--dim); font-size:15px; cursor:pointer; user-select:none; }
+  .tab.on{ background:rgba(255,176,32,.12); color:var(--ac); border-color:rgba(255,176,32,.5); font-weight:600; }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:13px; color:var(--dim); margin-bottom:6px; }
+  .field input{ width:100%; padding:11px 12px; border-radius:10px; background:#0a0f15;
+        border:1px solid var(--line); color:var(--txt); font-size:16px; outline:none; }
+  .field input:focus{ border-color:rgba(255,176,32,.6); }
+  .btn{ width:100%; padding:12px 0; border:0; border-radius:10px; background:var(--ac); color:#151105;
+        font-size:16px; font-weight:700; cursor:pointer; }
+  .btn:active{ transform:scale(.98); }
+  .msg{ font-size:13px; min-height:20px; margin-top:8px; }
+  .msg.err{ color:var(--red); } .msg.ok{ color:var(--green); }
+  .me{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .avatar{ width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#ffb020,#ff7a00);
+        display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:#151105; }
+  .me .name{ font-size:17px; font-weight:700; }
+  .me .sub{ font-size:12px; color:var(--dim); }
+  .mini{ margin-left:auto; padding:9px 16px; border-radius:10px; border:1px solid var(--line);
+        background:var(--card2); color:var(--dim); font-size:14px; cursor:pointer; }
+  .select-row{ display:flex; gap:8px; margin-bottom:12px; }
+  select{ flex:1; padding:11px 12px; border-radius:10px; background:#0a0f15; border:1px solid var(--line);
+        color:var(--txt); font-size:15px; outline:none; }
+  .refresh{ padding:0 16px; border-radius:10px; border:1px solid var(--line); background:var(--card2);
+        color:var(--dim); font-size:14px; cursor:pointer; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ padding:10px 8px; text-align:left; font-size:14px; border-bottom:1px solid var(--line); }
+  th{ color:var(--dim); font-weight:500; font-size:12px; }
+  td.rank{ width:44px; font-weight:700; color:var(--dim); }
+  tr.top1 td{ color:var(--ac); font-weight:700; }
+  .empty{ text-align:center; color:var(--dim); font-size:14px; padding:28px 0; }
+  .hint{ font-size:12px; color:var(--dim); line-height:1.7; margin-top:12px; padding:10px 12px;
+        background:var(--card2); border-radius:10px; }
+  code{ color:var(--ac2); }
+  .hide{ display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="index.html">← 返回首页</a>
+    <h1>账号与排行榜</h1>
+    <span class="status" id="srv">后端检测中…</span>
+  </div>
+
+  <!-- 未登录：登录/注册 -->
+  <div id="viewGuest">
+    <div class="tabs">
+      <div class="tab on" id="tabLogin">登录</div>
+      <div class="tab" id="tabReg">注册</div>
+    </div>
+    <div class="card" id="formLogin">
+      <div class="field"><label>用户名</label><input id="liUser" type="text" placeholder="2-32 位字符" autocomplete="username"></div>
+      <div class="field"><label>密码</label><input id="liPass" type="password" placeholder="4-64 位字符" autocomplete="current-password"></div>
+      <button class="btn" id="btnLogin">登 录</button>
+      <div class="msg" id="liMsg"></div>
+    </div>
+    <div class="card hide" id="formReg">
+      <div class="field"><label>用户名</label><input id="rgUser" type="text" placeholder="2-32 位字符" autocomplete="username"></div>
+      <div class="field"><label>密码</label><input id="rgPass" type="password" placeholder="4-64 位字符" autocomplete="new-password"></div>
+      <div class="field"><label>昵称（可选）</label><input id="rgNick" type="text" placeholder="默认同用户名"></div>
+      <button class="btn" id="btnReg">注 册</button>
+      <div class="msg" id="rgMsg"></div>
+    </div>
+  </div>
+
+  <!-- 已登录 -->
+  <div id="viewMe" class="hide">
+    <div class="me">
+      <div class="avatar" id="meAvatar">?</div>
+      <div>
+        <div class="name" id="meName">-</div>
+        <div class="sub" id="meSub">本地成绩会自动同步</div>
+      </div>
+      <button class="mini" id="btnOut">退出登录</button>
+    </div>
+
+    <div class="card">
+      <div class="select-row">
+        <select id="gameSel"></select>
+        <button class="refresh" id="btnRefresh">刷新</button>
+      </div>
+      <div id="board">
+        <div class="empty" id="boardEmpty">选择游戏查看排行榜</div>
+        <table class="hide" id="boardTable">
+          <thead><tr><th class="rank">#</th><th>玩家</th><th id="thVal">最佳</th></tr></thead>
+          <tbody id="boardBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin-bottom:10px;">我的最佳成绩</h2>
+      <div id="myScores"><div class="empty">暂无成绩，玩一局自动上报</div></div>
+    </div>
+  </div>
+
+  <div class="hint">
+    本机模式：需在本机运行后端 <code>D:\tanlan\server\start_all.bat</code>（MySQL + Flask，已设开机自启）。
+    登录后，各游戏结算成绩与本地历史最佳会自动上传；排行榜展示全部游戏排名。
+    线上版（https 站点）因浏览器安全限制无法连本机后端，请在电脑上打开本页使用。
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var srvEl = $('srv');
+  var GAMES = [
+    ['snake','腾蛇'],['2048','2048'],['minesweeper','扫雷'],['tetris','俄罗斯方块'],
+    ['breakout','打砖块'],['mole','打地鼠'],['jump','跳一跳'],['dino','小恐龙'],
+    ['pong','乒乓球'],['memory','记忆翻牌'],['lianliankan','连连看'],['sudoku','数独'],
+    ['hrd','华容道'],['sokoban','推箱子'],['nonogram','数织'],['slitherlink','数回'],
+    ['hashi','数桥'],['nurikabe','数墙'],['akari','美术馆'],['calc24','24点'],
+    ['guessnum','猜数字'],['p15','数字华容道'],['reversi','黑白棋'],['junqi','军棋'],
+    ['checkers','跳棋'],['animals','斗兽棋'],['shogi','将棋'],['draughts','国际跳棋'],
+    ['go','围棋'],['xiangqi','中国象棋'],['intchess','国际象棋'],['gomoku','五子棋']
+  ];
+  var LOW = {minesweeper:1,sudoku:1,hrd:1,sokoban:1,p15:1,memory:1,lianliankan:1,nonogram:1,
+             slitherlink:1,hashi:1,nurikabe:1,akari:1,calc24:1,guessnum:1,checkers:1,shogi:1,draughts:1,wordcard:1};
+
+  function renderAuth(){
+    var on = window.RANK && RANK.isAuthed();
+    $('viewGuest').classList.toggle('hide', on);
+    $('viewMe').classList.toggle('hide', !on);
+    if(on){ var u = RANK.getUser() || {}; $('meName').textContent = u.nickname || u.username || '-';
+      $('meAvatar').textContent = (u.nickname || u.username || '?').charAt(0).toUpperCase();
+      $('meSub').textContent = '@' + (u.username || '') + ' · 本地成绩自动同步';
+      fillGames(); loadMy(); RANK.syncLocalBest();
+    }
+  }
+
+  function ping(){
+    fetch(RANK.apiBase + '/api/games', { headers: {} })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(d.ok){ srvEl.textContent='后端在线'; srvEl.classList.add('on'); } else fail(); })
+      .catch(fail);
+    function fail(){ srvEl.textContent='后端离线'; srvEl.classList.remove('on'); }
+  }
+
+  function msg(el, text, type){ el.textContent = text; el.className = 'msg ' + (type||''); }
+
+  // tabs
+  $('tabLogin').addEventListener('click', function(){ tabOn('tabLogin','formLogin'); });
+  $('tabReg').addEventListener('click', function(){ tabOn('tabReg','formReg'); });
+  function tabOn(t, f){ $('tabLogin').classList.toggle('on', t==='tabLogin');
+    $('tabReg').classList.toggle('on', t==='tabReg');
+    $('formLogin').classList.toggle('hide', f!=='formLogin');
+    $('formReg').classList.toggle('hide', f!=='formReg'); }
+
+  $('btnLogin').addEventListener('click', function(){
+    var u=$('liUser').value.trim(), p=$('liPass').value;
+    if(!u||!p){ msg($('liMsg'),'请填写用户名和密码','err'); return; }
+    RANK.login(u,p).then(function(d){
+      if(d.ok){ msg($('liMsg'),'登录成功','ok'); renderAuth(); }
+      else msg($('liMsg'), d.msg || '登录失败','err');
+    });
+  });
+  $('btnReg').addEventListener('click', function(){
+    var u=$('rgUser').value.trim(), p=$('rgPass').value, n=$('rgNick').value.trim();
+    if(!u||!p){ msg($('rgMsg'),'请填写用户名和密码','err'); return; }
+    RANK.register(u,p,n).then(function(d){
+      if(d.ok){ msg($('rgMsg'),'注册成功，已登录','ok'); renderAuth(); }
+      else msg($('rgMsg'), d.msg || '注册失败','err');
+    });
+  });
+  $('btnOut').addEventListener('click', function(){ RANK.logout(); renderAuth(); });
+
+  // 排行榜
+  function fillGames(){
+    var sel = $('gameSel'); sel.innerHTML = '';
+    for(var i=0;i<GAMES.length;i++){
+      var o = document.createElement('option');
+      o.value = GAMES[i][0]; o.textContent = GAMES[i][1];
+      sel.appendChild(o);
+    }
+    sel.addEventListener('change', loadBoard);
+  }
+  function loadBoard(){
+    var g = $('gameSel').value;
+    fetch(RANK.apiBase + '/api/leaderboard/' + g)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d.ok){ return; }
+        $('thVal').textContent = LOW[g] ? '最佳（越小越好）' : '最佳';
+        if(!d.rows.length){ $('boardTable').classList.add('hide');
+          $('boardEmpty').textContent = '暂无记录，玩一局上传后上榜'; $('boardEmpty').classList.remove('hide'); return; }
+        $('boardEmpty').classList.add('hide'); $('boardTable').classList.remove('hide');
+        var tb = $('boardBody'); tb.innerHTML = '';
+        for(var i=0;i<d.rows.length;i++){
+          var r = d.rows[i]; var tr = document.createElement('tr');
+          if(i===0) tr.className = 'top1';
+          tr.innerHTML = '<td class="rank">' + (i+1) + '</td><td>' + esc(r.nickname||r.username) + '</td><td>' + r.best + '</td>';
+          tb.appendChild(tr);
+        }
+      }).catch(function(){});
+  }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  $('btnRefresh').addEventListener('click', function(){ loadBoard(); RANK.syncLocalBest(); });
+
+  // 我的成绩
+  function loadMy(){
+    fetch(RANK.apiBase + '/api/me', { headers: { 'Authorization': 'Bearer ' + (function(){try{return localStorage.getItem('miaodaToken')||'';}catch(e){return '';}}()) } })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d.ok || !d.scores || !d.scores.length){
+          $('myScores').innerHTML = '<div class="empty">暂无成绩，玩一局自动上报</div>'; return; }
+        var name = {};
+        GAMES.forEach(function(g){ name[g[0]] = g[1]; });
+        var html = '<table><thead><tr><th>游戏</th><th>最佳</th></tr></thead><tbody>';
+        d.scores.forEach(function(s){
+          html += '<tr><td>' + esc(name[s.game] || s.game) + '</td><td>' + s.best + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        $('myScores').innerHTML = html;
+      }).catch(function(){});
+  }
+
+  ping();
+  setTimeout(renderAuth, 50);
+})();
+</script>
+</body>
+</html>

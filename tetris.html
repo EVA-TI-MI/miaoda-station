@@ -180,6 +180,7 @@
   function gameOver(){
     over=true;
     if(window.SFX)SFX.lose();
+    if(window.RANK)RANK.report('tetris', score);
     document.getElementById('maskBig').textContent='💥';
     document.getElementById('maskTitle').textContent='游戏结束';
     document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>消除行数 '+lines+' · 等级 '+level;
@@ -301,5 +302,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

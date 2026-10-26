@@ -248,12 +248,14 @@
     if(!won && hasWin()){
       won=true;
       if(window.SFX)SFX.win();
+      if(window.RANK)RANK.report('2048', score);
       toast('达成 2048！继续冲击更高分');
       return;
     }
     if(!canMove()){
       over=true;
       if(window.SFX)SFX.lose();
+      if(window.RANK)RANK.report('2048', score);
       document.getElementById('maskBig').textContent='失败';
       document.getElementById('maskP').textContent='没有可移动的方块了';
       document.getElementById('mask').classList.add('show');
@@ -308,5 +310,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

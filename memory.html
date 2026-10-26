@@ -127,6 +127,7 @@
   function finish(){
     var k=key();
     if(window.SFX)SFX.win();
+    if(window.RANK)RANK.report('memory', moves);
     if(bestMap[k]==null || moves<bestMap[k]){ bestMap[k]=moves; try{localStorage.setItem('miaodaMemoryBestV44',JSON.stringify(bestMap));}catch(e){} renderBest(); }
     setTimeout(function(){ alert('🎉 配对完成！共 '+moves+' 步'); }, 300);
   }
@@ -162,5 +163,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

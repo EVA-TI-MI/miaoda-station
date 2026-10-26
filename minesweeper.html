@@ -265,6 +265,7 @@
   function blowUp(r,c){
     ended=true; timerStop();
     if(window.SFX)SFX.explode();
+    if(window.RANK)RANK.report('minesweeper', elapsed, '失败');
     for(var i=0;i<state.cells.length;i++){
       var cell=state.cells[i];
       if(cell.mine && !cell.flag){ cell.rev=true; var el=boardEl.children[i]; el.classList.add('mine'); el.textContent='💣'; }
@@ -279,6 +280,7 @@
     if(state.revealed===state.rows*state.cols-state.mines && !ended){
       ended=true; timerStop();
       if(window.SFX)SFX.win();
+      if(window.RANK)RANK.report('minesweeper', elapsed, '胜利');
       var d=DIFFS[diff];
       var isNew=false;
       if(!best[diff]||elapsed<best[diff]){ best[diff]=elapsed; isNew=true; try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){} }
@@ -362,5 +364,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

@@ -105,8 +105,7 @@
     if(!playing||active!==i) return;
     score++; document.getElementById('score').textContent=score;
     if(window.SFX)SFX.hit();
-    holes[i].classList.remove('up'); holes[i].classList.add('hit');
-    setTimeout(function(){ holes[i].classList.remove('hit'); },180);
+    holes[i].classList.remove('up'); holes[i].classList.add('hit');    setTimeout(function(){ holes[i].classList.remove('hit'); },180);
     if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
     active=-1; clearTimeout(hideT);
     nextT=setTimeout(showMole, 260);
@@ -131,6 +130,7 @@
   function finish(){
     playing=false; clearInterval(timer); clearTimeout(hideT); clearTimeout(nextT);
     holes.forEach(function(h){h.classList.remove('up');}); active=-1;
+    if(window.RANK)RANK.report('mole', score);
     document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>历史最佳 '+best;
     document.getElementById('mask').classList.add('show');
   }
@@ -159,5 +159,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

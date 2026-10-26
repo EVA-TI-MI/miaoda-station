@@ -125,6 +125,7 @@
   function gameOver(win){
     over=true;
     if(window.SFX)(win?SFX.win():SFX.lose());
+    if(window.RANK)RANK.report('breakout', score, win?'胜利':'失败');
     document.getElementById('maskBig').textContent=win?'🎉':'💥';
     document.getElementById('maskTitle').textContent=win?'第 '+level+' 关击破':'游戏结束';
     document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>到达第 '+level+' 关';
@@ -239,5 +240,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>

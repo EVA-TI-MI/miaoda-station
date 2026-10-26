@@ -185,6 +185,7 @@ function clickTile(r,c){
     if(isWin()){
       solved=true;stopTimer();
       if(window.SFX)SFX.win();
+      if(window.RANK)RANK.report('lianliankan', time);
       var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
       var dk=R+'x'+C;
       var isNew=false;
@@ -260,5 +261,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 
 <script src="sounds.js"></script>
+<script src="rank.js"></script>
 </body>
 </html>
