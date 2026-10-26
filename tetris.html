@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="creative-medium" content="other">
 <meta name="theme-color" content="#0c1016">
 <link rel="manifest" href="manifest.json">
@@ -151,6 +151,7 @@
     var cleared=0;
     for(var r=ROWS-1;r>=0;r--){ if(board[r].every(function(v){return !!v;})){ board.splice(r,1); board.unshift(new Array(COLS).fill(null)); cleared++; r++; } }
     if(cleared){ lines+=cleared; var gain=[0,100,300,500,800][cleared]; score+=gain*level;
+      if(window.SFX)SFX.clearLine();
       level=Math.floor(lines/10)+1; if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
       updateHud(); }
   }
@@ -178,6 +179,7 @@
 
   function gameOver(){
     over=true;
+    if(window.SFX)SFX.lose();
     document.getElementById('maskBig').textContent='💥';
     document.getElementById('maskTitle').textContent='游戏结束';
     document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>消除行数 '+lines+' · 等级 '+level;
@@ -297,5 +299,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

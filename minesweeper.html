@@ -204,6 +204,7 @@
     if(cell.mine){
       blowUp(r,c); return;
     }
+    if(window.SFX)SFX.pop();
     flood(r,c);
     checkWin();
   }
@@ -256,12 +257,14 @@
     if(cell.rev) return;
     cell.flag=!cell.flag;
     if(cell.flag){ state.flags++; flagCount--; } else { state.flags--; flagCount++; }
+    if(window.SFX)SFX.flip();
     document.getElementById('flags').textContent=Math.max(flagCount,0);
     renderCell(r,c);
   }
 
   function blowUp(r,c){
     ended=true; timerStop();
+    if(window.SFX)SFX.explode();
     for(var i=0;i<state.cells.length;i++){
       var cell=state.cells[i];
       if(cell.mine && !cell.flag){ cell.rev=true; var el=boardEl.children[i]; el.classList.add('mine'); el.textContent='💣'; }
@@ -275,6 +278,7 @@
   function checkWin(){
     if(state.revealed===state.rows*state.cols-state.mines && !ended){
       ended=true; timerStop();
+      if(window.SFX)SFX.win();
       var d=DIFFS[diff];
       var isNew=false;
       if(!best[diff]||elapsed<best[diff]){ best[diff]=elapsed; isNew=true; try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch(e){} }
@@ -356,5 +360,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

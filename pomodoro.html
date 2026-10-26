@@ -34,7 +34,7 @@
   .ring{stroke:#e8453c;stroke-linecap:round;transition:stroke-dashoffset .5s linear;}
   .clock.work .ring{stroke:#e8453c;}
   .clock.break .ring{stroke:#4ad6c1;}
-  .clock.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .clock .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .clock .tt{font-size:52px;font-weight:bold;letter-spacing:2px;font-variant-numeric:tabular-nums;}
   .clock .lt{font-size:14px;color:var(--sub);margin-top:6px;letter-spacing:3px;}
   .controls{width:100%;max-width:640px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
@@ -48,7 +48,7 @@
   .set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
   .set-row label{color:var(--sub);font-size:14px;letter-spacing:1px;}
   .set-row input{width:90px;padding:9px 10px;border-radius:8px;background:#1b1f2c;border:1px solid #2c3650;
-    color:var(--txt);font-size:15px;text-align:center;outline:none;min-height:42px;}
+    color:var(--txt);font-size:16px;text-align:center;outline:none;min-height:42px;}
   .set-row input:focus{border-color:var(--gold);}
   .set-row .unit{color:var(--sub);font-size:12px;}
   .stats{width:100%;max-width:640px;margin-top:14px;padding:16px;border-radius:12px;background:rgba(255,255,255,.03);
@@ -66,8 +66,8 @@
   </div>
 
   <div class="tabs">
-    <div class="tab on" id="tabPomo">🍅 番茄钟</div>
-    <div class="tab" id="tabTimer">⏳ 倒计时</div>
+    <div class="tab on" id="tabPomo">番茄钟</div>
+    <div class="tab" id="tabTimer">倒计时</div>
   </div>
 
   <div class="clock" id="clock">
@@ -261,5 +261,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

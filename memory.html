@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="creative-medium" content="other">
 <meta name="theme-color" content="#120d1a">
 <link rel="manifest" href="manifest.json">
@@ -107,14 +107,17 @@
   function flip(i){
     if(lock) return; var c=cards[i]; if(c.open||c.done) return;
     c.open=true; c.el.classList.add('flip');
+    if(window.SFX)SFX.flip();
     if(first===null){ first=i; return; }
     second=i; moves++; document.getElementById('moves').textContent=moves;
     if(cards[first].face===cards[second].face){
       cards[first].done=cards[second].done=true;
       cards[first].el.classList.add('done'); cards[second].el.classList.add('done');
+      if(window.SFX)SFX.pop();
       matched++; first=second=null;
       if(matched===cols*rows/2){ finish(); }
     } else {
+      if(window.SFX)SFX.error();
       lock=true;
       setTimeout(function(){ cards[first].open=cards[second].open=false;
         cards[first].el.classList.remove('flip'); cards[second].el.classList.remove('flip');
@@ -123,6 +126,7 @@
   }
   function finish(){
     var k=key();
+    if(window.SFX)SFX.win();
     if(bestMap[k]==null || moves<bestMap[k]){ bestMap[k]=moves; try{localStorage.setItem('miaodaMemoryBestV44',JSON.stringify(bestMap));}catch(e){} renderBest(); }
     setTimeout(function(){ alert('🎉 配对完成！共 '+moves+' 步'); }, 300);
   }
@@ -156,5 +160,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

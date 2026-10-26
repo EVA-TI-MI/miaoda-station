@@ -104,6 +104,7 @@
   function whack(i){
     if(!playing||active!==i) return;
     score++; document.getElementById('score').textContent=score;
+    if(window.SFX)SFX.hit();
     holes[i].classList.remove('up'); holes[i].classList.add('hit');
     setTimeout(function(){ holes[i].classList.remove('hit'); },180);
     if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
@@ -156,5 +157,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

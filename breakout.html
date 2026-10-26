@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="creative-medium" content="other">
 <meta name="theme-color" content="#160d0a">
 <link rel="manifest" href="manifest.json">
@@ -124,6 +124,7 @@
   }
   function gameOver(win){
     over=true;
+    if(window.SFX)(win?SFX.win():SFX.lose());
     document.getElementById('maskBig').textContent=win?'🎉':'💥';
     document.getElementById('maskTitle').textContent=win?'第 '+level+' 关击破':'游戏结束';
     document.getElementById('maskP').innerHTML='本局得分 <b style="color:var(--ac)">'+score+'</b><br>到达第 '+level+' 关';
@@ -132,6 +133,7 @@
 
   function brickHit(b){
     if(b.hp>1){ b.hp--; b.color='#5a3526'; } else { b.alive=false; }
+    if(window.SFX)SFX.hit();
     addScore(10*level);
     // 判断是否清空
     if(bricks.every(function(x){return !x.alive;})){
@@ -235,5 +237,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

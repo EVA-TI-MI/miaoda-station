@@ -49,7 +49,7 @@ jobs:
             --add-data "whitenoise.html;." --add-data "backup.html;." `
             --add-data "chess-hub.html;." --add-data "puzzle-hub.html;." `
             --add-data "casual-hub.html;." --add-data "tools-hub.html;." `
-            --add-data "novels_data.js;." `
+            --add-data "sounds.js;." --add-data "novels_data.js;." `
             --add-data "sw.js;." --add-data "manifest.json;." `
             --add-data "icon-192.png;." --add-data "icon-512.png;." snake_launcher.py
 

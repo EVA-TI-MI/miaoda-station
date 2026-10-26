@@ -208,6 +208,7 @@
     }
     if(!moved) return;
     score+=gain;
+    if(gain>0&&window.SFX)SFX.coin();
     document.getElementById('score').textContent=score;
     if(score>best){best=score;document.getElementById('best').textContent=best;try{localStorage.setItem(BEST_KEY,String(best));}catch(e){}}
     rebuildTiles();
@@ -246,11 +247,13 @@
   function checkEnd(){
     if(!won && hasWin()){
       won=true;
+      if(window.SFX)SFX.win();
       toast('达成 2048！继续冲击更高分');
       return;
     }
     if(!canMove()){
       over=true;
+      if(window.SFX)SFX.lose();
       document.getElementById('maskBig').textContent='失败';
       document.getElementById('maskP').textContent='没有可移动的方块了';
       document.getElementById('mask').classList.add('show');
@@ -303,5 +306,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>

@@ -180,9 +180,11 @@ function clickTile(r,c){
   if(sel[0]===r&&sel[1]===c){sel=null;render();return;}
   if(grid[sel[0]][sel[1]].ch===g.ch&&canConnect(sel[0],sel[1],r,c)){
     grid[sel[0]][sel[1]].gone=true;g.gone=true;
+    if(window.SFX)SFX.pop();
     steps++;sel=null;
     if(isWin()){
       solved=true;stopTimer();
+      if(window.SFX)SFX.win();
       var best={};try{best=JSON.parse(localStorage.getItem(BEST_KEY)||'{}');}catch(e){}
       var dk=R+'x'+C;
       var isNew=false;
@@ -256,5 +258,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+
+<script src="sounds.js"></script>
 </body>
 </html>
