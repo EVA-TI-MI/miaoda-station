@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2e7d5b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230d120f'/%3E%3Crect x='18' y='22' width='64' height='56' rx='8' fill='%23f4ecd8'/%3E%3Ctext x='50' y='60' font-size='34' text-anchor='middle' font-family='serif' fill='%232e7d5b'%3E%E5%92%8C%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>麻将 - 妙搭小站</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root{ --bg:#0d120f; --txt:#dce8df; --sub:#7d9488; --gold:#c9a24b; --jade:#2e7d5b; }
+  html,body{background:var(--bg);}
+  body { min-height:100vh; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--txt);
+    display:flex; flex-direction:column; align-items:center; padding:30px 20px 40px;
+    background: radial-gradient(ellipse at 18% 0%, rgba(46,125,91,.16) 0%, transparent 52%),
+      radial-gradient(ellipse at 85% 8%, rgba(201,162,75,.08) 0%, transparent 48%),
+      radial-gradient(ellipse at 80% 100%, rgba(30,80,60,.12) 0%, transparent 50%), var(--bg); }
+  .top{width:100%;max-width:1180px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;text-decoration:none;
+    background:rgba(201,162,75,.08);border:1px solid rgba(201,162,75,.3);color:var(--sub);font-size:13px;transition:.2s;}
+  .back:hover{color:var(--gold);border-color:var(--gold);}
+  .head{text-align:center;margin-bottom:6px;}
+  .head h1{font-family:"STKaiti","KaiTi","楷体",serif;font-size:36px;letter-spacing:8px;
+    background:linear-gradient(135deg,#8fd8b2,#2e7d5b 45%,#c9a24b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .head p{color:var(--sub);font-size:13px;letter-spacing:5px;margin-top:8px;}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;width:100%;max-width:1180px;margin-top:22px;}
+  .app-card{ --c:#2e7d5b; border-radius:14px; position:relative; overflow:hidden; text-decoration:none;
+    border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 10%,#101510) 0%,#101510 72%);
+    display:flex; flex-direction:column; transition:transform .25s,box-shadow .25s,border-color .25s; min-height:250px;}
+  .app-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px color-mix(in srgb,var(--c) 26%,transparent);border-color:var(--c);}
+  .app-card::before{content:"";position:absolute;top:-24%;right:-24%;width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--c) 26%,transparent) 0%,transparent 70%);opacity:.5;pointer-events:none;}
+  .cc{position:relative;z-index:1;padding:22px 22px 20px;display:flex;flex-direction:column;flex:1;}
+  .ci{width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--c);
+    background:color-mix(in srgb,var(--c) 14%,transparent);border:2px solid color-mix(in srgb,var(--c) 40%,transparent);margin-bottom:14px;}
+  .ct{font-size:21px;font-weight:bold;color:var(--c);font-family:"STKaiti","KaiTi",serif;letter-spacing:2px;}
+  .ce{font-size:10.5px;letter-spacing:1.5px;color:var(--sub);margin-top:3px;text-transform:uppercase;}
+  .cd{font-size:12.5px;line-height:1.8;color:rgba(255,255,255,.62);margin-top:9px;flex:1;}
+  .cb{margin-top:12px;padding:8px 16px;border-radius:7px;font-size:13px;letter-spacing:2px;align-self:flex-start;
+    color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid var(--c);transition:.2s;}
+  .app-card:hover .cb{background:var(--c);color:#101510;}
+  .rule{width:100%;max-width:1180px;margin-top:26px;background:rgba(255,255,255,.03);border:1px solid rgba(201,162,75,.18);
+    border-radius:14px;padding:20px 22px;}
+  .rule h2{font-size:16px;color:var(--gold);letter-spacing:2px;margin-bottom:10px;font-family:"STKaiti","KaiTi",serif;}
+  .rule ul{list-style:none;}
+  .rule li{font-size:12.5px;color:rgba(255,255,255,.66);line-height:2.1;padding-left:16px;position:relative;}
+  .rule li::before{content:"◆";position:absolute;left:0;color:var(--jade);font-size:10px;top:2px;}
+  .foot{margin-top:30px;color:#5c6b62;font-size:12px;letter-spacing:2px;text-align:center;}
+  @media (max-width:520px){
+    body{padding:20px 12px 30px;}
+    .head h1{font-size:28px;letter-spacing:5px;}
+    .cards{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="back" href="index.html">← 返回首页</a>
+  </div>
+  <div class="head">
+    <h1>麻将</h1>
+    <p>MAHJONG · 方城之战</p>
+  </div>
+  <div class="cards">
+
+    <a href="mahjong.html" class="app-card" style="--c:#2e7d5b">
+      <div class="cc">
+        <div class="ci">和</div>
+        <div class="ct">麻将 · 推倒胡</div>
+        <div class="ce">Mahjong · Single Player</div>
+        <div class="cd">经典四人麻将单机版：万条筒 108 张，三名 AI 陪打，吃碰杠胡、暗杠与听牌提示，七对可胡，自摸与点炮计分，积分自动保存。</div>
+        <div class="cb">入局开打 →</div>
+      </div>
+    </a>
+
+  </div>
+  <div class="rule">
+    <h2>玩法速览</h2>
+    <ul>
+      <li>牌型：万、条、筒 1–9 各四张，共 108 张，无字牌。</li>
+      <li>和牌：四组面子（顺子 / 刻子 / 杠）+ 一对将，或七对。</li>
+      <li>操作：摸牌后点击手牌出牌；别人打牌时可选择 胡 / 杠 / 碰 / 吃 / 过。</li>
+      <li>听牌：轮到你时手牌下方会高亮提示可和的牌，帮助快速上听。</li>
+      <li>计分：自摸 +2，点炮 +1；明杠、暗杠补牌后继续出牌，积分累计保存。</li>
+    </ul>
+  </div>
+  <div class="foot">妙搭小站 · 麻将 · 方城之战</div>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var key = e.key.toLowerCase();
+    if (key === 'f12') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 'u') { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); return; }
+  });
+})();
+</script>
+<script src="sounds.js"></script>
+</body>
+</html>
