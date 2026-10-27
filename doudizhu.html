@@ -86,6 +86,28 @@
   .uniobig{ font-family:"STKaiti","KaiTi",serif; font-size:44px; color:#e8453c; text-align:center; letter-spacing:6px; }
   .hidden{ display:none !important; }
   .foot{ margin-top:18px; color:#6a5a3e; font-size:11px; letter-spacing:2px; text-align:center; }
+  /* ===== 联机面板（样式参考麻将范本；作用于 #netMask，不影响既有 .mask 弹层） ===== */
+  #netMask{ display:none; align-items:center; justify-content:center; }
+  #netMask.show{ display:flex; }
+  #netTag{ display:inline-block; padding:3px 10px; border-radius:99px; background:rgba(212,168,75,.08);
+    border:1px solid rgba(212,168,75,.25); font-size:11px; color:var(--gold); margin-left:8px; }
+  .dialog{ max-width:340px; width:calc(100% - 40px); background:#1b160e; border:1px solid rgba(212,168,75,.35); border-radius:16px;
+    padding:26px 22px; text-align:center; }
+  .dialog h2{ font-family:"STKaiti","KaiTi",serif; color:var(--gold); font-size:24px; letter-spacing:3px; margin-bottom:10px; }
+  .dialog p{ font-size:13px; color:var(--sub); line-height:1.9; margin-bottom:16px; }
+  .toast{ position:fixed; left:50%; top:14%; transform:translateX(-50%); background:rgba(20,17,11,.92); border:1px solid rgba(212,168,75,.4);
+    color:var(--txt); padding:9px 18px; border-radius:99px; font-size:13px; letter-spacing:1px; z-index:60; opacity:0; transition:opacity .25s; pointer-events:none; }
+  .toast.show{ opacity:1; }
+  .nbox{ display:flex; gap:8px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+  .nin{ width:180px; padding:10px; border-radius:8px; background:#241c10; border:1px solid rgba(212,168,75,.4); color:var(--txt); font-size:15px; letter-spacing:4px; text-align:center; }
+  .nbig{ font-size:32px; letter-spacing:10px; color:var(--gold); font-family:"STKaiti","KaiTi",serif; margin:6px 0; }
+  .nlist{ margin:8px 0; font-size:12.5px; color:var(--sub); line-height:1.9; min-height:8px; }
+  .nbtn{ padding:9px 18px; border-radius:8px; border:1px solid var(--gold); background:rgba(212,168,75,.12); color:var(--gold); font-size:13px; letter-spacing:1px; cursor:pointer; min-height:44px; }
+  .nbtn.primary{ background:var(--gold); color:#14110b; }
+  .nbtn.grey{ border-color:#4a3d22; color:var(--sub); background:transparent; }
+  .nmode{ display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+  .nbtn.nm{ padding:6px 16px; font-size:12.5px; border-radius:99px; min-height:36px; }
+  .nbtn.nm.active{ background:var(--gold); color:#14110b; }
   @media (min-width:768px){
     body{ padding:20px 20px 40px; }
     .ttl{ font-size:24px; }
@@ -102,9 +124,10 @@
     <div class="hdrbtns">
       <button class="hbtn" id="btnRules">规则</button>
       <button class="hbtn" id="btnNew">新局</button>
+      <button class="hbtn" id="netBtn" style="cursor:pointer;">联机</button>
     </div>
   </div>
-  <div class="stats" id="stats"></div>
+  <div class="stats" id="stats"></div><span id="netTag" style="display:none"></span>
 
   <div class="opps">
     <div class="opp" id="opp1"></div>
@@ -125,11 +148,12 @@
     <div class="acts">
       <button class="btn ghost" id="btnPass" disabled>不出</button>
       <button class="btn pri" id="btnPlay" disabled>出牌</button>
+      <button class="btn ghost" id="btnResign" style="min-width:96px">认输</button>
     </div>
   </div>
 
   <div class="log" id="log"></div>
-  <div class="foot">妙搭小站 · 卡牌 · 斗地主</div>
+  <div class="foot">妙搭小站 · 卡牌 · 斗地主 · V4.13.0</div>
 </div>
 
 <!-- 叫地主弹层 -->
@@ -174,8 +198,50 @@
   </div>
 </div>
 
+<!-- 联机面板（结构照抄麻将范本，id 一字不差） -->
+<div class="mask" id="netMask">
+  <div class="dialog">
+    <h2 id="netTitle">联机对局</h2>
+    <div class="nmode" id="netModeBar">
+      <button class="nbtn nm active" id="netModeLan" type="button">局域网</button>
+      <button class="nbtn nm" id="netModeWan" type="button">远程</button>
+    </div>
+    <p id="netHint">同一 WiFi 下的设备可互相联机：房主创建房间，把房间码告诉其他人加入。</p>
+    <div id="netCodeBox" style="display:none">
+      <div style="font-size:12px;color:var(--sub);">房间码</div>
+      <div class="nbig" id="netCode"></div>
+    </div>
+    <input class="nin" id="netCodeInput" placeholder="输入 6 位房间码" maxlength="6" style="display:none;margin-top:10px;">
+    <div class="nlist" id="netMembers"></div>
+    <div id="netWait" style="display:none;font-size:12.5px;color:var(--sub);margin:8px 0;"></div>
+    <div class="nbox" id="netOps">
+      <button class="nbtn primary" id="netCreate">创建房间</button>
+      <button class="nbtn" id="netJoin">加入房间</button>
+      <button class="nbtn primary" id="netStart" style="display:none">开始对局</button>
+      <button class="nbtn grey" id="netCancel">关闭</button>
+      <button class="nbtn grey" id="netLeave" style="display:none">离开房间</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
 <script>
 'use strict';
+/* ===== 联机状态（桌游 3 人制，按麻将范本形状） ===== */
+var NET={mode:'solo', me:0, inGame:false, conns:[], connSeat:{}, realSeats:[0], waitAsk:-1, askTimer:null, turnTimer:null, _overShown:false};
+function sendTo(conn,msg){ Net.sendTo(conn,msg); }
+function seatOfConn(conn){ return NET.connSeat[conn.peer]; }
+function connOfSeat(seat){ for(var c in NET.connSeat){ if(NET.connSeat[c]===seat){ for(var i=0;i<NET.conns.length;i++){ if(NET.conns[i].peer===c) return NET.conns[i]; } } } return null; }
+function sendIntent(msg){ if(Net.send(msg)){ return true; } toast('连接已断开'); return false; }
+function seatName(seat){ return G && G.players[seat] ? G.players[seat].name : ('座'+seat); }
+var toastTimer=null;
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ el.classList.remove('show'); },2400);
+}
+
 /* ===== 常量与牌定义 ===== */
 var SUITS=[{ch:'♠',red:false},{ch:'♥',red:true},{ch:'♣',red:false},{ch:'♦',red:true}];
 var RN={11:'J',12:'Q',13:'K',14:'A',15:'2',16:'小王',17:'大王'};
@@ -284,6 +350,13 @@ function newGame(){
       landlord:-1, turn:0, leadBy:-1, cur:{cards:[],info:null,by:-1},
       lastPlay:[[],[],[]], passCount:0, log:[], over:false, bombs:0, phase:'bid', timer:null };
   G.players.forEach(function(p){sortHand(p.hand);});
+  if(NET.mode==='host'){
+    G.phase='bid'; G.bidOrder=[0,1,2]; G.bidIdx=0; G.bidDecided={}; G.bidCalled=-1; G.waitBid=-1;
+    render();
+    broadcastView();
+    askNextBidder();
+    return;
+  }
   showBid();
   render();
 }
@@ -319,10 +392,12 @@ function setLandlord(i){
 }
 function onCall(){
   if(window.SFX)SFX.pop();
+  if(NET.mode==='host'){ decideBid(0,true); return; }
   setLandlord(0);
 }
 function onNoCall(){
   if(window.SFX)SFX.pop();
+  if(NET.mode==='host'){ decideBid(0,false); return; }
   document.getElementById('bidMask').classList.add('hidden');
   // 两家 AI 以简单策略决定，必须有一家当地主
   var s1=strength(G.players[1].hand), s2=strength(G.players[2].hand);
@@ -331,6 +406,69 @@ function onNoCall(){
   if(Math.max(s1,s2)<thr) { /* 强制分当地主，保证对局进行 */ }
   sayMsg('你不叫，'+G.players[who].name+'当地主');
   setTimeout(function(){ setLandlord(who); }, 700);
+}
+
+/* ===== 联机：叫分响应链（3 座轮转，真人成员 20s 超时按不叫处理） ===== */
+function askNextBidder(){
+  while(G.bidIdx<G.bidOrder.length){
+    var seat=G.bidOrder[G.bidIdx];
+    if(G.bidDecided[seat]!=null){ G.bidIdx++; continue; }
+    if(NET.realSeats.indexOf(seat)>=0){
+      if(seat===0){
+        // 房主本人叫分
+        G.waitBid=0;
+        showBid();
+        clearTimeout(NET.askTimer);
+        NET.askTimer=setTimeout(function(){ bidTimeout(0); },20000);
+        return;
+      }
+      var conn=connOfSeat(seat);
+      if(conn){
+        G.waitBid=seat;
+        sendTo(conn,{k:'ask',type:'bid'});
+        clearTimeout(NET.askTimer);
+        NET.askTimer=setTimeout(function(){ bidTimeout(seat); },20000);
+        return;
+      }
+    }
+    // AI 座位按牌力自动决定（内联处理，不递归，避免重复推进叫分链）
+    G.bidDecided[seat] = strength(G.players[seat].hand)>=5 ? 'call':'pass';
+    if(G.bidDecided[seat]==='call' && G.bidCalled<0) G.bidCalled=seat;
+    sayMsg(seatName(seat)+(G.bidDecided[seat]==='call'?' 叫地主':' 不叫'));
+    G.log.push({who:seat, txt:G.bidDecided[seat]==='call'?'叫地主':'不叫'});
+    render(); broadcastView();
+    G.bidIdx++;
+    continue;
+  }
+  finishBid();
+}
+function bidTimeout(seat){
+  if(G.phase!=='bid'||G.waitBid!==seat) return;
+  toast(seatName(seat)+' 未叫分，按不叫处理');
+  decideBid(seat,false);
+}
+function decideBid(seat, call){
+  if(G.phase!=='bid') return;
+  clearTimeout(NET.askTimer); NET.askTimer=null;
+  G.waitBid=-1;
+  G.bidDecided[seat]=call?'call':'pass';
+  if(call && G.bidCalled<0) G.bidCalled=seat;
+  document.getElementById('bidMask').classList.add('hidden');
+  sayMsg(seatName(seat)+(call?' 叫地主':' 不叫'));
+  G.log.push({who:seat, txt:call?'叫地主':'不叫'});
+  render(); broadcastView();
+  G.bidIdx++;
+  askNextBidder();
+}
+function finishBid(){
+  var chosen=G.bidCalled;
+  if(chosen<0){
+    var best=-1, bs=-1;
+    for(var s=0;s<3;s++){ var sc=strength(G.players[s].hand); if(sc>bs){bs=sc;best=s;} }
+    chosen=best;
+    sayMsg('无人叫分，'+G.players[best].name+'被迫当地主');
+  }
+  setLandlord(chosen);
 }
 
 /* ===== AI 找牌 ===== */
@@ -500,8 +638,9 @@ function playCards(i, cards, info){
   else if(window.SFX)SFX.pop();
   G.log.push({who:i, txt:labelCards(cards)});
   render();
-  if(G.players[i].hand.length===0){ endGame(i); return; }
+  if(G.players[i].hand.length===0){ endGame(i); if(NET.mode==='host') broadcastView(); return; }
   nextTurn();
+  if(NET.mode==='host') netSchedule();
 }
 function pass(i){
   G.passCount++;
@@ -522,6 +661,7 @@ function nextTurn(){
   G.turn=(G.turn+1)%3;
 }
 function scheduleAI(){
+  if(NET.mode==='host'){ netSchedule(); return; }
   if(G.over) return;
   if(G.phase!=='play') return;
   if(G.players[G.turn].isAI){
@@ -537,11 +677,58 @@ function scheduleAI(){
   }
 }
 
+/* ===== 联机：房主回合流转（真人成员 30s 超时 AI 接管） ===== */
+function netSchedule(){
+  if(G.over) return;
+  broadcastView();
+  if(G.phase!=='play') return;
+  var seat=G.turn;
+  if(NET.realSeats.indexOf(seat)>=0){
+    if(seat!==0){
+      var conn=connOfSeat(seat);
+      if(conn){
+        sendTo(conn,{k:'ask',type:'turn'});
+        armTurnTimer(seat);
+        render();
+        return;
+      }
+    } else {
+      sayMsg(G.cur.by===0 ? '你获得出牌权，自由出牌' : (G.cur.by===-1?'轮到你出牌':'轮到你出牌，可压或不出'));
+      render();
+      return;
+    }
+  }
+  // AI 座位托管
+  G.timer=setTimeout(function(){
+    if(G.over) return;
+    var mv=aiAct(G.turn);
+    if(mv){ playCards(G.turn, mv.cards, mv.info); }
+    else pass(G.turn);
+  }, 750);
+}
+function armTurnTimer(seat){
+  clearTimeout(NET.turnTimer);
+  NET.turnTimer=setTimeout(function(){ aiTakeoverTurn(seat); },30000);
+}
+function aiTakeoverTurn(seat){
+  if(G.over || G.phase!=='play' || G.turn!==seat) return;
+  clearTimeout(NET.turnTimer); NET.turnTimer=null;
+  var idx=NET.realSeats.indexOf(seat);
+  if(idx>=0) NET.realSeats.splice(idx,1);
+  G.players[seat].isAI=true;
+  toast(seatName(seat)+' 长时间未操作，AI 接管');
+  netSchedule();
+}
+
 /* ===== 结束 ===== */
 function endGame(winner){
   G.over=true;
   clearTimeout(G.timer);
+  clearTimeout(NET.turnTimer); NET.turnTimer=null;
+  clearTimeout(NET.askTimer); NET.askTimer=null;
   var landlordWin = G.landlord===winner;
+  G.endWinner=winner; G.endLandlordWin=landlordWin;
+  G.endMult=Math.pow(2,G.bombs);
   var mult=Math.pow(2,G.bombs);
   var humanWin = landlordWin ? (G.landlord===0) : (G.players[0].role==='farmer');
   var st=loadStats();
@@ -651,6 +838,11 @@ document.getElementById('btnPlay').addEventListener('click', function(){
   var p=G.players[0];
   var chosen=p.hand.filter(function(c){ return p.sel[c.id]; });
   if(!chosen.length){ sayMsg('请先点选手牌', true); if(window.SFX)SFX.error(); return; }
+  if(NET.mode==='client'){
+    sendIntent({k:'intent', act:'play', cards:chosen.map(function(c){return {r:c.r,s:c.s};})});
+    p.sel={};
+    return;
+  }
   var info=analyze(chosen);
   if(!info){ sayMsg('牌型不合法，请重新选择', true); if(window.SFX)SFX.error(); return; }
   if(G.cur.info && !canBeat(info, G.cur.info)){
@@ -664,10 +856,34 @@ document.getElementById('btnPass').addEventListener('click', function(){
   if(!G || G.turn!==0 || G.phase!=='play' || G.over) return;
   if(G.cur.by===0){ sayMsg('该你出牌，不能不出', true); if(window.SFX)SFX.error(); return; }
   G.players[0].sel={};
+  if(NET.mode==='client'){ sendIntent({k:'intent', act:'pass'}); return; }
   pass(0);
 });
-document.getElementById('btnCall').addEventListener('click', onCall);
-document.getElementById('btnNoCall').addEventListener('click', onNoCall);
+document.getElementById('btnCall').addEventListener('click', function(){
+  if(NET.mode==='client'){
+    sendIntent({k:'intent', act:'call'});
+    document.getElementById('bidMask').classList.add('hidden');
+    return;
+  }
+  onCall();
+});
+document.getElementById('btnNoCall').addEventListener('click', function(){
+  if(NET.mode==='client'){
+    sendIntent({k:'intent', act:'nocall'});
+    document.getElementById('bidMask').classList.add('hidden');
+    return;
+  }
+  onNoCall();
+});
+document.getElementById('btnResign').addEventListener('click', function(){
+  if(!G || G.over) return;
+  if(NET.mode==='client'){ sendIntent({k:'intent', act:'resign'}); return; }
+  if(NET.mode==='host'){ doResign(0); return; }
+  // 单机：认输即对方获胜
+  var w = (G.landlord===0) ? (G.landlord+1)%3 : G.landlord;
+  if(w==null||w===undefined||w<0) w=(0+1)%3;
+  endGame(w);
+});
 document.getElementById('btnNew').addEventListener('click', function(){ if(G)clearTimeout(G.timer); newGame(); });
 document.getElementById('btnRules').addEventListener('click', function(){ document.getElementById('ruleMask').classList.remove('hidden'); });
 document.getElementById('btnRuleClose').addEventListener('click', function(){ document.getElementById('ruleMask').classList.add('hidden'); });
@@ -678,8 +894,296 @@ document.addEventListener('keydown', function(e){
   if(e.key===' ' && !document.getElementById('btnPass').disabled){ e.preventDefault(); document.getElementById('btnPass').click(); }
 });
 
+/* ===== 联机：脱敏视图广播与客户端应用 ===== */
+function stripCard(c){ return {r:c.r, s:c.s}; }
+function mkLocalCard(c){ return {r:c.r, s:c.s, id:Math.random()}; }
+function viewOf(me){
+  return {
+    k:'view', me:me,
+    bottom: G.bottom.map(stripCard),
+    landlord: G.landlord, turn: G.turn, leadBy: G.leadBy, passCount: G.passCount,
+    bombs: G.bombs, phase: G.phase,
+    cur: { cards: G.cur.cards.map(stripCard), info: G.cur.info, by: G.cur.by },
+    lastPlay: G.lastPlay.map(function(lp){ return lp.map(stripCard); }),
+    players: G.players.map(function(p,i){
+      var hand;
+      if(i===me){ hand=p.hand.map(stripCard); }
+      else { hand=[]; for(var k=0;k<p.hand.length;k++) hand.push({x:1}); } /* 脱敏：他人手牌只传长度，绝不广播牌面 */
+      return { i:i, hand:hand, ai:p.isAI, role:p.role, name:p.name };
+    }),
+    log: G.log.map(function(e){ return {who:e.who, txt:e.txt}; }),
+    over: G.over ? { winner:G.endWinner, landlordsWin:G.endLandlordWin, mult:G.endMult } : null
+  };
+}
+function broadcastView(){
+  NET.conns.forEach(function(conn){
+    var seat=seatOfConn(conn);
+    if(seat==null) return;
+    sendTo(conn,viewOf(seat));
+  });
+}
+function applyView(v){
+  NET.me=v.me;
+  var m=v.me;
+  function rm(s){ return (s-m+3)%3; }
+  var players=[null,null,null];
+  v.players.forEach(function(p){
+    var hand=p.hand.map(function(c){
+      if(c && c.x){ return {r:0,s:-99,id:Math.random()}; } /* 占位牌，仅用于保持长度 */
+      return mkLocalCard(c);
+    });
+    players[rm(p.i)] = { hand:hand, name:(rm(p.i)===0?'你':p.name), isAI:p.ai, role:p.role, sel:{} };
+  });
+  G={ players:players,
+      bottom: v.bottom.map(mkLocalCard),
+      landlord: v.landlord<0?-1:rm(v.landlord),
+      turn: rm(v.turn), leadBy: rm(v.leadBy),
+      cur: { cards:v.cur.cards.map(mkLocalCard), info:v.cur.info, by: v.cur.by<0?-1:rm(v.cur.by) },
+      lastPlay:[null,null,null], passCount:v.passCount, log:[], over:false, bombs:v.bombs, phase:v.phase, timer:null,
+      endWinner:null, endLandlordWin:null };
+  v.lastPlay.forEach(function(lp,seat){ G.lastPlay[rm(seat)]=lp.map(mkLocalCard); });
+  v.log.forEach(function(e){ G.log.push({who:rm(e.who), txt:e.txt}); });
+  if(v.over && !NET._overShown){
+    NET._overShown=true;
+    var iAmLandlord = (players[0].role==='landlord');
+    var myWin = v.landlordsWin ? iAmLandlord : !iAmLandlord;
+    showEndClient(v, myWin);
+  }
+  if(!v.over) NET._overShown=false;
+  render();
+  if(NET.mode==='client') updateClientTurn();
+}
+function showEndClient(v, myWin){
+  var rows=G.players.map(function(p){
+    var d = v.landlordsWin ? (p.role==='landlord'? '赢 +'+2*v.mult : '输 -'+v.mult)
+                        : (p.role==='landlord'? '输 -'+2*v.mult : '赢 +'+v.mult);
+    return '<tr><td>'+p.name+'（'+(p.role==='landlord'?'地主':'农民')+'）</td><td>'+p.hand.length+' 张</td><td>'+d+'</td></tr>';
+  }).join('');
+  document.getElementById('endPanel').innerHTML =
+    '<h2 style="color:'+(myWin?'#46c39a':'#ff6a5e')+'">'+(myWin?'你赢了':'你输了')+'</h2>'+
+    '<p style="text-align:center">'+(v.landlordsWin?'地主获胜':'农民获胜')+' · 炸弹翻倍 ×'+v.mult+'</p>'+
+    '<table><colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup>'+
+    '<tr><th>玩家</th><th>剩余牌</th><th>得分</th></tr>'+rows+'</table>'+
+    '<div class="row"><button class="btn pri" id="btnAgainNet">再来一局</button></div>';
+  document.getElementById('endMask').classList.remove('hidden');
+  document.getElementById('btnAgainNet').addEventListener('click',function(){ location.reload(); });
+}
+function updateClientTurn(){
+  if(NET.mode!=='client') return;
+  if(G.phase==='play' && G.turn===0 && !G.over){
+    toast(G.cur.by===0 ? '你获得出牌权，自由出牌' : '轮到你出牌，可压或不出');
+  }
+}
+function onAsk(msg){
+  if(NET.mode!=='client') return;
+  if(msg.type==='bid'){
+    sayMsg('轮到你叫地主：叫 / 不叫');
+    document.getElementById('bidMask').classList.remove('hidden');
+  } else if(msg.type==='turn'){
+    toast('轮到你出牌');
+  }
+}
+function matchCards(hand, specs){
+  var pool=hand.slice();
+  var out=[];
+  for(var i=0;i<specs.length;i++){
+    var found=-1;
+    for(var j=0;j<pool.length;j++){
+      if(pool[j].r===specs[i].r && pool[j].s===specs[i].s){ found=j; break; }
+    }
+    if(found<0) return null;
+    out.push(pool[found]); pool.splice(found,1);
+  }
+  return out;
+}
+function doResign(seat){
+  if(!G || G.over) return;
+  if(G.landlord<0){
+    var tmp=(seat+1)%3;
+    G.landlord=tmp;
+    G.players[tmp].role='landlord';
+    G.players[(tmp+1)%3].role='farmer'; G.players[(tmp+2)%3].role='farmer';
+  }
+  var w = (seat===G.landlord) ? (G.landlord+1)%3 : G.landlord;
+  sayMsg(seatName(seat)+' 认输');
+  G.log.push({who:seat, txt:'认输'});
+  endGame(w);
+  broadcastView();
+}
+function handleIntent(msg,seat){
+  if(!NET.inGame || msg.k!=='intent') return;
+  /* 认输：先于回合守卫，任意阶段（含叫分）有效 */
+  if(msg.act==='resign'){ doResign(seat); return; }
+  if(G.phase==='bid'){
+    if(G.waitBid!==seat) return;
+    if(msg.act==='call') decideBid(seat,true);
+    else if(msg.act==='nocall') decideBid(seat,false);
+    return;
+  }
+  if(G.phase==='play' && G.turn===seat){
+    clearTimeout(NET.turnTimer); NET.turnTimer=null;
+    var p=G.players[seat];
+    if(msg.act==='pass'){
+      if(G.cur.by===seat){ sendTo(connOfSeat(seat),{k:'toast',msg:'该你出牌，不能不出'}); return; }
+      pass(seat);
+      return;
+    }
+    if(msg.act==='play'){
+      var chosen=matchCards(p.hand, msg.cards||[]);
+      if(!chosen || !chosen.length){ sendTo(connOfSeat(seat),{k:'toast',msg:'出牌无效'}); return; }
+      var info=analyze(chosen);
+      if(!info){ sendTo(connOfSeat(seat),{k:'toast',msg:'牌型不合法'}); return; }
+      if(G.cur.info && !canBeat(info,G.cur.info)){ sendTo(connOfSeat(seat),{k:'toast',msg:'牌型不符或压不过'}); return; }
+      playCards(seat, chosen, info);
+    }
+  }
+}
+
+/* ===== 联机面板 ===== */
+var netBtn=document.getElementById('netBtn'), netMask=document.getElementById('netMask');
+var netCodeEl=document.getElementById('netCode'), netCodeInput=document.getElementById('netCodeInput'),
+    netMembers=document.getElementById('netMembers'), netWait=document.getElementById('netWait'),
+    netCreate=document.getElementById('netCreate'), netJoin=document.getElementById('netJoin'),
+    netStart=document.getElementById('netStart'), netCancel=document.getElementById('netCancel'),
+    netLeave=document.getElementById('netLeave'), netTag=document.getElementById('netTag'),
+    netCodeBox=document.getElementById('netCodeBox');
+function showNetPanel(){ netMask.classList.add('show'); refreshNetUI(); }
+var NET_MODE='lan';
+function setNetMode(m){
+  NET_MODE=m;
+  document.getElementById('netModeLan').classList.toggle('active',m==='lan');
+  document.getElementById('netModeWan').classList.toggle('active',m==='wan');
+  document.getElementById('netTitle').textContent=(m==='lan'?'局域网联机':'远程联机');
+  document.getElementById('netHint').textContent=(m==='lan'
+    ?'同一 WiFi 下联机：房主创建房间，其他人输入房间码即可加入。P2P 直连，速度最快。'
+    :'异地远程联机：把房间码发给朋友（微信 / QQ），公网自动建连。连接质量受双方网络影响，严格 NAT 网络可能无法直连。');
+}
+document.getElementById('netModeLan').addEventListener('click',function(){ setNetMode('lan'); });
+document.getElementById('netModeWan').addEventListener('click',function(){ setNetMode('wan'); });
+setNetMode('lan');
+function refreshNetUI(){
+  if(NET.mode==='solo'){
+    netCodeBox.style.display='none'; netCodeInput.style.display='block';
+    netWait.style.display='none'; netStart.style.display='none'; netLeave.style.display='none';
+    netMembers.textContent='';
+    netCreate.style.display=''; netJoin.style.display=''; netCancel.style.display='';
+    netTag.style.display='none';
+    return;
+  }
+  netTag.style.display='';
+  netCreate.style.display='none'; netJoin.style.display='none'; netCodeInput.style.display='none';
+  netCancel.style.display=''; netLeave.style.display='';
+  var code=Net.code();
+  if(NET.mode==='host'){
+    netCodeBox.style.display='block'; netCodeEl.textContent=code;
+    var n=NET.conns.length;
+    netMembers.textContent=n ? ('已加入：'+n+' 人') : '等待成员加入…（可 1 人开局，其余由 AI 补位）';
+    netStart.style.display=NET.inGame?'none':'';
+    netWait.style.display='none';
+    netTag.textContent='联机 · '+code+' · '+(n+1)+'/3';
+  }else{
+    netCodeBox.style.display='block'; netCodeEl.textContent=code;
+    netStart.style.display='none';
+    netWait.style.display='block';
+    netWait.textContent=NET.inGame?'对局中…':'已加入房间 '+code+'，等待房主开始';
+    netMembers.textContent='';
+    netTag.textContent='联机 · '+code;
+  }
+}
+netBtn.addEventListener('click',showNetPanel);
+netCancel.addEventListener('click',function(){ netMask.classList.remove('show'); });
+netLeave.addEventListener('click',function(){ Net.leave(); location.reload(); });
+netCreate.addEventListener('click',function(){
+  netCreate.style.display='none'; netJoin.style.display='none';
+  netMembers.textContent='正在创建房间…';
+  Net.createRoom({game:'ddz',
+    onOpen:function(code){
+      NET.mode='host'; NET.me=0; NET.inGame=false;
+      refreshNetUI();
+      toast('房间已创建：'+code+(NET_MODE==='wan'?'（远程，可发给异地朋友）':'（局域网直连）'));
+    },
+    onPeer:function(conn){
+      NET.conns.push(conn);
+      if(NET.inGame || NET.conns.length>=2){ sendTo(conn,{k:'full'}); conn.close(); return; }
+      refreshNetUI();
+      toast('有新成员加入');
+    },
+    onData:function(conn,msg){
+      if(NET.inGame && msg.k==='intent'){
+        handleIntent(msg,seatOfConn(conn));
+      } else if(!NET.inGame){
+        refreshNetUI();
+      }
+    },
+    onPeerClose:function(conn){
+      var seat=seatOfConn(conn);
+      NET.conns=NET.conns.filter(function(c){return c!==conn;});
+      delete NET.connSeat[conn.peer];
+      if(NET.inGame && seat!=null && G && !G.over){
+        clearTimeout(NET.turnTimer); NET.turnTimer=null;
+        var idx=NET.realSeats.indexOf(seat);
+        if(idx>=0){ NET.realSeats.splice(idx,1); G.players[seat].isAI=true; toast(seatName(seat)+' 已离开，AI 接管'); }
+        if(G.waitBid===seat){
+          clearTimeout(NET.askTimer); NET.askTimer=null; G.waitBid=-1;
+          G.bidIdx++; askNextBidder();
+        } else {
+          broadcastView(); netSchedule();
+        }
+      } else refreshNetUI();
+    },
+    onError:function(e){
+      if(e&&e.error==='peerjs-load-fail') toast('无法加载联机组件');
+      else toast('联机错误：'+(e.type||e.error||'未知'));
+    }
+  });
+});
+netJoin.addEventListener('click',function(){
+  var code=netCodeInput.value.trim().toUpperCase();
+  if(code.length!==6){ toast('请输入 6 位房间码'); return; }
+  netCodeInput.value='';
+  netMembers.textContent='正在加入…';
+  Net.joinRoom({game:'ddz',code:code,
+    onOpen:function(){
+      NET.mode='client'; NET.inGame=false;
+      clearTimeout(NET.askTimer); NET.askTimer=null;
+      clearTimeout(NET.turnTimer); NET.turnTimer=null;
+      if(G){ clearTimeout(G.timer); G.over=true; G.phase='over'; }
+      document.getElementById('bidMask').classList.add('hidden');
+      refreshNetUI();
+      toast('已加入房间 '+code);
+    },
+    onData:function(conn,msg){
+      if(msg.k==='full'){ toast('房间已满'); setTimeout(function(){location.reload();},600); return; }
+      if(msg.k==='start'){ NET.inGame=true; netMask.classList.remove('show'); refreshNetUI(); }
+      else if(msg.k==='ask'){ onAsk(msg); }
+      else if(msg.k==='view'){ applyView(msg); }
+      else if(msg.k==='toast'){ toast(msg.msg); }
+    },
+    onClose:function(){ toast('与房主断开连接'); setTimeout(function(){location.reload();},900); },
+    onError:function(e){
+      if(e&&e.type==='room-not-found') toast('房间不存在，请核对房间码');
+      else if(e&&e.error==='peerjs-load-fail') toast('无法加载联机组件');
+      else toast('联机错误：'+(e.type||e.error||'未知'));
+    }
+  });
+});
+netStart.addEventListener('click',function(){
+  if(NET.mode!=='host') return;
+  NET.inGame=true;
+  NET.realSeats=[0];
+  NET.conns.forEach(function(conn,idx){
+    NET.connSeat[conn.peer]=idx+1;
+    NET.realSeats.push(idx+1);
+  });
+  NET.me=0;
+  Net.broadcast({k:'start'});
+  netMask.classList.remove('show');
+  newGame();
+});
+
 newGame();
 </script>
+<script src="net.js"></script>
 <script src="sounds.js"></script>
 </body>
 </html>

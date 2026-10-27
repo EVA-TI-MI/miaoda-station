@@ -146,6 +146,7 @@
     <button class="dbtn ghost" id="homeBtn">返回板块</button>
   </div>
 </div>
+<div class="foot">妙搭小站 · V4.13.0 · 四人麻将</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -159,6 +160,7 @@ try{ var _s=JSON.parse(localStorage.getItem(BEST)||'{}'); if(_s&&_s.score!=null)
 var S={}; // 状态
 // ---------- 联机状态 ----------
 var NET={mode:'solo', me:0, inGame:false, conns:[], connSeat:{}, realSeats:[0], waitAsk:-1, askTimer:null, turnTimer:null, _overShown:false};
+function sendTo(conn,msg){ Net.sendTo(conn,msg); }
 var SEAT_NAMES=['南家','东家','北家','西家'];
 function meIdx(){ return NET.mode==='solo'?0:(NET.me||0); }
 function seatOfConn(conn){ return NET.connSeat[conn.peer]; }

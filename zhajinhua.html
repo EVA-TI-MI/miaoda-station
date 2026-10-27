@@ -88,7 +88,7 @@
   <div class="seat" id="seat2"></div>
 </div>
 
-<div class="foot">妙搭小站 · V4.12.0 · 娱乐纸牌 · 无真实货币 <span id="netTag" style="display:none;color:var(--gold);"></span></div>
+<div class="foot">妙搭小站 · V4.13.0 · 娱乐纸牌 · 无真实货币 <span id="netTag" style="display:none;color:var(--gold);"></span></div>
 
 <div class="mask" id="netMask">
   <div class="dialog">
@@ -186,6 +186,7 @@ function rankName(cs){
 var S=null;
 // ---------- 联机 ----------
 var NET={mode:'solo', me:0, inGame:false, conns:[], connSeat:{}, realSeats:[0], turnTimer:null, _overShown:false};
+function sendTo(conn,msg){ Net.sendTo(conn,msg); }
 function meIdx(){ return NET.mode==='solo'?0:(NET.me||0); }
 function seatOfConn(conn){ return NET.connSeat[conn.peer]; }
 function connOfSeat(seat){ for(var c in NET.connSeat){ if(NET.connSeat[c]===seat){ for(var i=0;i<NET.conns.length;i++){ if(NET.conns[i].peer===c) return NET.conns[i]; } } } return null; }

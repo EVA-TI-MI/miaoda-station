@@ -105,7 +105,7 @@
   <button class="obtn" id="resetBtn">重新开局</button>
 </div>
 
-<div class="foot">妙搭小站 · V4.12.0 · 双人接火车 <span id="netTag" style="display:none;color:var(--gold);"></span></div>
+<div class="foot">妙搭小站 · V4.13.0 · 双人接火车 <span id="netTag" style="display:none;color:var(--gold);"></span></div>
 
 <div class="mask" id="netMask">
   <div class="dialog">
@@ -150,6 +150,7 @@ var REDS={'\u2665':1,'\u2666':1};
 var S=null,busy=false;
 // ---------- 联机 ----------
 var NET={mode:'solo', inGame:false, conn:null, realAi:false, turnTimer:null, _overShown:false};
+function sendTo(conn,msg){ Net.sendTo(conn,msg); }
 function sendIntent(act){ if(Net.send({k:'intent',act:act})) return true; toast('连接已断开'); return false; }
 function armTurnTimer(){
   clearTimeout(NET.turnTimer);
