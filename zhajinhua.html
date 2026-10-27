@@ -57,6 +57,13 @@
   .toast{position:fixed;left:50%;top:12%;transform:translateX(-50%);background:rgba(16,20,30,.94);border:1px solid rgba(226,176,74,.4);
     color:var(--txt);padding:9px 18px;border-radius:99px;font-size:13px;letter-spacing:1px;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;}
   .toast.show{opacity:1;}
+  .nbox{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+  .nin{width:180px;padding:10px;border-radius:8px;background:#1a2030;border:1px solid rgba(226,176,74,.4);color:var(--txt);font-size:15px;letter-spacing:4px;text-align:center;}
+  .nbig{font-size:32px;letter-spacing:10px;color:var(--gold);font-weight:600;margin:6px 0;}
+  .nlist{margin:8px 0;font-size:12.5px;color:var(--sub);line-height:1.9;min-height:8px;}
+  .nbtn{padding:9px 18px;border-radius:8px;border:1px solid var(--gold);background:rgba(226,176,74,.12);color:var(--gold);font-size:13px;letter-spacing:1px;cursor:pointer;min-height:44px;}
+  .nbtn.primary{background:var(--gold);color:#14110b;}
+  .nbtn.grey{border-color:#3c465c;color:var(--sub);background:transparent;}
 </style>
 </head>
 <body>
@@ -64,7 +71,7 @@
 <div class="top">
   <a class="back" href="cards-hub.html">← 返回</a>
   <div class="ttl">炸金花</div>
-  <span style="width:58px"></span>
+  <button class="back" id="netBtn" style="cursor:pointer;">联机</button>
 </div>
 
 <div class="board">
@@ -78,8 +85,28 @@
   <div class="seat" id="seat2"></div>
 </div>
 
-<div class="foot">妙搭小站 · V4.10.0 · 娱乐纸牌 · 无真实货币</div>
+<div class="foot">妙搭小站 · V4.11.0 · 娱乐纸牌 · 无真实货币 <span id="netTag" style="display:none;color:var(--gold);"></span></div>
 
+<div class="mask" id="netMask">
+  <div class="dialog">
+    <h2>联机对局</h2>
+    <p id="netHint">同一 WiFi 下的设备可互相联机：房主创建房间，把房间码告诉其他人加入。</p>
+    <div id="netCodeBox" style="display:none">
+      <div style="font-size:12px;color:var(--sub);">房间码</div>
+      <div class="nbig" id="netCode"></div>
+    </div>
+    <input class="nin" id="netCodeInput" placeholder="输入 6 位房间码" maxlength="6" style="display:none;margin-top:10px;">
+    <div class="nlist" id="netMembers"></div>
+    <div id="netWait" style="display:none;font-size:12.5px;color:var(--sub);margin:8px 0;"></div>
+    <div class="nbox" id="netOps">
+      <button class="nbtn primary" id="netCreate">创建房间</button>
+      <button class="nbtn" id="netJoin">加入房间</button>
+      <button class="nbtn primary" id="netStart" style="display:none">开始对局</button>
+      <button class="nbtn grey" id="netCancel">关闭</button>
+      <button class="nbtn grey" id="netLeave" style="display:none">离开房间</button>
+    </div>
+  </div>
+</div>
 <div class="mask" id="mask">
   <div class="dialog">
     <h2 id="endTitle">结算</h2>
@@ -150,15 +177,67 @@ function rankName(cs){
 }
 
 var S=null;
+// ---------- 联机 ----------
+var NET={mode:'solo', me:0, inGame:false, conns:[], connSeat:{}, realSeats:[0], turnTimer:null, _overShown:false};
+function meIdx(){ return NET.mode==='solo'?0:(NET.me||0); }
+function seatOfConn(conn){ return NET.connSeat[conn.peer]; }
+function connOfSeat(seat){ for(var c in NET.connSeat){ if(NET.connSeat[c]===seat){ for(var i=0;i<NET.conns.length;i++){ if(NET.conns[i].peer===c) return NET.conns[i]; } } } return null; }
+function sendIntent(act){ if(Net.send({k:'intent',act:act})) return true; toast('连接已断开'); return false; }
+function seatLabel(i){ return i===meIdx()?'你':(S&&S.players&&S.players[i]&&S.players[i].ai?('AI '+(i+1)):('玩家 '+(i+1))); }
+function bankOfSeat(i){ return i===0?'me':(i===1?'ai1':'ai2'); }
+function armTurnTimer(seat){
+  clearTimeout(NET.turnTimer);
+  NET.turnTimer=setTimeout(function(){
+    if(S.ended||S.turn!==seat) return;
+    clearTimeout(NET.turnTimer); NET.turnTimer=null;
+    var idx=NET.realSeats.indexOf(seat);
+    if(idx>=0) NET.realSeats.splice(idx,1);
+    S.players[seat].ai=true;
+    toast(seatLabel(seat)+' 长时间未操作，AI 接管');
+    schedule();
+  },25000);
+}
+function viewOf(me){
+  var v={k:'view',me:me,pot:S.pot,turn:S.turn,roundNo:S.roundNo,ended:S.ended,base:S.base,winner:S.winner,
+    players:S.players.map(function(p){return {i:p.i,hand:(i===me||p.seen)?p.hand.slice():null,chips:p.chips,seen:p.seen,out:p.out,lastAct:p.lastAct,ai:p.ai};})};
+  return v;
+}
+function broadcastView(){ NET.conns.forEach(function(conn){ var seat=seatOfConn(conn); if(seat!=null) sendTo(conn,viewOf(seat)); }); }
+function applyView(v){
+  NET.me=v.me;
+  S={players:[],pot:v.pot,turn:v.turn,roundNo:v.roundNo,ended:v.ended,base:v.base,winner:v.winner};
+  v.players.forEach(function(p){ S.players.push({i:p.i,hand:p.hand?p.hand.slice():null,chips:p.chips,seen:p.seen,out:p.out,lastAct:p.lastAct,ai:p.ai}); });
+  if(v.ended&&!NET._overShown){
+    NET._overShown=true;
+    var w=S.players[v.winner];
+    document.getElementById('mask').classList.add('show');
+    document.getElementById('endTitle').textContent=v.winner===NET.me?'你赢了本局':'本局结束';
+    var t='胜者：'+(w?seatLabel(w.i):'?')+'\n赢得底池 '+S.pot+' 分';
+    document.getElementById('endText').textContent=t;
+    var my=S.players[NET.me];
+    if(my){ bank[bankOfSeat(NET.me)]=my.chips; save(); }
+    renderAll();
+    return;
+  }
+  if(!v.ended) NET._overShown=false;
+  renderAll();
+}
 function newRound(){
   var d=shuffle(deck());
   S={players:[
     {i:0,hand:[d[0],d[1],d[2]],chips:bank.me,seen:false,out:false,lastAct:null},
     {i:1,hand:[d[3],d[4],d[5]],chips:bank.ai1,seen:false,out:false,lastAct:null},
     {i:2,hand:[d[6],d[7],d[8]],chips:bank.ai2,seen:false,out:false,lastAct:null}
-  ],pot:0,turn:Math.floor(Math.random()*3),roundNo:0,ended:false,base:3};
-  // 底注：每人 1
-  S.players.forEach(function(p){p.chips-=1;S.pot+=1;});
+  ],pot:0,turn:Math.floor(Math.random()*3),roundNo:0,ended:false,base:3,winner:null};
+  for(var i=0;i<3;i++){
+    if(NET.mode==='solo'){ S.players[i].ai=(i!==0); }
+    else if(NET.mode==='host'){ S.players[i].ai=(NET.realSeats.indexOf(i)<0); }
+    else { S.players[i].ai=false; }
+  }
+  if(NET.mode==='host'||NET.mode==='solo'){
+    S.players.forEach(function(p){p.chips-=1;S.pot+=1;});
+  }
+  NET._overShown=false;
   renderAll();
   toast('开局：底注各 1');
   schedule();
@@ -168,7 +247,12 @@ function schedule(){
   renderAll();
   var p=S.players[S.turn];
   if(p.out){ next(); return; }
-  if(p.i===0){ showOps(); }
+  if(NET.mode==='host'&&NET.realSeats.indexOf(S.turn)>=0&&S.turn!==meIdx()){
+    var conn=connOfSeat(S.turn);
+    if(conn){ sendTo(conn,{k:'ask',type:'turn'}); armTurnTimer(S.turn); }
+    return;
+  }
+  if(p.i===meIdx()){ showOps(); }
   else { setTimeout(function(){ if(!S.ended) aiAct(p); },850); }
 }
 function next(){
@@ -180,18 +264,18 @@ function next(){
 }
 function endRound(winner){
   S.ended=true;
+  S.winner=winner.i;
   winner.chips+=S.pot;
-  var old=bank;
-  bank.me=S.players[0].chips;bank.ai1=S.players[1].chips;bank.ai2=S.players[2].chips;
-  save();
-  var meWin=winner.i===0;
+  if(NET.mode==='solo'){ bank.me=S.players[0].chips;bank.ai1=S.players[1].chips;bank.ai2=S.players[2].chips; save(); }
+  else if(NET.mode==='host'){ bank[bankOfSeat(meIdx())]=S.players[meIdx()].chips; save(); }
+  var meWin=winner.i===meIdx();
   document.getElementById('mask').classList.add('show');
   document.getElementById('endTitle').textContent=meWin?'你赢了本局':'本局结束';
   var t='';
   S.players.forEach(function(p){
-    if(!p.out) t+=(p.i===0?'你':('AI'+(p.i)))+' 的牌：'+p.hand.map(function(c){return RN[c.r-2]+c.s;}).join(' ')+'（'+rankName(p.hand)+'）\n';
+    if(!p.out) t+=(p.i===meIdx()?'你':seatLabel(p.i))+' 的牌：'+p.hand.map(function(c){return RN[c.r-2]+c.s;}).join(' ')+'（'+rankName(p.hand)+'）\n';
   });
-  t+='\n'+(winner.i===0?'你':('AI'+(winner.i)))+' 赢得底池 '+S.pot+' 分';
+  t+='\n'+(winner.i===meIdx()?'你':seatLabel(winner.i))+' 赢得底池 '+S.pot+' 分';
   document.getElementById('endText').textContent=t;
   renderAll();
 }
@@ -217,31 +301,32 @@ function perform(p,act){
   var msg='';
   if(act==='弃牌'){
     p.out=true;
-    msg='AI'+(p.i===0?'':p.i)+' 弃牌';
+    msg=seatLabel(p.i)+' 弃牌';
   }else if(act==='看牌'){
     if(p.seen){ msg='已看牌'; }
-    else{ p.seen=true; msg='AI'+(p.i)+' 看牌'; }
+    else{ p.seen=true; msg=seatLabel(p.i)+' 看牌'; }
   }else if(act==='加注'||act==='跟注'){
     var amt=(act==='加注'?3:2)*(p.seen?2:1);
     if(amt>p.chips){ amt=Math.max(1,p.chips); }
-    if(amt<=0){ p.out=true; msg='AI'+(p.i)+' 筹码不足弃牌'; }
-    else{ p.chips-=amt; S.pot+=amt; p.lastBet=amt; msg='AI'+(p.i)+(p.seen?'（明）':'（闷）')+' '+act+' '+amt; }
+    if(amt<=0){ p.out=true; msg=seatLabel(p.i)+' 筹码不足弃牌'; }
+    else{ p.chips-=amt; S.pot+=amt; p.lastBet=amt; msg=seatLabel(p.i)+(p.seen?'（明）':'（闷）')+' '+act+' '+amt; }
   }
   p.lastAct=act;
   toast(msg);
   next();
 }
 function showOps(){
-  var p=S.players[0];
+  var p=S.players[meIdx()];
   var bar=document.getElementById('opbar');
   bar.innerHTML='';
+  function act(fn){ if(NET.mode==='client'){ sendIntent(fn); } else { doAct(fn); } }
   var defs=[];
-  if(!p.seen) defs.push(['闷跟',function(){doAct('闷跟');},'primary']);
-  defs.push(['看牌',function(){doAct('看牌');},'']);
-  defs.push([p.seen?'跟注':'',p.seen?function(){doAct('跟注');}:null,'']);
-  defs.push(['加注',function(){doAct('加注');},'']);
-  defs.push(['比牌',function(){doAct('比牌');},'danger']);
-  defs.push(['弃牌',function(){doAct('弃牌');},'grey']);
+  if(!p.seen) defs.push(['闷跟',function(){act('闷跟');},'primary']);
+  defs.push(['看牌',function(){act('看牌');},'']);
+  defs.push([p.seen?'跟注':'',p.seen?function(){act('跟注');}:null,'']);
+  defs.push(['加注',function(){act('加注');},'']);
+  defs.push(['比牌',function(){act('比牌');},'danger']);
+  defs.push(['弃牌',function(){act('弃牌');},'grey']);
   defs.forEach(function(d){
     if(!d[0]) return;
     var b=document.createElement('button');
@@ -305,21 +390,21 @@ function highlight(a,b){
   // 简化：无
 }
 function renderAll(){
+  var mi=meIdx();
   document.getElementById('potVal').textContent=S.pot;
   var info=document.getElementById('info');
   var alive=S.players.filter(function(p){return !p.out;}).length;
   if(S.ended) info.textContent='本局已结束';
   else if(alive<=1) info.textContent='等待结算…';
-  else info.textContent='轮到 '+(S.turn===0?'你':('AI'+S.turn))+' · 剩余 '+alive+' 家';
+  else info.textContent='轮到 '+(S.turn===mi?'你':seatLabel(S.turn))+' · 剩余 '+alive+' 家';
   S.players.forEach(function(p,i){
     var el=document.getElementById('seat'+i);
-    var me=p.i===0;
-    var seen=me?true:p.seen;
-    var chips=me?bank.me:p.chips;
+    var me=p.i===mi;
     el.className='seat'+(S.turn===i&&!S.ended&&!p.out?' turn':'')+(p.out?' out':'');
     var cards='';
-    p.hand.forEach(function(c){ cards+=cardOuter(c,me||p.seen); });
-    el.innerHTML='<div class="seat-h"><b>'+(me?'你':('AI '+p.i))+'</b><span>'+(p.out?'已出局':('筹码 '+p.chips))+('</span></div><div class="cards">'+cards+'</div>');
+    if(p.hand){ p.hand.forEach(function(c){ cards+=cardOuter(c,me||p.seen); }); }
+    else { for(var z=0;z<3;z++) cards+='<div class="card face"></div>'; }
+    el.innerHTML='<div class="seat-h"><b>'+(me?'你':seatLabel(i))+'</b><span>'+(p.out?'已出局':('筹码 '+p.chips))+('</span></div><div class="cards">'+cards+'</div>');
   });
 }
 function cardOuter(c,face){
@@ -335,9 +420,172 @@ function toast(msg){
 }
 document.getElementById('againBtn').addEventListener('click',function(){
   document.getElementById('mask').classList.remove('show');
+  if(NET.mode==='client'){ toast('等待房主开始新局'); return; }
   newRound();
 });
 newRound();
+
+// ---------- 联机：房主意图处理 ----------
+function handleIntent(msg,seat){
+  if(!NET.inGame||msg.k!=='intent') return;
+  clearTimeout(NET.turnTimer); NET.turnTimer=null;
+  var p=S.players[seat];
+  if(S.ended||p.out) return;
+  var act=msg.act;
+  if(act==='看牌'){
+    if(!p.seen){ p.seen=true; toast(seatLabel(seat)+' 看牌'); }
+    renderAll();
+    return;
+  }
+  if(act==='闷跟'){
+    if(p.seen) return;
+    bet(seat,2);
+    return;
+  }
+  if(act==='跟注'){ bet(seat,2*(p.seen?2:1)); return; }
+  if(act==='加注'){ bet(seat,3*(p.seen?2:1)); return; }
+  if(act==='弃牌'){ p.out=true; toast(seatLabel(seat)+' 弃牌'); next(); return; }
+  if(act==='比牌'){
+    var i2=(S.turn+1)%3;
+    while(S.players[i2].out) i2=(i2+1)%3;
+    if(i2===seat){ toast('没有可比的对手'); return; }
+    var op=S.players[i2];
+    var meWin=beat(p.hand,op.hand);
+    p.seen=true;
+    var loser=meWin?op:p;
+    loser.out=true; loser.seen=true;
+    toast('比牌：'+(meWin?seatLabel(seat):seatLabel(i2))+' 胜，'+(loser.i===seat?seatLabel(seat):seatLabel(loser.i))+' 出局');
+    next();
+    return;
+  }
+}
+function bet(seat,amt){
+  var p=S.players[seat];
+  if(amt>p.chips) amt=Math.max(1,p.chips);
+  if(amt<=0){ p.out=true; toast(seatLabel(seat)+' 筹码不足弃牌'); next(); return; }
+  p.chips-=amt; S.pot+=amt; p.lastBet=amt; p.lastAct='下注';
+  toast(seatLabel(seat)+' 下注 '+amt);
+  next();
+}
+
+// ---------- 联机面板 ----------
+var netBtn=document.getElementById('netBtn'), netMask=document.getElementById('netMask');
+var netCodeEl=document.getElementById('netCode'), netCodeInput=document.getElementById('netCodeInput'),
+    netMembers=document.getElementById('netMembers'), netWait=document.getElementById('netWait'),
+    netCreate=document.getElementById('netCreate'), netJoin=document.getElementById('netJoin'),
+    netStart=document.getElementById('netStart'), netCancel=document.getElementById('netCancel'),
+    netLeave=document.getElementById('netLeave'), netTag=document.getElementById('netTag'),
+    netCodeBox=document.getElementById('netCodeBox');
+function showNetPanel(){ netMask.classList.add('show'); refreshNetUI(); }
+function refreshNetUI(){
+  if(NET.mode==='solo'){
+    netCodeBox.style.display='none'; netCodeInput.style.display='block';
+    netWait.style.display='none'; netStart.style.display='none'; netLeave.style.display='none';
+    netMembers.textContent='';
+    netCreate.style.display=''; netJoin.style.display=''; netCancel.style.display='';
+    netTag.style.display='none';
+    return;
+  }
+  netTag.style.display='';
+  netCreate.style.display='none'; netJoin.style.display='none'; netCodeInput.style.display='none';
+  netCancel.style.display=''; netLeave.style.display='';
+  var code=Net.code();
+  if(NET.mode==='host'){
+    netCodeBox.style.display='block'; netCodeEl.textContent=code;
+    var n=NET.conns.length;
+    netMembers.textContent=n?('已加入：'+n+' 人（'+['玩家 2','玩家 3'].slice(0,n).join('、')+'）'):'等待成员加入…（可 1 人开局，其余由 AI 补位）';
+    netStart.style.display=NET.inGame?'none':'';
+    netWait.style.display='none';
+    netTag.textContent='联机 · '+code+' · '+(n+1)+'/3';
+  }else{
+    netCodeBox.style.display='block'; netCodeEl.textContent=code;
+    netStart.style.display='none';
+    netWait.style.display='block';
+    netWait.textContent=NET.inGame?'对局中…':'已加入房间 '+code+'，等待房主开始';
+    netMembers.textContent='';
+    netTag.textContent='联机 · '+code;
+  }
+}
+netBtn.addEventListener('click',showNetPanel);
+netCancel.addEventListener('click',function(){ netMask.classList.remove('show'); });
+netLeave.addEventListener('click',function(){ Net.leave(); location.reload(); });
+netCreate.addEventListener('click',function(){
+  netCreate.style.display='none'; netJoin.style.display='none';
+  netMembers.textContent='正在创建房间…';
+  Net.createRoom({game:'zj',
+    onOpen:function(code){
+      NET.mode='host'; NET.me=0; NET.inGame=false;
+      refreshNetUI();
+      toast('房间已创建：'+code);
+    },
+    onPeer:function(conn){
+      NET.conns.push(conn);
+      if(NET.inGame||NET.conns.length>=2){ sendTo(conn,{k:'full'}); conn.close(); return; }
+      refreshNetUI();
+      toast('有新成员加入');
+    },
+    onData:function(conn,msg){
+      if(NET.inGame&&msg.k==='intent'){ handleIntent(msg,seatOfConn(conn)); }
+      else if(!NET.inGame){ refreshNetUI(); }
+    },
+    onPeerClose:function(conn){
+      var seat=seatOfConn(conn);
+      NET.conns=NET.conns.filter(function(c){return c!==conn;});
+      delete NET.connSeat[conn.peer];
+      if(NET.inGame&&seat!=null){
+        clearTimeout(NET.turnTimer); NET.turnTimer=null;
+        var idx=NET.realSeats.indexOf(seat);
+        if(idx>=0){ NET.realSeats.splice(idx,1); S.players[seat].ai=true; toast(seatLabel(seat)+' 已离开，AI 接管'); }
+        renderAll();
+      } else refreshNetUI();
+    },
+    onError:function(e){
+      if(e&&e.error==='peerjs-load-fail') toast('无法加载联机组件');
+      else toast('联机错误：'+(e.type||e.error||'未知'));
+    }
+  });
+});
+netJoin.addEventListener('click',function(){
+  var code=netCodeInput.value.trim().toUpperCase();
+  if(code.length!==6){ toast('请输入 6 位房间码'); return; }
+  netCodeInput.value='';
+  netMembers.textContent='正在加入…';
+  Net.joinRoom({game:'zj',code:code,
+    onOpen:function(){
+      NET.mode='client'; NET.inGame=false;
+      if(S) S.ended=true;
+      renderAll();
+      refreshNetUI();
+      toast('已加入房间 '+code);
+    },
+    onData:function(conn,msg){
+      if(msg.k==='full'){ toast('房间已满'); setTimeout(function(){location.reload();},600); return; }
+      if(msg.k==='start'){ NET.inGame=true; refreshNetUI(); }
+      else if(msg.k==='ask'){ if(NET.inGame){ var p=S.players[NET.me]; if(p&&!S.ended&&!p.out) showOps(); } }
+      else if(msg.k==='view'){ applyView(msg); }
+      else if(msg.k==='toast'){ toast(msg.msg); }
+    },
+    onClose:function(){ toast('与房主断开连接'); setTimeout(function(){location.reload();},900); },
+    onError:function(e){
+      if(e&&e.type==='room-not-found') toast('房间不存在，请核对房间码');
+      else if(e&&e.error==='peerjs-load-fail') toast('无法加载联机组件');
+      else toast('联机错误：'+(e.type||e.error||'未知'));
+    }
+  });
+});
+netStart.addEventListener('click',function(){
+  if(NET.mode!=='host') return;
+  NET.inGame=true;
+  NET.realSeats=[0];
+  NET.conns.forEach(function(conn,idx){
+    NET.connSeat[conn.peer]=idx+1;
+    NET.realSeats.push(idx+1);
+  });
+  NET.me=0;
+  Net.broadcast({k:'start'});
+  netMask.classList.remove('show');
+  newRound();
+});
 })();
 </script>
 <script>
@@ -345,6 +593,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+<script src="net.js"></script>
 <script src="sounds.js"></script>
 <script>
 (function(){document.addEventListener('contextmenu',function(e){e.preventDefault();});document.addEventListener('dragstart',function(e){e.preventDefault();});

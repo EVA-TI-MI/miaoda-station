@@ -59,6 +59,13 @@
   .toast{position:fixed;left:50%;top:12%;transform:translateX(-50%);background:rgba(14,19,29,.95);border:1px solid rgba(224,178,90,.4);
     color:var(--txt);padding:9px 18px;border-radius:99px;font-size:13px;letter-spacing:1px;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;}
   .toast.show{opacity:1;}
+  .nbox{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+  .nin{width:180px;padding:10px;border-radius:8px;background:#1a2030;border:1px solid rgba(226,176,74,.4);color:var(--txt);font-size:15px;letter-spacing:4px;text-align:center;}
+  .nbig{font-size:32px;letter-spacing:10px;color:var(--gold);font-weight:600;margin:6px 0;}
+  .nlist{margin:8px 0;font-size:12.5px;color:var(--sub);line-height:1.9;min-height:8px;}
+  .nbtn{padding:9px 18px;border-radius:8px;border:1px solid var(--gold);background:rgba(226,176,74,.12);color:var(--gold);font-size:13px;letter-spacing:1px;cursor:pointer;min-height:44px;}
+  .nbtn.primary{background:var(--gold);color:#14110b;}
+  .nbtn.grey{border-color:#3c465c;color:var(--sub);background:transparent;}
 </style>
 </head>
 <body>
@@ -66,18 +73,18 @@
 <div class="top">
   <a class="back" href="cards-hub.html">← 返回</a>
   <div class="ttl">接火车</div>
-  <span style="width:58px"></span>
+  <button class="back" id="netBtn" style="cursor:pointer;">联机</button>
 </div>
 
 <div class="status">
   <span class="pill">你 <b id="meCnt">26</b> 张</span>
   <span class="pill" id="who">准备中</span>
-  <span class="pill">AI <b id="aiCnt">26</b> 张</span>
+  <span class="pill" id="aiPill">AI <b id="aiCnt">26</b> 张</span>
 </div>
 
 <div class="board">
   <div class="pile" id="aiPile">
-    <div class="pile-h"><b>AI 手牌堆</b><span class="cnt" id="aiCnt2">26 张</span></div>
+    <div class="pile-h"><b id="aiPileName">AI 手牌堆</b><span class="cnt" id="aiCnt2">26 张</span></div>
     <div class="deck-box"><div class="deckcard"></div></div>
   </div>
   <div class="train">
@@ -95,7 +102,28 @@
   <button class="obtn" id="resetBtn">重新开局</button>
 </div>
 
-<div class="foot">妙搭小站 · V4.10.0 · 双人接火车</div>
+<div class="foot">妙搭小站 · V4.11.0 · 双人接火车 <span id="netTag" style="display:none;color:var(--gold);"></span></div>
+
+<div class="mask" id="netMask">
+  <div class="dialog">
+    <h2>联机对局</h2>
+    <p id="netHint">同一 WiFi 下的设备可互相联机：房主创建房间，把房间码告诉对方加入。</p>
+    <div id="netCodeBox" style="display:none">
+      <div style="font-size:12px;color:var(--sub);">房间码</div>
+      <div class="nbig" id="netCode"></div>
+    </div>
+    <input class="nin" id="netCodeInput" placeholder="输入 6 位房间码" maxlength="6" style="display:none;margin-top:10px;">
+    <div class="nlist" id="netMembers"></div>
+    <div id="netWait" style="display:none;font-size:12.5px;color:var(--sub);margin:8px 0;"></div>
+    <div class="nbox" id="netOps">
+      <button class="nbtn primary" id="netCreate">创建房间</button>
+      <button class="nbtn" id="netJoin">加入房间</button>
+      <button class="nbtn primary" id="netStart" style="display:none">开始对局</button>
+      <button class="nbtn grey" id="netCancel">关闭</button>
+      <button class="nbtn grey" id="netLeave" style="display:none">离开房间</button>
+    </div>
+  </div>
+</div>
 
 <div class="mask" id="mask">
   <div class="dialog">
@@ -113,6 +141,46 @@ var SUITS=['\u2660\uFE0E','\u2665\uFE0E','\u2666\uFE0E','\u2663\uFE0E'];
 var RN=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 var REDS={'\u2665':1,'\u2666':1};
 var S=null,busy=false;
+// ---------- 联机 ----------
+var NET={mode:'solo', inGame:false, conn:null, realAi:false, turnTimer:null, _overShown:false};
+function sendIntent(act){ if(Net.send({k:'intent',act:act})) return true; toast('连接已断开'); return false; }
+function armTurnTimer(){
+  clearTimeout(NET.turnTimer);
+  NET.turnTimer=setTimeout(function(){
+    clearTimeout(NET.turnTimer); NET.turnTimer=null;
+    if(S.winner) return;
+    NET.realAi=false;
+    toast('对方长时间未操作，AI 接管');
+    aiStep();
+  },25000);
+}
+function viewOf(extra){
+  extra=extra||{};
+  var v={k:'view',mePile:S.me.slice(),aiPile:S.ai.slice(),train:S.train.slice(),
+    turn:S.turn,winner:S.winner,phase:busy?'resolving':'play',
+    just:extra.just?S.train.indexOf(extra.just):-1,
+    eaten:extra.eaten?extra.eaten.map(function(c){return S.train.indexOf(c);}):[],
+    aiReal:NET.realAi};
+  return v;
+}
+function broadcastView(extra){
+  if(NET.conn) sendTo(NET.conn,viewOf(extra));
+}
+function applyView(v){
+  // 成员端视角：自己的牌堆=房主端 ai 槽，对方=房主端 me 槽
+  S={me:v.aiPile.slice(),ai:v.mePile.slice(),train:v.train.slice(),
+    turn:(v.turn==='me'?'ai':'me'),winner:v.winner?(v.winner==='ai'?'me':'ai'):null};
+  busy=v.phase!=='play';
+  if(v.winner&&!NET._overShown){
+    NET._overShown=true;
+    var meWin=(v.winner==='ai');
+    document.getElementById('mask').classList.add('show');
+    document.getElementById('endTitle').textContent=meWin?'你赢了！':'对方获胜';
+    document.getElementById('endText').textContent='火车共 '+v.train.length+' 张牌。'+(meWin?'你先出完手牌，接火车接住并吃掉了对方。':'对方先出完手牌。');
+  }
+  if(!v.winner) NET._overShown=false;
+  renderAll({just:v.just>=0?v.train[v.just]:null,eaten:v.eaten.map(function(i){return v.train[i];})});
+}
 
 function buildDeck(){var d=[];SUITS.forEach(function(s){RN.forEach(function(r,i){d.push({s:s,r:i+2});});});return d;}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -126,8 +194,10 @@ function newGame(){
   var d=shuffle(buildDeck());
   S={me:d.slice(0,26).reverse(),ai:d.slice(26).reverse(),train:[],turn:Math.random()<0.5?'me':'ai',winner:null};
   busy=false;
+  NET._overShown=false;
   renderAll();
-  toast((S.turn==='me'?'你先出牌':'AI 先出牌'));
+  if(NET.mode==='host') broadcastView();
+  toast((S.turn==='me'?'你先出牌':'对方先出牌'));
   if(S.turn==='ai') setTimeout(function(){aiStep();},900);
 }
 function flip(p){
@@ -165,13 +235,15 @@ function step(p){
   }
   S.train.push(c);
   renderAll({just:c});
+  broadcastView({just:c});
   var eaten=checkEat(c);
   if(eaten&&eaten.length){
     setTimeout(function(){
       var pile=S[p];
       // 吃到的牌放到自己堆底（保持顺序）
       S[p]=eaten.concat(pile);
-      renderAll({eaten:eaten,msg:(p==='me'?'你吃到 ':'AI 吃到 ')+eaten.length+' 张'});
+      renderAll({eaten:eaten,msg:(p==='me'?'你吃到 ':'对方吃到 ')+eaten.length+' 张'});
+      broadcastView({eaten:eaten,msg:(p==='me'?'你吃到 ':'对方吃到 ')+eaten.length+' 张'});
       setTimeout(function(){
         if(!S[p].length){ busy=false; finish(p==='me'?'ai':'me'); return; }
         step(p); // 继续出牌
@@ -182,17 +254,24 @@ function step(p){
       busy=false;
       S.turn=p==='me'?'ai':'me';
       renderAll();
+      broadcastView();
       if(S.turn==='ai') setTimeout(function(){aiStep();},750);
     },420);
   }
 }
 function aiStep(){
   if(S.winner||busy) return;
+  if(NET.mode==='host'&&NET.realAi&&NET.conn){
+    sendTo(NET.conn,{k:'ask',type:'turn'});
+    armTurnTimer();
+    return;
+  }
   busy=true;
   step('ai');
 }
 function doDeal(){
   if(S.winner||busy||S.turn!=='me') return;
+  if(NET.mode==='client'){ sendIntent('deal'); return; }
   busy=true;
   step('me');
 }
@@ -201,20 +280,24 @@ function finish(winnerP){
   S.winner=winnerP;
   var meWin=winnerP==='me';
   document.getElementById('mask').classList.add('show');
-  document.getElementById('endTitle').textContent=meWin?'你赢了！':'AI 获胜';
-  document.getElementById('endText').textContent='火车共 '+S.train.length+' 张牌。'+(meWin?'你先出完手牌，接火车接住并吃掉了对方。':'AI 先出完手牌。');
+  document.getElementById('endTitle').textContent=meWin?'你赢了！':'对方获胜';
+  document.getElementById('endText').textContent='火车共 '+S.train.length+' 张牌。'+(meWin?'你先出完手牌，接火车接住并吃掉了对方。':'对方先出完手牌。');
   renderAll();
+  broadcastView();
 }
 function renderAll(extra){
   extra=extra||{};
+  var aiName=NET.mode==='solo'?'AI 手牌堆':(NET.mode==='host'?(NET.realAi?'对手手牌堆':'AI 手牌堆'):'对手手牌堆');
+  document.getElementById('aiPileName').textContent=aiName;
   document.getElementById('meCnt').textContent=S.me.length;
   document.getElementById('aiCnt').textContent=S.ai.length;
   document.getElementById('meCnt2').textContent=S.me.length+' 张';
   document.getElementById('aiCnt2').textContent=S.ai.length+' 张';
   document.getElementById('trainCnt').textContent=S.train.length+' 张';
   var who=document.getElementById('who');
+  var oppName=NET.mode==='client'?'对方':'AI';
   if(S.winner) who.textContent='本局结束';
-  else who.textContent=(S.turn==='me'?'轮到你出牌':'AI 出牌中');
+  else who.textContent=(S.turn==='me'?'轮到你出牌':(oppName+' 出牌中'));
   var rail=document.getElementById('rail');
   rail.innerHTML='';
   if(!S.train.length){ rail.innerHTML='<span style="color:#54617a;font-size:12px;padding:10px;">火车为空，出第一张牌启动列车</span>'; }
@@ -225,7 +308,7 @@ function renderAll(extra){
     rail.appendChild(cardEl(c,cls));
   });
   rail.scrollLeft=rail.scrollWidth;
-  document.getElementById('dealBtn').disabled=S.winner||S.turn!=='me'||busy;
+  document.getElementById('dealBtn').disabled=S.winner||S.turn!=='me'||busy||(NET.mode==='host'&&NET.realAi);
   if(extra.msg) toast(extra.msg);
 }
 function toast(msg){
@@ -234,8 +317,132 @@ function toast(msg){
   clearTimeout(t._tm);t._tm=setTimeout(function(){t.classList.remove('show');},2200);
 }
 document.getElementById('dealBtn').addEventListener('click',doDeal);
-document.getElementById('resetBtn').addEventListener('click',function(){ document.getElementById('mask').classList.remove('show'); newGame(); });
-document.getElementById('againBtn').addEventListener('click',function(){ document.getElementById('mask').classList.remove('show'); newGame(); });
+document.getElementById('resetBtn').addEventListener('click',function(){
+  document.getElementById('mask').classList.remove('show');
+  if(NET.mode==='client'){ toast('等待房主重新开局'); return; }
+  if(NET.mode==='host'&&NET.realAi){ sendTo(NET.conn,{k:'start'}); }
+  newGame();
+});
+document.getElementById('againBtn').addEventListener('click',function(){
+  document.getElementById('mask').classList.remove('show');
+  if(NET.mode==='client'){ toast('等待房主开始新局'); return; }
+  if(NET.mode==='host'&&NET.realAi){ sendTo(NET.conn,{k:'start'}); }
+  newGame();
+});
+
+// ---------- 联机面板 ----------
+var netBtn=document.getElementById('netBtn'), netMask=document.getElementById('netMask');
+var netCodeEl=document.getElementById('netCode'), netCodeInput=document.getElementById('netCodeInput'),
+    netMembers=document.getElementById('netMembers'), netWait=document.getElementById('netWait'),
+    netCreate=document.getElementById('netCreate'), netJoin=document.getElementById('netJoin'),
+    netStart=document.getElementById('netStart'), netCancel=document.getElementById('netCancel'),
+    netLeave=document.getElementById('netLeave'), netTag=document.getElementById('netTag'),
+    netCodeBox=document.getElementById('netCodeBox');
+function showNetPanel(){ netMask.classList.add('show'); refreshNetUI(); }
+function refreshNetUI(){
+  if(NET.mode==='solo'){
+    netCodeBox.style.display='none'; netCodeInput.style.display='block';
+    netWait.style.display='none'; netStart.style.display='none'; netLeave.style.display='none';
+    netMembers.textContent='';
+    netCreate.style.display=''; netJoin.style.display=''; netCancel.style.display='';
+    netTag.style.display='none';
+    return;
+  }
+  netTag.style.display='';
+  netCreate.style.display='none'; netJoin.style.display='none'; netCodeInput.style.display='none';
+  netCancel.style.display=''; netLeave.style.display='';
+  var code=Net.code();
+  if(NET.mode==='host'){
+    netCodeBox.style.display='block'; netCodeEl.textContent=code;
+    netMembers.textContent=NET.conn?'对方已加入':'等待对方加入…（可 1 人开局，由 AI 陪练）';
+    netStart.style.display=NET.inGame?'none':'';
+    netWait.style.display='none';
+    netTag.textContent='联机 · '+code+' · 2/2';
+  }else{
+    netCodeBox.style.display='block'; netCodeEl.textContent=code;
+    netStart.style.display='none';
+    netWait.style.display='block';
+    netWait.textContent=NET.inGame?'对局中…':'已加入房间 '+code+'，等待房主开始';
+    netMembers.textContent='';
+    netTag.textContent='联机 · '+code;
+  }
+}
+netBtn.addEventListener('click',showNetPanel);
+netCancel.addEventListener('click',function(){ netMask.classList.remove('show'); });
+netLeave.addEventListener('click',function(){ Net.leave(); location.reload(); });
+netCreate.addEventListener('click',function(){
+  netCreate.style.display='none'; netJoin.style.display='none';
+  netMembers.textContent='正在创建房间…';
+  Net.createRoom({game:'ct',
+    onOpen:function(code){
+      NET.mode='host'; NET.inGame=true;
+      refreshNetUI();
+      toast('房间已创建：'+code);
+    },
+    onPeer:function(conn){
+      if(NET.conn){ sendTo(conn,{k:'full'}); conn.close(); return; }
+      NET.conn=conn;
+      NET.realAi=true;
+      refreshNetUI();
+      toast('对方已加入');
+      sendTo(conn,{k:'start'});
+      broadcastView();
+      renderAll();
+    },
+    onData:function(conn,msg){
+      if(NET.inGame&&msg.k==='intent'){
+        clearTimeout(NET.turnTimer); NET.turnTimer=null;
+        if(msg.act==='deal'){ if(!S.winner&&S.turn==='ai'&&!busy){ busy=true; step('ai'); } }
+      }
+    },
+    onPeerClose:function(){
+      NET.conn=null; NET.realAi=false;
+      clearTimeout(NET.turnTimer); NET.turnTimer=null;
+      if(NET.inGame){ toast('对方已离开，AI 接管'); if(S&&!S.winner) renderAll(); }
+      refreshNetUI();
+    },
+    onError:function(e){
+      if(e&&e.error==='peerjs-load-fail') toast('无法加载联机组件');
+      else toast('联机错误：'+(e.type||e.error||'未知'));
+    }
+  });
+});
+netJoin.addEventListener('click',function(){
+  var code=netCodeInput.value.trim().toUpperCase();
+  if(code.length!==6){ toast('请输入 6 位房间码'); return; }
+  netCodeInput.value='';
+  netMembers.textContent='正在加入…';
+  Net.joinRoom({game:'ct',code:code,
+    onOpen:function(){
+      NET.mode='client'; NET.inGame=false;
+      if(S) S.winner='ai';
+      renderAll();
+      refreshNetUI();
+      toast('已加入房间 '+code);
+    },
+    onData:function(conn,msg){
+      if(msg.k==='full'){ toast('房间已满'); setTimeout(function(){location.reload();},600); return; }
+      if(msg.k==='start'){ NET.inGame=true; refreshNetUI(); }
+      else if(msg.k==='ask'){ if(NET.inGame&&!S.winner&&S.turn==='me'){ toast('轮到你出牌'); } }
+      else if(msg.k==='view'){ applyView(msg); }
+      else if(msg.k==='toast'){ toast(msg.msg); }
+    },
+    onClose:function(){ toast('与房主断开连接'); setTimeout(function(){location.reload();},900); },
+    onError:function(e){
+      if(e&&e.type==='room-not-found') toast('房间不存在，请核对房间码');
+      else if(e&&e.error==='peerjs-load-fail') toast('无法加载联机组件');
+      else toast('联机错误：'+(e.type||e.error||'未知'));
+    }
+  });
+});
+netStart.addEventListener('click',function(){
+  if(NET.mode!=='host') return;
+  NET.inGame=true;
+  if(NET.conn) sendTo(NET.conn,{k:'start'});
+  netMask.classList.remove('show');
+  newGame();
+});
+
 newGame();
 })();
 </script>
@@ -244,6 +451,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
+<script src="net.js"></script>
 <script src="sounds.js"></script>
 <script>
 (function(){document.addEventListener('contextmenu',function(e){e.preventDefault();});document.addEventListener('dragstart',function(e){e.preventDefault();});
