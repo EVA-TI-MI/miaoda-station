@@ -1,12 +1,19 @@
 /* net.js — 妙搭小站联机网络层
- * 拓扑：房主星型。成员直连房主（WebRTC DataChannel），信令走 PeerJS 官方云（wss://0.peerjs.com）。
+ * 拓扑：房主星型。成员直连房主（WebRTC DataChannel），信令走 PeerJS 官方云（wss://0.peerjs.com，公网可达）。
+ * 场景：局域网（同一 WiFi，P2P 直连最快）与远程（异地公网，同房间码互通，STUN 打洞，P2P 优先；
+ *       双方为 cone NAT 的家用宽带一般可直连，严格 NAT 需中继——公共免费 TURN 国内不可达，未内置）。
  * 权威：房主运行完整游戏状态机，向各成员广播脱敏状态视图；成员只发意图、收视图渲染。
  * 单机模式完全不受影响；本文件仅被联机流程动态加载 PeerJS 库。
  */
 (function(){
 "use strict";
 var PEER_SRC='peerjs.min.js';   // 同源本地库
-var PEER_OPTS={debug:0};        // 默认连官方云：new Peer(id) → wss://0.peerjs.com
+// 默认连官方云：new Peer(id) → wss://0.peerjs.com；显式补充公共 STUN 提升打洞成功率
+var ICE={iceServers:[
+  {urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},
+  {urls:'stun:stun.services.mozilla.com'}
+]};
+var PEER_OPTS={debug:0, config:ICE};
 var CODES='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 var L={ mode:'idle', role:null, peer:null, conns:[], conn:null, code:null };

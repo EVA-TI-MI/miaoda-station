@@ -71,6 +71,9 @@
   .nbtn{padding:9px 18px;border-radius:8px;border:1px solid var(--gold);background:rgba(212,168,75,.12);color:var(--gold);font-size:13px;letter-spacing:1px;cursor:pointer;min-height:44px;}
   .nbtn.primary{background:var(--gold);color:#14110b;}
   .nbtn.grey{border-color:#4a3d22;color:var(--sub);background:transparent;}
+  .nmode{display:flex;gap:6px;justify-content:center;margin-bottom:10px;}
+  .nbtn.nm{padding:6px 16px;font-size:12.5px;border-radius:99px;min-height:36px;}
+  .nbtn.nm.active{background:var(--gold);color:#14110b;}
   @media (min-width:768px){ .board{max-width:560px;} body{padding-top:20px;} }
 </style>
 </head>
@@ -113,7 +116,11 @@
 
 <div class="mask" id="netMask">
   <div class="dialog">
-    <h2>联机对局</h2>
+    <h2 id="netTitle">联机对局</h2>
+    <div class="nmode" id="netModeBar">
+      <button class="nbtn nm active" id="netModeLan" type="button">局域网</button>
+      <button class="nbtn nm" id="netModeWan" type="button">远程</button>
+    </div>
     <p id="netHint">同一 WiFi 下的设备可互相联机：房主创建房间，把房间码告诉其他人加入。</p>
     <div id="netCodeBox" style="display:none">
       <div style="font-size:12px;color:var(--sub);">房间码</div>
@@ -864,6 +871,19 @@ var netCodeEl=document.getElementById('netCode'), netCodeInput=document.getEleme
     netLeave=document.getElementById('netLeave'), netTag=document.getElementById('netTag'),
     netCodeBox=document.getElementById('netCodeBox');
 function showNetPanel(){ netMask.classList.add('show'); refreshNetUI(); }
+var NET_MODE='lan';
+function setNetMode(m){
+  NET_MODE=m;
+  document.getElementById('netModeLan').classList.toggle('active',m==='lan');
+  document.getElementById('netModeWan').classList.toggle('active',m==='wan');
+  document.getElementById('netTitle').textContent=(m==='lan'?'局域网联机':'远程联机');
+  document.getElementById('netHint').textContent=(m==='lan'
+    ?'同一 WiFi 下联机：房主创建房间，其他人输入房间码即可加入。P2P 直连，速度最快。'
+    :'异地远程联机：把房间码发给朋友（微信 / QQ），公网自动建连。连接质量受双方网络影响，严格 NAT 网络可能无法直连。');
+}
+document.getElementById('netModeLan').addEventListener('click',function(){ setNetMode('lan'); });
+document.getElementById('netModeWan').addEventListener('click',function(){ setNetMode('wan'); });
+setNetMode('lan');
 function refreshNetUI(){
   if(NET.mode==='solo'){
     netCodeBox.style.display='none'; netCodeInput.style.display='block';
@@ -903,7 +923,7 @@ netCreate.addEventListener('click',function(){
     onOpen:function(code){
       NET.mode='host'; NET.me=0; NET.inGame=false;
       refreshNetUI();
-      toast('房间已创建：'+code);
+      toast('房间已创建：'+code+(NET_MODE==='wan'?'（远程，可发给异地朋友）':'（局域网直连）'));
     },
     onPeer:function(conn){
       NET.conns.push(conn);
