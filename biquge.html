@@ -1952,7 +1952,7 @@ img { max-width: 100%; display: block; }
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="novels_data.js"></script>
+<script src="novels_data.js?v=20261107a"></script>
 <script src="novels/fengzi/fengzi_index.js"></script>
 <script>
 // ==================== Data ====================
@@ -5625,6 +5625,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       location.reload();
     });
     navigator.serviceWorker.register('sw.js').then(function (reg) {
+      try { reg.update(); } catch (e) {}
       const askSkip = function (sw) { try { sw && sw.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {} };
       if (reg.waiting) askSkip(reg.waiting);
       reg.addEventListener('updatefound', function () {

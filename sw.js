@@ -1,5 +1,5 @@
 // 妙搭小站 - Service Worker
-const CACHE_NAME = 'miaoda-station-v40';
+const CACHE_NAME = 'miaoda-station-v41';
 // 离线语音引擎/模型独立缓存（体积约 45MB，跨 SW 版本长期保留，不随主缓存清理）
 const TTS_CACHE = 'biquge-tts-v1';
 const ASSETS = [
@@ -159,7 +159,24 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 2) 离线语音资源
+  // 2) 小说数据文件：网络优先，保证内容更新立即生效；断网时才回退缓存
+  if (new URL(req.url).pathname.endsWith('/novels_data.js')) {
+    e.respondWith((async () => {
+      try {
+        const resp = await fetch(req);
+        if (resp && resp.ok) {
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
+        }
+        return resp;
+      } catch (err) {
+        return (await caches.match(req, { ignoreSearch: true })) || (await caches.match('novels_data.js'));
+      }
+    })());
+    return;
+  }
+
+  // 3) 离线语音资源
   if (isTtsResource(req.url)) {
     // 前端显式要求绕缓存直连（X5 流式卡死时的兜底通道）
     if (isNetBypass(req.url)) {
@@ -186,7 +203,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 3) 其余静态资源：缓存优先，未命中走网络
+  // 4) 其余静态资源：缓存优先，未命中走网络
   e.respondWith(
     caches.match(req).then((cached) => cached || fetch(req).catch(() => cached))
   );
